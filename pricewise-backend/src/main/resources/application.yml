@@ -1,0 +1,147 @@
+spring:
+  application:
+    name: pricewise
+  
+  # Base de Datos PostgreSQL
+  datasource:
+    url: jdbc:postgresql://localhost:5432/pricewise_db
+    username: alvaromartinez
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    # HikariCP Connection Pool
+    hikari:
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      minimum-idle: 5
+      maximum-pool-size: 20
+      pool-name: PriceWisePool
+      leak-detection-threshold: 60000
+  
+  # Cache en memoria
+  cache:
+    type: simple
+  
+  # JPA / Hibernate
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+  
+  # Perfiles
+  profiles:
+    active: dev
+
+# Configuración del servidor
+server:
+  port: 9090
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# =========================================
+# JWT Configuration
+# =========================================
+# IMPORTANTE PARA PRODUCCIÓN:
+# - NUNCA usar el secret por defecto en producción
+# - Establecer la variable de entorno JWT_SECRET con un valor seguro
+# - El secret debe tener al menos 256 bits (32 caracteres)
+# - Generar con: openssl rand -base64 32
+jwt:
+  secret: ${JWT_SECRET:MiClaveSecretaSuperSeguraParaPriceWise2026QueTieneQueTenerAlMenos256Bits}
+  expiration: 86400000  # 24 horas en milisegundos
+
+# =========================================
+# CORS Configuration
+# =========================================
+cors:
+  # En desarrollo: true permite cualquier origen (Postman, etc.)
+  # En producción: false solo permite orígenes específicos
+  allow-all: false
+  # Orígenes permitidos en producción (separados por coma)
+  allowed-origins: http://localhost:8100,http://localhost:4200,http://localhost:3000
+
+# =========================================
+# Keepa API Configuration (Amazon Price Tracking)
+# =========================================
+# IMPORTANTE: Obtener API key en https://keepa.com/#!api
+# La clave gratuita tiene límites, considera plan de pago para producción
+keepa:
+  api-key: ${KEEPA_API_KEY:}
+  # Locale de Amazon (ES = España, US = USA, DE = Alemania, etc.)
+  default-locale: ES
+  # Días de historial a solicitar en cada consulta
+  history-days: 90
+  # Límite de requests por minuto (depende de tu plan)
+  rate-limit: 10
+
+# Swagger/OpenAPI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+
+# Logging - Nivel base (sobrescrito por perfiles)
+logging:
+  level:
+    root: INFO
+    com.alvaro.pricewise: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+---
+# =========================================
+# Perfil de DESARROLLO
+# =========================================
+spring:
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    show-sql: true
+
+# CORS permisivo en desarrollo
+cors:
+  allow-all: true
+
+logging:
+  level:
+    root: INFO
+    com.alvaro.pricewise: DEBUG
+    # Reducido para evitar logs excesivos de contraseñas/tokens
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
+
+---
+# =========================================
+# Perfil de PRODUCCIÓN
+# =========================================
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+
+# CORS restrictivo en producción
+cors:
+  allow-all: false
+  # IMPORTANTE: Actualizar con dominios reales de producción
+  allowed-origins: https://tudominio.com,https://app.tudominio.com
+
+logging:
+  level:
+    root: WARN
+    com.alvaro.pricewise: INFO
+    org.springframework.security: WARN
+

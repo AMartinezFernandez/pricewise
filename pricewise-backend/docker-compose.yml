@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: pricewise-db
+    environment:
+      POSTGRES_DB: pricewise_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Aplicación Spring Boot (opcional - para producción)
+  # Descomenta si quieres ejecutar la app en Docker
+  # app:
+  #   build: .
+  #   container_name: pricewise-api
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: prod
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pricewise_db
+  #     SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres}
+  #     JWT_SECRET: ${JWT_SECRET}
+  #     KEEPA_API_KEY: ${KEEPA_API_KEY:-}
+  #   ports:
+  #     - "9090:9090"
+
+volumes:
+  postgres_data:
