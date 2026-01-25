@@ -1,0 +1,98 @@
+package com.alvaro.pricewise.data.api
+
+import com.alvaro.pricewise.data.model.*
+import retrofit2.Response
+import retrofit2.http.*
+
+interface PriceWiseApi {
+
+    // ─── Auth ────────────────────────────────────────────────────────────
+    @POST("api/auth/login")
+    suspend fun login(@Body request: LoginRequest): Response<ApiResponse<AuthData>>
+
+    @POST("api/auth/register")
+    suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<AuthData>>
+
+    @GET("api/auth/profile")
+    suspend fun getProfile(): Response<ApiResponse<UserProfile>>
+
+    // ─── Productos ───────────────────────────────────────────────────────
+    @GET("api/products")
+    suspend fun getProducts(
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20,
+        @Query("sortBy") sortBy: String = "name",
+        @Query("sortDir") sortDir: String = "asc"
+    ): Response<ApiResponse<PageResponse<ProductResponse>>>
+
+    @GET("api/products/search")
+    suspend fun searchProducts(
+        @Query("name") name: String? = null,
+        @Query("category") category: String? = null,
+        @Query("brand") brand: String? = null,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): Response<ApiResponse<PageResponse<ProductResponse>>>
+
+    @GET("api/products/{id}")
+    suspend fun getProduct(@Path("id") id: Long): Response<ApiResponse<ProductResponse>>
+
+    @POST("api/products")
+    suspend fun createProduct(@Body request: CreateProductRequest): Response<ApiResponse<ProductResponse>>
+
+    @PUT("api/products/{id}")
+    suspend fun updateProduct(
+        @Path("id") id: Long,
+        @Body request: UpdateProductRequest
+    ): Response<ApiResponse<ProductResponse>>
+
+    @DELETE("api/products/{id}")
+    suspend fun deleteProduct(@Path("id") id: Long): Response<Unit>
+
+    @GET("api/products/categories")
+    suspend fun getCategories(): Response<ApiResponse<List<String>>>
+
+    @GET("api/products/brands")
+    suspend fun getBrands(): Response<ApiResponse<List<String>>>
+
+    // ─── Keepa / Competidores ────────────────────────────────────────────
+    @GET("api/competitors/status")
+    suspend fun getKeepaStatus(): Response<ApiResponse<KeepaStatus>>
+
+    @GET("api/competitors/amazon/price/{asin}")
+    suspend fun getAmazonPrice(@Path("asin") asin: String): Response<ApiResponse<CompetitorPriceResponse>>
+
+    @POST("api/competitors/amazon/sync/{productId}")
+    suspend fun syncWithAmazon(
+        @Path("productId") productId: Long,
+        @Query("asin") asin: String? = null
+    ): Response<ApiResponse<CompetitorPriceResponse>>
+
+    // ─── Recomendaciones ─────────────────────────────────────────────────
+    @GET("api/analytics/recommendations")
+    suspend fun getRecommendations(
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): Response<ApiResponse<PageResponse<RecommendationResponse>>>
+
+    @POST("api/analytics/recommendations/{id}/apply")
+    suspend fun applyRecommendation(@Path("id") id: Long): Response<ApiResponse<String>>
+
+    @POST("api/analytics/recommendations/{id}/dismiss")
+    suspend fun dismissRecommendation(@Path("id") id: Long): Response<ApiResponse<String>>
+
+    // ─── Alertas ─────────────────────────────────────────────────────────
+    @GET("api/analytics/alerts")
+    suspend fun getAlerts(
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20,
+        @Query("onlyUnread") onlyUnread: Boolean = false
+    ): Response<ApiResponse<PageResponse<AlertResponse>>>
+
+    @POST("api/analytics/alerts/{id}/read")
+    suspend fun markAlertRead(@Path("id") id: Long): Response<ApiResponse<String>>
+
+    // ─── Dashboard ───────────────────────────────────────────────────────
+    @GET("api/analytics/dashboard")
+    suspend fun getDashboard(): Response<ApiResponse<DashboardResponse>>
+}

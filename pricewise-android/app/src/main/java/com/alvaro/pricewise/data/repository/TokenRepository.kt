@@ -1,0 +1,61 @@
+package com.alvaro.pricewise.data.repository
+
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "pricewise_prefs")
+
+@Singleton
+class TokenRepository @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    companion object {
+        private val TOKEN_KEY = stringPreferencesKey("jwt_token")
+        private val USER_ID_KEY = longPreferencesKey("user_id")
+        private val USERNAME_KEY = stringPreferencesKey("username")
+        private val ROLE_KEY = stringPreferencesKey("role")
+    }
+
+    fun getToken(): Flow<String?> = context.dataStore.data
+        .map { prefs -> prefs[TOKEN_KEY] }
+
+    fun getUserId(): Flow<Long?> = context.dataStore.data
+        .map { prefs -> prefs[USER_ID_KEY] }
+
+    fun getUsername(): Flow<String?> = context.dataStore.data
+        .map { prefs -> prefs[USERNAME_KEY] }
+
+    fun getRole(): Flow<String?> = context.dataStore.data
+        .map { prefs -> prefs[ROLE_KEY] }
+
+    fun isLoggedIn(): Flow<Boolean> = context.dataStore.data
+        .map { prefs -> !prefs[TOKEN_KEY].isNullOrBlank() }
+
+    suspend fun saveSession(token: String, userId: Long, username: String, role: String) {
+        context.dataStore.edit { prefs ->
+            prefs[TOKEN_KEY] = token
+            prefs[USER_ID_KEY] = userId
+            prefs[USERNAME_KEY] = username
+            prefs[ROLE_KEY] = role
+        }
+    }
+
+    suspend fun clearSession() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(TOKEN_KEY)
+            prefs.remove(USER_ID_KEY)
+            prefs.remove(USERNAME_KEY)
+            prefs.remove(ROLE_KEY)
+        }
+    }
+}
