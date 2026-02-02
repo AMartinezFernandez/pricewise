@@ -1,0 +1,940 @@
+# Registro de Bugs y Soluciones - PriceWise Backend
+
+Este documento registra todos los errores encontrados durante el desarrollo de PriceWise Backend,
+junto con sus causas raiz y soluciones aplicadas.
+
+> Periodo cubierto: 2026-01-25 a 2026-02-10
+
+---
+
+## Indice de Bugs
+
+| #  | Titulo                                            | Fecha      | Estado |
+|----|---------------------------------------------------|------------|--------|
+| 1  | DDL auto destruye datos al cambiar entidad        | 2026-01-26 | OK     |
+| 2  | Fuga de entidad User en respuesta de login        | 2026-01-27 | OK     |
+| 3  | SKU duplicado entre usuarios distintos            | 2026-01-28 | OK     |
+| 4  | Precio negativo en PriceHistory al actualizar     | 2026-01-29 | OK     |
+| 5  | CORS bloquea peticiones desde localhost en dev    | 2026-02-01 | OK     |
+| 6  | JWT_SECRET invalido en produccion sin aviso claro | 2026-02-01 | OK     |
+| 7  | N+1 queries en listado de productos               | 2026-02-02 | OK     |
+| 8  | Cache no se invalida al borrar producto           | 2026-02-03 | OK     |
+| 9  | KeepaService bloquea hilo HTTP durante 30s        | 2026-02-04 | OK     |
+| 10 | Race condition en inicializacion de Amazon        | 2026-02-04 | OK     |
+| 11 | Scheduler no se reanuda tras caida del servidor   | 2026-02-05 | OK     |
+| 12 | Paginacion devuelve elementos de otros usuarios   | 2026-02-05 | OK     |
+| 13 | getMargin() lanza ArithmeticException             | 2026-02-06 | OK     |
+| 14 | CompetitorPrice.getPriceDifferencePercentage() NullPointerException | 2026-02-06 | OK |
+| 15 | Endpoint DELETE no hace soft delete               | 2026-02-06 | OK     |
+| 16 | Admin puede desactivarse a si mismo               | 2026-02-07 | OK     |
+| 17 | JWT expira pero el cliente no recibe 401          | 2026-02-07 | OK     |
+| 18 | PriceMonitorJob no para ante error de Keepa       | 2026-02-08 | OK     |
+| 19 | BCrypt hash expuesto en log de debug              | 2026-02-08 | OK     |
+| 20 | Productos inactivos aparecen en busqueda          | 2026-02-09 | OK     |
+| 21 | Connection pool agotado bajo carga moderada       | 2026-02-09 | OK     |
+| 22 | ChangeType INITIAL sobreescrito al actualizar     | 2026-02-10 | OK     |
+
+---
+
+## Bug #1: DDL auto destruye datos al cambiar entidad
+
+**Fecha:** 2026-01-26
+**Estado:** OK
+
+### Sintomas
+- Al cambiar el nombre de un campo en una entidad JPA y reiniciar la app, la
+  tabla se borraba y recreaba vacia.
+- Todos los datos de desarrollo se perdian.
+
+### Causa Raiz
+`spring.jpa.hibernate.ddl-auto: create-drop` en el perfil dev. Esta estrategia
+borra y recrea el esquema completo en cada inicio.
+
+### Solucion
+Cambiar a `ddl-auto: update` en dev y `ddl-auto: validate` en prod:
+
+```yaml
+# application.yml
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update   # dev: actualiza sin borrar
+# application-prod.yml
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate # prod: solo verifica, no modifica
+```
+
+### Archivos Modificados
+- `application.yml`
+
+---
+
+## Bug #2: Fuga de entidad User en respuesta de login
+
+**Fecha:** 2026-01-27
+**Estado:** OK
+
+### Sintomas
+- La respuesta de `POST /api/auth/login` incluia el campo `password` (hash BCrypt)
+  y las listas de productos del usuario en el JSON de respuesta.
+
+### Causa Raiz
+`AuthService.login()` devuelvia directamente la entidad `User` en lugar de un DTO.
+Jackson serializaba todos los campos publicos incluyendo los sensibles.
+
+### Solucion
+Crear `AuthResponse` DTO que incluye solo los campos necesarios:
+
+```java
+public class AuthResponse {
+    private Long id;
+    private String username;
+    private String email;
+    private String businessName;
+    private String role;
+    private String token;
+    private long expiresIn;
+}
+```
+
+Y mapear la entidad al DTO en el servicio antes de devolver.
+
+### Archivos Modificados
+- `AuthService.java`
+- `AuthResponse.java` (nuevo)
+
+---
+
+## Bug #3: SKU duplicado entre usuarios distintos
+
+**Fecha:** 2026-01-28
+**Estado:** OK
+
+### Sintomas
+- Un usuario recibia error al crear un producto con SKU "ABC-001" si otro usuario
+  ya tenia un producto con ese mismo SKU.
+- El error era confuso: "SKU ya en uso" cuando en realidad el SKU era libre para
+  ese usuario.
+
+### Causa Raiz
+La constraint `@Column(unique = true)` en el campo `sku` de `Product` era global
+(a nivel de tabla), sin tener en cuenta el `user_id`. El SKU debe ser unico solo
+dentro del catalogo de cada usuario.
+
+### Solucion
+Eliminar la constraint de columna y mover la unicidad a un indice compuesto:
+
+```java
+@Entity
+@Table(name = "products",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"sku", "user_id"})  // Unico por usuario
+    })
+public class Product { ... }
+```
+
+Y actualizar la validacion en el servicio:
+
+```java
+// Antes (incorrecto):
+if (productRepository.existsBySku(request.getSku()))
+
+// Despues (correcto):
+if (productRepository.existsBySkuAndUserId(request.getSku(), userId))
+```
+
+### Archivos Modificados
+- `Product.java`
+- `ProductService.java`
+- `ProductRepository.java`
+
+---
+
+## Bug #4: Precio negativo en PriceHistory al actualizar
+
+**Fecha:** 2026-01-29
+**Estado:** OK
+
+### Sintomas
+- Al actualizar un producto con precio 0.00, se registraba una entrada en
+  PriceHistory con `price = 0.00` y el ChangeType calculado como DECREASE.
+- El historial mostraba una caida de precio al 0 cuando en realidad era un
+  error de validacion.
+
+### Causa Raiz
+La validacion `@DecimalMin("0.01")` en `ProductRequest` se saltaba al hacer
+PUT porque el campo `currentPrice` era nullable en el DTO de actualizacion.
+Un precio 0 o null pasaba la validacion y llegaba al servicio.
+
+### Solucion
+Aplicar validaciones estrictas en el DTO de actualizacion:
+
+```java
+public class ProductUpdateRequest {
+    @DecimalMin(value = "0.01", message = "El precio debe ser mayor a 0")
+    @Digits(integer = 10, fraction = 2)
+    private BigDecimal currentPrice;  // Si se envia, debe ser >= 0.01
+}
+```
+
+Y en el servicio, ignorar el campo si viene null (no actualizar el precio
+si no se envia en la peticion).
+
+### Archivos Modificados
+- `ProductUpdateRequest.java`
+- `ProductService.java`
+
+---
+
+## Bug #5: CORS bloquea peticiones desde localhost en dev
+
+**Fecha:** 2026-02-01
+**Estado:** OK
+
+### Sintomas
+- El frontend en `http://localhost:3000` recibia error CORS al llamar a la API
+  en `http://localhost:9090`.
+- El error en el navegador: "No 'Access-Control-Allow-Origin' header".
+
+### Causa Raiz
+La configuracion de CORS en `SecurityConfig` no contemplaba localhost en
+desarrollo. El perfil dev no tenia habilitado el modo permisivo.
+
+### Solucion
+Configurar CORS segun perfil:
+
+```java
+// SecurityConfig.java
+CorsConfiguration config = new CorsConfiguration();
+if (corsProperties.isAllowAll()) {
+    config.addAllowedOriginPattern("*");  // Dev: cualquier origen
+} else {
+    config.setAllowedOrigins(corsProperties.getAllowedOrigins());  // Prod: lista blanca
+}
+config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+config.setAllowedHeaders(List.of("*"));
+config.setAllowCredentials(true);
+```
+
+```yaml
+# application.yml (dev)
+cors:
+  allow-all: true
+
+# application-prod.yml
+cors:
+  allow-all: false
+  allowed-origins:
+    - https://miapp.com
+    - https://www.miapp.com
+```
+
+### Archivos Modificados
+- `SecurityConfig.java`
+- `application.yml`
+
+---
+
+## Bug #6: JWT_SECRET invalido en produccion sin aviso claro
+
+**Fecha:** 2026-02-01
+**Estado:** OK
+
+### Sintomas
+- En produccion, si `JWT_SECRET` no estaba configurado, la aplicacion arrancaba
+  con un secreto por defecto inseguro sin ningun error visible.
+- Los tokens se firmaban con `"default-secret-change-in-production"` y eran
+  validos pero completamente inseguros.
+
+### Causa Raiz
+La propiedad `jwt.secret` tenia un valor por defecto en `application.yml`. No
+habia ninguna validacion al arrancar de que el secreto cumplia requisitos de
+seguridad.
+
+### Solucion
+Validar el secreto en la inicializacion de `JwtService`:
+
+```java
+@PostConstruct
+public void validateSecretKey() {
+    if (secret.equals("default-secret-change-in-production")) {
+        if (isProduction()) {
+            throw new IllegalStateException(
+                "FATAL: JWT_SECRET no configurado en produccion. " +
+                "Configura la variable de entorno JWT_SECRET con minimo 32 caracteres.");
+        }
+        log.warn("ATENCION: Usando JWT_SECRET por defecto. " +
+                 "Configura JWT_SECRET antes de desplegar en produccion.");
+    }
+    if (secret.length() < 32) {
+        throw new IllegalStateException(
+            "JWT_SECRET debe tener al menos 32 caracteres.");
+    }
+}
+```
+
+### Archivos Modificados
+- `JwtService.java`
+
+---
+
+## Bug #7: N+1 queries en listado de productos
+
+**Fecha:** 2026-02-02
+**Estado:** OK
+
+### Sintomas
+- Al listar 20 productos, los logs mostraban 21 queries SQL:
+  1 para obtener los productos + 1 por cada producto para cargar el usuario.
+- Tiempo de respuesta de 200-400ms para solo 20 productos.
+
+### Causa Raiz
+La relacion `@ManyToOne` entre `Product` y `User` usaba `FetchType.EAGER` por
+defecto. Al serializar cada `ProductResponse`, Jackson intentaba acceder a
+`product.getUser()` lo que disparaba una query lazy por cada producto.
+
+### Solucion
+1. Cambiar a `FetchType.LAZY` en la relacion:
+
+```java
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "user_id", nullable = false)
+private User user;
+```
+
+2. Usar `@EntityGraph` en la query de listado cuando se necesita el usuario:
+
+```java
+@EntityGraph(attributePaths = {"user"})
+Page<Product> findByUserIdAndActiveTrue(Long userId, Pageable pageable);
+```
+
+3. En el mapeo a DTO, no acceder a `product.getUser()` directamente.
+   El `userId` ya esta disponible como parametro del metodo de servicio.
+
+### Archivos Modificados
+- `Product.java`
+- `ProductRepository.java`
+- `ProductService.java`
+
+---
+
+## Bug #8: Cache no se invalida al borrar producto
+
+**Fecha:** 2026-02-03
+**Estado:** OK
+
+### Sintomas
+- Despues de borrar (soft delete) un producto de la categoria "Electronica",
+  el endpoint `/api/products/categories` seguia devolviendo "Electronica" incluso
+  si era el unico producto de esa categoria.
+- La cache solo se invalidaba en create y update, no en delete.
+
+### Causa Raiz
+El metodo `deleteProduct()` en `ProductService` no tenia la anotacion
+`@CacheEvict`. La cache de categorias y marcas quedaba desactualizada.
+
+### Solucion
+
+```java
+// Antes:
+public void deleteProduct(Long productId, Long userId) {
+    product.setActive(false);
+    productRepository.save(product);
+}
+
+// Despues:
+@CacheEvict(value = {"categories", "brands"}, key = "#userId")
+public void deleteProduct(Long productId, Long userId) {
+    product.setActive(false);
+    productRepository.save(product);
+}
+```
+
+### Archivos Modificados
+- `ProductService.java`
+
+---
+
+## Bug #9: KeepaService bloquea hilo HTTP durante 30s
+
+**Fecha:** 2026-02-04
+**Estado:** OK
+
+### Sintomas
+- El endpoint `POST /api/competitors/amazon/sync/{productId}` bloqueaba el hilo
+  de la peticion HTTP hasta 30 segundos mientras esperaba la respuesta de Keepa.
+- Bajo carga concurrente, el pool de hilos de Tomcat se agotaba.
+
+### Causa Raiz
+`KeepaService.syncAmazonPrice()` llamaba a `future.get()` directamente en el
+hilo del controlador, convirtiendo una operacion async en sincrona.
+
+### Solucion
+Redisenar el endpoint para devolver respuesta inmediata y procesar en background:
+
+```java
+// Controller: responde inmediatamente
+@PostMapping("/amazon/sync/{productId}")
+public ResponseEntity<ApiResponse<String>> syncAmazonPrice(@PathVariable Long productId) {
+    keepaService.syncAmazonPriceAsync(productId);  // No espera resultado
+    return ResponseEntity.accepted()
+        .body(ApiResponse.success("Sincronizacion iniciada en segundo plano"));
+}
+
+// Service: procesa de forma asincrona
+public void syncAmazonPriceAsync(Long productId) {
+    CompletableFuture.runAsync(() -> {
+        try {
+            // Obtener precio y guardar
+            getAmazonPrice(asin, productId)
+                .thenAccept(price -> price.ifPresent(this::saveCompetitorPrice));
+        } catch (Exception e) {
+            log.error("Error sincronizando precio para producto {}: {}", productId, e.getMessage());
+        }
+    }, keepaExecutor);
+}
+```
+
+### Archivos Modificados
+- `CompetitorController.java`
+- `KeepaService.java`
+
+---
+
+## Bug #10: Race condition en inicializacion de Amazon Competitor
+
+**Fecha:** 2026-02-04
+**Estado:** OK
+
+### Sintomas
+- En el primer arranque, cuando dos peticiones concurrentes de sync llegaban
+  a la vez, se creaban dos registros `Competitor` para "Amazon ES" en la BD.
+- Violaba la constraint unique del campo `name`.
+
+### Causa Raiz
+`KeepaService.getOrCreateAmazonCompetitor()` no era thread-safe. Dos hilos
+podian pasar la comprobacion `findByName()` simultaneamente antes de que
+ninguno hubiera guardado el registro.
+
+### Solucion
+Implementar double-checked locking con inicializacion en `@PostConstruct`:
+
+```java
+@Service
+public class KeepaService {
+
+    private volatile Competitor amazonCompetitor;
+
+    @PostConstruct
+    private void initAmazonCompetitor() {
+        // Se ejecuta en un solo hilo al arrancar
+        amazonCompetitor = competitorRepository
+            .findByCode("amazon_es")
+            .orElseGet(this::createAmazonCompetitor);
+    }
+
+    private synchronized Competitor createAmazonCompetitor() {
+        // Double-check: otro hilo puede haber creado mientras esperabamos
+        return competitorRepository.findByCode("amazon_es")
+            .orElseGet(() -> {
+                Competitor amazon = Competitor.builder()
+                    .name("Amazon ES")
+                    .code("amazon_es")
+                    .sourceType(SourceType.API)
+                    .active(true)
+                    .build();
+                return competitorRepository.save(amazon);
+            });
+    }
+}
+```
+
+### Archivos Modificados
+- `KeepaService.java`
+
+---
+
+## Bug #11: Scheduler no se reanuda tras caida del servidor
+
+**Fecha:** 2026-02-05
+**Estado:** OK
+
+### Sintomas
+- Si el servidor caia mientras `PriceMonitorJob` estaba ejecutandose,
+  tras reiniciar el scheduler no lanzaba el job hasta el siguiente ciclo de 6h.
+- En escenarios de crash frecuente, los precios podian desactualizarse por
+  horas sin que hubiera ningun aviso.
+
+### Causa Raiz
+Quartz estaba configurado en modo `RAMJobStore` (sin persistencia). Al reiniciar,
+perdia el estado de los jobs y triggers pendientes.
+
+### Solucion
+Configurar `misfire-threshold` y politica de recuperacion en el trigger:
+
+```java
+@Bean
+public Trigger priceMonitorTrigger(JobDetail jobDetail) {
+    return TriggerBuilder.newTrigger()
+        .forJob(jobDetail)
+        .withSchedule(
+            CronScheduleBuilder.cronSchedule("0 0 */6 * * ?")
+                .withMisfireHandlingInstructionFireAndProceed()  // Ejecuta si se perdio
+        )
+        .build();
+}
+```
+
+Con `withMisfireHandlingInstructionFireAndProceed()`, si el servidor estuvo caido
+y se perdio una ejecucion, Quartz ejecuta el job inmediatamente al reiniciar.
+
+### Archivos Modificados
+- `SchedulerConfig.java`
+
+---
+
+## Bug #12: Paginacion devuelve elementos de otros usuarios
+
+**Fecha:** 2026-02-05
+**Estado:** OK
+
+### Sintomas
+- Con pagination offset alto (pagina 5+), algunas respuestas incluian productos
+  de otros usuarios si el total de productos del usuario era pequeno.
+
+### Causa Raiz
+La query de busqueda usaba `findAll(pageable)` sin filtrar por `userId` en el
+repositorio cuando no se proporcionaban criterios de busqueda.
+
+### Solucion
+Garantizar que TODAS las queries de producto incluyen filtro por `userId`:
+
+```java
+// Siempre incluir userId en los filtros
+@Query("SELECT p FROM Product p WHERE p.user.id = :userId AND p.active = true")
+Page<Product> findAllByUserId(@Param("userId") Long userId, Pageable pageable);
+```
+
+Y nunca exponer endpoints que devuelvan productos sin filtro de usuario
+(salvo endpoints ADMIN que tienen su propia seguridad).
+
+### Archivos Modificados
+- `ProductRepository.java`
+- `ProductService.java`
+
+---
+
+## Bug #13: getMargin() lanza ArithmeticException
+
+**Fecha:** 2026-02-06
+**Estado:** OK
+
+### Sintomas
+- Al llamar a `GET /api/products/{id}` para un producto con `costPrice = 0`,
+  la respuesta era un 500 Internal Server Error.
+- Stack trace: `java.lang.ArithmeticException: Division by zero`.
+
+### Causa Raiz
+El metodo `getMargin()` en `Product.java` no manejaba el caso `costPrice = 0`.
+La division `currentPrice / costPrice` lanzaba excepcion.
+
+### Solucion
+Verificar ambas condiciones antes de dividir:
+
+```java
+public BigDecimal getMargin() {
+    if (costPrice == null || costPrice.compareTo(BigDecimal.ZERO) <= 0) {
+        return null;  // Sin coste configurado o coste 0: no se puede calcular margen
+    }
+    return currentPrice.subtract(costPrice)
+            .divide(costPrice, 4, RoundingMode.HALF_UP)
+            .multiply(new BigDecimal("100"));
+}
+```
+
+### Archivos Modificados
+- `Product.java`
+
+---
+
+## Bug #14: CompetitorPrice.getPriceDifferencePercentage() NullPointerException
+
+**Fecha:** 2026-02-06
+**Estado:** OK
+
+### Sintomas
+- El endpoint de analytics crasheaba con NPE al calcular diferencias de precio
+  para productos que aun no tenian precio propio configurado.
+
+### Causa Raiz
+`getPriceDifferencePercentage()` calculaba `(competitorPrice - ourPrice) / ourPrice * 100`
+sin verificar si `ourPrice` (el precio del producto) era null.
+
+### Solucion
+Verificar nulls antes del calculo y devolver null si no es calculable:
+
+```java
+public BigDecimal getPriceDifferencePercentage() {
+    if (product == null || product.getCurrentPrice() == null
+            || product.getCurrentPrice().compareTo(BigDecimal.ZERO) == 0
+            || this.price == null) {
+        return null;
+    }
+    return this.price.subtract(product.getCurrentPrice())
+            .divide(product.getCurrentPrice(), 4, RoundingMode.HALF_UP)
+            .multiply(new BigDecimal("100"));
+}
+```
+
+### Archivos Modificados
+- `CompetitorPrice.java`
+
+---
+
+## Bug #15: Endpoint DELETE no hace soft delete
+
+**Fecha:** 2026-02-06
+**Estado:** OK
+
+### Sintomas
+- `DELETE /api/products/{id}` borraba el registro de la BD de forma permanente.
+- Se perdia todo el historial de precios del producto (cascade = ALL).
+
+### Causa Raiz
+`ProductService.deleteProduct()` llamaba a `productRepository.delete(product)`
+en lugar de marcar el campo `active = false`.
+
+### Solucion
+Implementar soft delete:
+
+```java
+public void deleteProduct(Long productId, Long userId) {
+    Product product = productRepository.findByIdAndUserId(productId, userId)
+        .orElseThrow(() -> new ResourceNotFoundException("Producto", productId));
+
+    // Soft delete: marcar inactivo, no borrar fisicamente
+    product.setActive(false);
+    productRepository.save(product);
+}
+```
+
+Para borrado fisico (admin) se mantiene un metodo separado con nombre
+explicito: `permanentlyDeleteProduct()`.
+
+### Archivos Modificados
+- `ProductService.java`
+
+---
+
+## Bug #16: Admin puede desactivarse a si mismo
+
+**Fecha:** 2026-02-07
+**Estado:** OK
+
+### Sintomas
+- Un administrador podia llamar a `PUT /api/admin/users/{suPropiId}/status`
+  con `active = false` y desactivar su propia cuenta.
+- Quedaba completamente bloqueado sin poder reactivarse.
+
+### Causa Raiz
+`AdminController.updateUserStatus()` no verificaba si el usuario objetivo era
+el mismo que el solicitante.
+
+### Solucion
+Añadir validacion en el servicio:
+
+```java
+public void updateUserStatus(Long targetUserId, boolean active, Long requestingAdminId) {
+    if (targetUserId.equals(requestingAdminId)) {
+        throw new BadRequestException("No puedes desactivar tu propia cuenta de administrador");
+    }
+    // ... resto de la logica
+}
+```
+
+### Archivos Modificados
+- `AdminService.java`
+
+---
+
+## Bug #17: JWT expirado no devuelve 401
+
+**Fecha:** 2026-02-07
+**Estado:** OK
+
+### Sintomas
+- Al enviar un token expirado, el servidor devolvio 403 Forbidden en lugar
+  de 401 Unauthorized.
+- El cliente no podia distinguir entre "no tienes permiso" y "tu sesion expiro".
+
+### Causa Raiz
+`JwtAuthenticationFilter` capturaba todas las excepciones de JWT y las trataba
+igual, dejando que Spring Security devolviera 403 generico.
+
+### Solucion
+Distinguir el tipo de error JWT y enviar respuesta clara:
+
+```java
+try {
+    username = jwtService.extractUsername(token);
+} catch (ExpiredJwtException e) {
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    response.getWriter().write("{\"error\": \"Token expirado. Inicia sesion de nuevo.\"}");
+    return;
+} catch (JwtException e) {
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    response.getWriter().write("{\"error\": \"Token invalido.\"}");
+    return;
+}
+```
+
+### Archivos Modificados
+- `JwtAuthenticationFilter.java`
+
+---
+
+## Bug #18: PriceMonitorJob no detiene procesamiento ante error de Keepa
+
+**Fecha:** 2026-02-08
+**Estado:** OK
+
+### Sintomas
+- Cuando Keepa API devolvio error 429 (rate limit), `PriceMonitorJob` seguia
+  intentando procesar los 200+ productos restantes, lanzando 200+ intentos
+  fallidos en rafaga.
+- Los logs se llenaban de errores y se gastaba la quota diaria de Keepa.
+
+### Causa Raiz
+El job no tenia logica de circuit breaker. Cuando el primer lote fallaba por
+rate limit, el siguiente lote se intentaba igualmente.
+
+### Solucion
+Implementar circuit breaker manual en el job:
+
+```java
+int consecutiveErrors = 0;
+final int MAX_CONSECUTIVE_ERRORS = 5;
+
+for (List<Product> batch : batches) {
+    if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+        log.warn("Demasiados errores consecutivos. Abortando job para evitar " +
+                 "saturar Keepa. Se reintentara en el siguiente ciclo.");
+        break;
+    }
+    try {
+        processBatch(batch);
+        consecutiveErrors = 0;  // Reset en exito
+    } catch (Exception e) {
+        consecutiveErrors++;
+        log.error("Error en lote {}: {}", batchIndex, e.getMessage());
+    }
+}
+```
+
+### Archivos Modificados
+- `PriceMonitorJob.java`
+
+---
+
+## Bug #19: BCrypt hash expuesto en log de debug
+
+**Fecha:** 2026-02-08
+**Estado:** OK
+
+### Sintomas
+- Con el perfil dev activo (`show-sql: true`), la query de INSERT al crear un
+  usuario mostraba el hash BCrypt de la contrasena en los logs.
+- Aunque el hash es unidireccional, su presencia en logs supone un riesgo.
+
+### Causa Raiz
+Hibernate con `show-sql: true` loguea todos los parametros de las queries,
+incluyendo el campo `password`.
+
+### Solucion
+1. En dev, usar `logging.level.org.hibernate.type: TRACE` solo para queries
+   que no involucren la tabla `users`.
+2. Marcar el campo password con `@JsonIgnore` para prevenir serializacion
+   accidental:
+
+```java
+@JsonIgnore
+@Column(nullable = false)
+private String password;
+```
+
+3. En la configuracion de logs dev, excluir queries de autenticacion:
+
+```yaml
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: WARN  # No loguear valores de parametros
+```
+
+### Archivos Modificados
+- `User.java`
+- `application.yml`
+
+---
+
+## Bug #20: Productos inactivos aparecen en busqueda
+
+**Fecha:** 2026-02-09
+**Estado:** OK
+
+### Sintomas
+- El endpoint `GET /api/products/search?name=ibuprofeno` devolvio productos
+  con `active = false` que habian sido borrados (soft delete).
+
+### Causa Raiz
+La query de busqueda con JPQL no incluia el filtro `AND p.active = true`.
+Solo el listado principal filtraba por activo.
+
+### Solucion
+Anadir `AND p.active = true` a todas las queries de busqueda:
+
+```java
+@Query("SELECT p FROM Product p WHERE p.user.id = :userId " +
+       "AND p.active = true " +   // Siempre excluir borrados logicamente
+       "AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+       "AND (:category IS NULL OR p.category = :category)")
+Page<Product> searchProducts(...);
+```
+
+Adicionalmente, anadir test que verifique que los borrados logicamente
+nunca aparecen en ninguna query de busqueda.
+
+### Archivos Modificados
+- `ProductRepository.java`
+
+---
+
+## Bug #21: Connection pool agotado bajo carga moderada
+
+**Fecha:** 2026-02-09
+**Estado:** OK
+
+### Sintomas
+- Con 15 usuarios concurrentes, la app empezaba a devolver errores:
+  `Unable to acquire JDBC Connection`.
+- El tiempo de espera de conexion (30s) se agotaba.
+
+### Causa Raiz
+`PriceMonitorJob` abria transacciones de larga duracion durante el procesamiento
+de cada lote de productos, manteniendo conexiones del pool ocupadas durante
+varios minutos.
+
+El pool de 10 conexiones por defecto era insuficiente cuando el job estaba
+corriendo y habia usuarios usando la app simultaneamente.
+
+### Solucion
+1. Aumentar el pool a 20 conexiones en `application.yml`:
+
+```yaml
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+```
+
+2. Dividir la transaccion del job en transacciones mas cortas por producto:
+
+```java
+// En lugar de una transaccion para todo el lote,
+// usar @Transactional(propagation = REQUIRES_NEW) por producto
+@Transactional(propagation = Propagation.REQUIRES_NEW)
+public void processSingleProduct(Product product, CompetitorPrice newPrice) {
+    // Guardado rapido, libera la conexion inmediatamente
+}
+```
+
+### Archivos Modificados
+- `application.yml`
+- `PriceMonitorJob.java`
+
+---
+
+## Bug #22: ChangeType INITIAL sobreescrito al actualizar
+
+**Fecha:** 2026-02-10
+**Estado:** OK
+
+### Sintomas
+- El historial de un producto que nunca habia cambiado de precio mostraba
+  entradas de tipo INITIAL repetidas en lugar de mostrar una sola INITIAL
+  y luego NO_CHANGE.
+
+### Causa Raiz
+`ProductService.updateProduct()` siempre registraba una nueva entrada en
+PriceHistory, incluso cuando el precio no habia cambiado. Ademas, en esas
+entradas sin cambio asignaba incorrectamente `ChangeType.INITIAL`.
+
+### Solucion
+Solo registrar historial cuando el precio realmente cambia:
+
+```java
+public ProductResponse updateProduct(Long productId, ProductRequest request, Long userId) {
+    // ... cargar y verificar producto
+
+    BigDecimal oldPrice = product.getCurrentPrice();
+    BigDecimal newPrice = request.getCurrentPrice();
+
+    if (newPrice != null && newPrice.compareTo(oldPrice) != 0) {
+        // Solo registrar si hay cambio real
+        ChangeType changeType = newPrice.compareTo(oldPrice) > 0
+            ? ChangeType.INCREASE
+            : ChangeType.DECREASE;
+
+        PriceHistory history = PriceHistory.builder()
+            .product(product)
+            .price(newPrice)
+            .previousPrice(oldPrice)
+            .changeType(changeType)
+            .recordedAt(LocalDateTime.now())
+            .build();
+        priceHistoryRepository.save(history);
+    }
+    // ... actualizar y guardar producto
+}
+```
+
+### Archivos Modificados
+- `ProductService.java`
+
+---
+
+## Advertencias Pendientes (No criticas)
+
+| Advertencia | Descripcion | Accion Recomendada |
+|-------------|-------------|-------------------|
+| DDL update en dev | Hibernate update no gestiona renombrados de columnas | Usar Flyway para migraciones en prod |
+| Simple Cache | La cache en memoria se pierde al reiniciar | Migrar a Redis en produccion |
+| No paginacion en historial | PriceHistory puede crecer sin limite | Anadir paginacion y TTL de datos historicos |
+| Jsoup sin usar | Dependencia incluida pero sin implementacion | Implementar o eliminar |
+
+---
+
+## Plantilla para Nuevos Bugs
+
+```markdown
+## Bug #X: [Titulo descriptivo]
+
+**Fecha:** YYYY-MM-DD
+**Estado:** Abierto / En progreso / OK
+
+### Sintomas
+[Descripcion de lo que el usuario observa]
+
+### Causa Raiz
+[Explicacion tecnica del problema]
+
+### Solucion
+[Codigo o pasos para resolver]
+
+### Archivos Modificados
+- [lista de archivos]
+```

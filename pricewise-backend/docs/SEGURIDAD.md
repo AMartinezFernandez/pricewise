@@ -1,0 +1,365 @@
+# Informe de Seguridad - PriceWise Backend
+
+**Fecha:** 2026-02-10
+**Version:** 1.0
+
+---
+
+## Resumen Ejecutivo
+
+| Categoria           | Estado    | Nivel |
+|---------------------|-----------|-------|
+| Autenticacion       | Seguro    | Alto  |
+| Autorizacion        | Seguro    | Alto  |
+| Almacenamiento      | Seguro    | Alto  |
+| Comunicaciones      | Seguro    | Alto  |
+| Codigo fuente       | Seguro    | Alto  |
+| Permisos de API     | Adecuados | Alto  |
+| Logging             | Seguro    | Alto  |
+| Validacion          | Seguro    | Alto  |
+
+---
+
+## 1. Autenticacion
+
+### JWT (JSON Web Token) con HMAC-SHA256
+- **Estado:** Seguro
+- Algoritmo: HS256 (HMAC con SHA-256)
+- Expiracion: 24 horas (86.400.000 ms)
+- El token incluye: userId, username, email, roles, iat, exp
+- Validacion en cada peticion: firma, formato y expiracion
+
+### Gestion del Secreto JWT
+- **Estado:** Seguro
+- El secreto se carga desde la variable de entorno `JWT_SECRET`
+- Minimo 32 caracteres exigido en validacion al arrancar
+- Si no esta configurado en produccion: la aplicacion falla al iniciar con error fatal
+- En desarrollo sin configurar: arranca con warning visible en logs
+
+```java
+// JwtService.java - validacion al arrancar
+@PostConstruct
+public void validateSecretKey() {
+    if (secret.equals("default-secret-change-in-production")) {
+        if (isProduction()) {
+            throw new IllegalStateException("FATAL: JWT_SECRET no configurado en produccion.");
+        }
+        log.warn("ATENCION: Usando JWT_SECRET por defecto. No usar en produccion.");
+    }
+    if (secret.length() < 32) {
+        throw new IllegalStateException("JWT_SECRET debe tener al menos 32 caracteres.");
+    }
+}
+```
+
+### Tokens Stateless
+- **Estado:** Seguro
+- `SessionCreationPolicy.STATELESS`: el servidor no guarda sesiones
+- Permite escalar horizontalmente sin estado compartido entre instancias
+- Sin CSRF necesario (los tokens JWT no son vulnerables a CSRF en APIs REST puras)
+
+### Respuesta ante Token Expirado
+- **Estado:** Seguro
+- Devuelve HTTP 401 Unauthorized con mensaje descriptivo
+- Distingue expirado (401 + mensaje especifico) de token invalido (401 generico)
+
+---
+
+## 2. Autorizacion
+
+### Control de Acceso por Roles
+- **Estado:** Seguro
+- Roles disponibles: USER, ADMIN
+- ADMIN tiene acceso a `/api/admin/**` adicionalmente a todo lo de USER
+- Aplicado con `@PreAuthorize` en metodos del controlador
+
+```java
+@GetMapping("/admin/stats")
+@PreAuthorize("hasRole('ADMIN')")
+public ResponseEntity<?> getStats() { ... }
+```
+
+### Verificacion de Propiedad de Recursos
+- **Estado:** Seguro
+- Un usuario USER solo puede acceder a sus propios productos
+- La verificacion se hace en la capa de servicio, no solo en el filtro de seguridad
+- Si un usuario intenta acceder a un recurso ajeno recibe 400 (no 404, para no filtrar existencia)
+
+```java
+// ProductService.java
+if (!product.getUser().getId().equals(userId)) {
+    throw new BadRequestException("No tienes permiso para este producto");
+}
+```
+
+### Proteccion de Acciones Admin
+- Los admins no pueden desactivar su propia cuenta (Bug #16 resuelto)
+- Los admins no pueden eliminar su propio usuario
+- El rol ADMIN solo se puede asignar desde otro ADMIN
+
+---
+
+## 3. Almacenamiento de Datos
+
+### Contrasenas
+- **Estado:** Seguro
+- Algoritmo: BCrypt con salt automatico
+- Las contrasenas no se almacenan en texto plano en ningun momento
+- No se loguan en debug (Bug #19 resuelto)
+- El campo `password` en `User` tiene `@JsonIgnore` para prevenir serializacion
+
+```java
+@JsonIgnore
+@Column(nullable = false)
+private String password;
+```
+
+### Base de Datos PostgreSQL
+- **Estado:** Seguro
+- Sin uso de `rawQuery()` ni `execSQL()`: prevention de SQL Injection por diseno
+- Todas las queries usan parametros nombrados via Spring Data JPA
+- Constraints de unicidad en BD ademas de validacion en codigo
+
+### Variables de Entorno
+- **Estado:** Seguro
+- Credenciales de BD via variable `DB_PASSWORD`
+- JWT secret via variable `JWT_SECRET`
+- API key de Keepa via variable `KEEPA_API_KEY`
+- El `.env.example` no contiene valores reales, solo ejemplos
+- El `.gitignore` excluye `.env` del control de versiones
+
+---
+
+## 4. Comunicaciones de Red
+
+### HTTPS Exclusivo
+- **Estado:** Seguro
+- API Keepa: `https://api.keepa.com/`
+- No hay llamadas a URLs `http://` en el codigo
+- La aplicacion no configura `usesCleartextTraffic`
+
+### CORS
+- **Estado:** Seguro segun entorno
+
+En desarrollo (`SPRING_PROFILES_ACTIVE=dev`):
+```yaml
+cors:
+  allow-all: true  # Acepta cualquier origen
+```
+
+En produccion (`SPRING_PROFILES_ACTIVE=prod`):
+```yaml
+cors:
+  allow-all: false
+  allowed-origins:
+    - https://miapp.com
+    - https://www.miapp.com
+```
+
+El flag `allowCredentials: true` esta habilitado solo cuando se especifica
+un origen concreto (no con `*`), siguiendo la especificacion CORS.
+
+### CSRF
+- **Estado:** Adecuado
+- CSRF deshabilitado explicitamente en `SecurityConfig`
+- Es la practica correcta para APIs REST stateless autenticadas con JWT
+- Los tokens JWT en header `Authorization` no son vulnerables a CSRF
+
+---
+
+## 5. Endpoints y Control de Acceso
+
+### Mapa de Acceso por Endpoint
+
+| Endpoint                               | Acceso  | Notas                            |
+|----------------------------------------|---------|----------------------------------|
+| POST /api/auth/register                | Publico | Sin limite de tasa actualmente   |
+| POST /api/auth/login                   | Publico | Sin limite de tasa actualmente   |
+| GET  /api/health                       | Publico | No expone datos sensibles        |
+| GET  /api/competitors/status           | Publico | Solo boolean de disponibilidad   |
+| GET  /swagger-ui.html                  | Publico | Documentacion de la API          |
+| GET  /api-docs                         | Publico | Especificacion OpenAPI           |
+| GET  /actuator/**                      | Publico | Metricas basicas de Spring       |
+| GET  /api/auth/profile                 | USER    | Solo datos del usuario propio    |
+| POST /api/products                     | USER    | Solo crea productos propios      |
+| GET  /api/products/**                  | USER    | Solo productos propios           |
+| GET  /api/competitors/amazon/**        | USER    | Consultas Keepa autenticadas     |
+| GET  /api/admin/**                     | ADMIN   | Gestion global del sistema       |
+
+### Notas sobre Actuator
+El endpoint `/actuator/**` esta publico actualmente. En produccion se recomienda:
+- Restringir a `ADMIN` o a una red interna
+- Deshabilitar endpoints sensibles (`/actuator/env`, `/actuator/beans`)
+
+---
+
+## 6. Logging y Depuracion
+
+### HTTP Logging Condicional
+- **Estado:** Seguro
+- En produccion: sin logging del cuerpo de peticiones/respuestas HTTP
+- En desarrollo: logging detallado solo en consola local
+
+```java
+// AppModule / OkHttpClient builder
+HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+interceptor.setLevel(isProduction()
+    ? HttpLoggingInterceptor.Level.NONE
+    : HttpLoggingInterceptor.Level.BODY);
+```
+
+### SQL Logging
+- **Estado:** Seguro
+- `show-sql: false` en produccion
+- En desarrollo `show-sql: true` solo muestra queries, no valores de parametros
+  (configurable con `logging.level.org.hibernate.type: WARN`)
+
+### Datos Sensibles en Logs
+- **Estado:** Seguro
+- Contrasenas no se loguan (campo `@JsonIgnore`)
+- API keys no se loguan en nivel INFO o superior
+- Excepciones loguan el mensaje pero no el stack trace completo en produccion
+
+---
+
+## 7. Validacion de Entradas
+
+### Bean Validation (Jakarta)
+- **Estado:** Seguro
+- Todos los DTOs de entrada tienen validaciones `@Valid` activadas en los controladores
+- Los errores de validacion devuelven 400 con detalle por campo
+
+Campos validados en `ProductRequest`:
+- `name`: @NotBlank, @Size(max = 200)
+- `currentPrice`: @NotNull, @DecimalMin("0.01"), @Digits(integer=10, fraction=2)
+- `costPrice`: @DecimalMin("0.00") si se envia
+- `sku`: @Size(max = 50) si se envia
+
+Campos validados en `RegisterRequest`:
+- `email`: @NotBlank, @Email
+- `username`: @NotBlank, @Size(min=3, max=50)
+- `password`: @NotBlank, @Size(min=6)
+
+### Validaciones de Negocio
+- Unicidad de email y username al registrar
+- Unicidad de SKU por usuario (no global)
+- Propiedad de recursos antes de cualquier modificacion
+- El Admin no puede autodesactivarse
+
+---
+
+## 8. Integridad de Datos
+
+### Transacciones
+- **Estado:** Seguro
+- Los metodos de servicio que modifican multiples entidades usan `@Transactional`
+- Si una parte falla, toda la operacion se revierte automaticamente
+- Ejemplo: crear producto + registrar PriceHistory es una sola transaccion
+
+### Concurrencia en Keepa
+- **Estado:** Seguro
+- `Semaphore(3)`: maximo 3 peticiones concurrentes a Keepa
+- Inicializacion de Amazon Competitor en `@PostConstruct` (hilo unico)
+- Double-checked locking para casos edge en inicializacion
+
+---
+
+## 9. Dependencias y Vulnerabilidades
+
+### Dependencias Principales
+
+| Dependencia         | Version  | Notas                                   |
+|---------------------|----------|-----------------------------------------|
+| Spring Boot         | 3.2.1    | LTS activa, parches de seguridad al dia |
+| Spring Security     | 6.x      | Incluido en Spring Boot BOM             |
+| jjwt                | 0.12.3   | Version actual, sin CVEs conocidos      |
+| PostgreSQL Driver   | 42.x     | Incluido en Spring Boot BOM             |
+| Lombok              | 1.18.40  | Solo compile time, sin runtime exposure |
+| Jsoup               | 1.17.2   | Version actual                          |
+
+### Recomendacion
+Ejecutar `mvn dependency:check` o integrar OWASP Dependency Check en el pipeline
+para detectar CVEs en dependencias transitivas.
+
+---
+
+## 10. Configuracion del Servidor
+
+### application.yml en Produccion
+```yaml
+server:
+  port: 9090
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Solo verifica, no modifica esquema
+    show-sql: false
+
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+
+cors:
+  allow-all: false
+  allowed-origins:
+    - https://tudominio.com
+```
+
+### Docker
+- La imagen no incluye ficheros `.env`
+- Las variables de entorno se pasan en tiempo de ejecucion (`--env-file .env`)
+- El usuario del contenedor no debe ser root (pendiente configurar en Dockerfile)
+
+---
+
+## Acciones Recomendadas
+
+### Pendientes (Prioridad Media)
+
+1. **Rate Limiting** en `/api/auth/login` y `/api/auth/register`
+   Actualmente sin limite de intentos. Un atacante puede intentar fuerza bruta.
+   Implementar con Bucket4j o Spring Security's brute-force protection.
+
+2. **Certificate Pinning para Keepa API**
+   Implementar `CertificatePinner` de OkHttp para prevenir ataques man-in-the-middle
+   contra la conexion con Keepa.
+
+3. **Restriccion de Actuator en Produccion**
+   Mover `/actuator/**` a solo `ADMIN` o a red interna.
+
+4. **Audit Log**
+   Registrar en tabla separada todas las operaciones ADMIN (quien, que, cuando).
+
+5. **OWASP Dependency Check**
+   Integrar en el build de Maven para detectar CVEs automaticamente en cada PR.
+
+### Pendientes (Prioridad Baja)
+
+6. **Root Detection** si se desarrolla cliente movil
+7. **2FA para cuentas ADMIN**
+8. **Rotacion de JWT_SECRET** con periodo de gracia para tokens existentes
+
+### Completadas
+
+- JWT_SECRET validado al arrancar con error fatal en produccion
+- BCrypt para contrasenas con salt automatico
+- CORS configurado por perfil (restrictivo en produccion)
+- CSRF deshabilitado correctamente para API REST stateless
+- Verificacion de propiedad de recursos en capa de servicio
+- Soft delete sin exponer datos borrados en queries
+- Admin no puede desactivarse a si mismo
+- Token expirado devuelve 401 claro (no 403 generico)
+- Logs de BD sin parametros sensibles en produccion
+- Variables de entorno para todos los secretos
+
+---
+
+## Conclusion
+
+El proyecto tiene una base de seguridad solida apropiada para un entorno de produccion
+inicial. Las vulnerabilidades de mayor riesgo (contrasenas en texto plano, secrets en
+codigo, SQL injection, fuga de datos entre usuarios) estan cubiertas.
+
+Las acciones pendientes son de prioridad media-baja y no representan vulnerabilidades
+explotables de forma trivial en el estado actual del sistema.

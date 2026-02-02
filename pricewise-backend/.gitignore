@@ -1,0 +1,46 @@
+# =========================================
+# Git Ignore - PriceWise Backend
+# =========================================
+
+# Compilados
+target/
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+
+# Logs
+*.log
+logs/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+
+
+# ARCHIVOS SENSIBLES - NUNCA SUBIR
+.env
+*.env.local
+application-local.yml
+application-local.properties
+
+# Claves y certificados
+*.pem
+*.key
+*.p12
+*.jks
+
+# Documentación privada (no subir a Git)
+NOTES.md
+TODO.md
+SECRETS.md
