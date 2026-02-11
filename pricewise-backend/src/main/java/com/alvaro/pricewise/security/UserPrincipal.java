@@ -17,6 +17,7 @@ import java.util.List;
 public class UserPrincipal implements UserDetails {
 
     private Long id;
+    private Long companyId;
     private String email;
     private String username;
     private String password;
@@ -30,6 +31,7 @@ public class UserPrincipal implements UserDetails {
 
         return UserPrincipal.builder()
                 .id(user.getId())
+                .companyId(user.getCompany().getId())
                 .email(user.getEmail())
                 .username(user.getUsername())
                 .password(user.getPassword())
@@ -73,3 +75,4 @@ public class UserPrincipal implements UserDetails {
         return active;
     }
 }
+
