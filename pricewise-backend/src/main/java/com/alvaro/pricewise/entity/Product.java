@@ -15,7 +15,7 @@ import java.util.List;
 @Table(name = "products",
        indexes = {
            @Index(name = "idx_product_sku", columnList = "sku"),
-           @Index(name = "idx_product_user", columnList = "user_id"),
+           @Index(name = "idx_product_company", columnList = "company_id"),
            @Index(name = "idx_product_category", columnList = "category")
        })
 @Data
@@ -71,14 +71,26 @@ public class Product {
     @Column(nullable = false)
     private Boolean monitoringEnabled = true;  // Si se debe monitorear competencia
 
-    // Relación con usuario
+    // Stock simple
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer stockQuantity = 0;
+
+    // Relación con empresa (propietaria del producto)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "company_id", nullable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private User user;
+    private Company company;
 
-    // Relación con precios históricos (se añadirá en fase 2)
+    // Auditoría: quién creó el producto
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private User createdBy;
+
+    // Relación con precios históricos
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
@@ -102,3 +114,4 @@ public class Product {
                 .multiply(new BigDecimal("100"));
     }
 }
+

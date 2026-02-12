@@ -17,6 +17,9 @@ import java.util.Set;
        uniqueConstraints = {
            @UniqueConstraint(columnNames = "email"),
            @UniqueConstraint(columnNames = "username")
+       },
+       indexes = {
+           @Index(name = "idx_user_company", columnList = "company_id")
        })
 @Data
 @NoArgsConstructor
@@ -43,11 +46,12 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column(length = 100)
-    private String businessName;  // Nombre del negocio del usuario
-
-    @Column(length = 50)
-    private String businessType;  // Tipo: retail, ecommerce, etc.
+    // Relación con empresa (multi-tenancy)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Company company;
 
     @Builder.Default
     @Column(nullable = false)
@@ -56,7 +60,7 @@ public class User {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private Role role = Role.USER;
+    private Role role = Role.EMPLOYEE;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -65,15 +69,17 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    // Relación con productos (se añadirá después)
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Productos creados por este usuario (auditoría)
+    @OneToMany(mappedBy = "createdBy")
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private Set<Product> products = new HashSet<>();
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private Set<Product> createdProducts = new HashSet<>();
 
     public enum Role {
-        USER,
+        COMPANY_ADMIN,
+        EMPLOYEE,
         ADMIN
     }
 }
