@@ -30,7 +30,7 @@ fun RegisterScreen(
 
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
-    var businessName by remember { mutableStateOf("") }
+    var companyCode by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -60,6 +60,26 @@ fun RegisterScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Empresa",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            OutlinedTextField(
+                value = companyCode,
+                onValueChange = { if (it.length <= 8) companyCode = it.uppercase() },
+                label = { Text("Código de empresa *") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                isError = companyCode.isNotEmpty() && companyCode.length != 8,
+                supportingText = { Text("Código de 8 caracteres proporcionado por tu empresa") },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
             Text(
                 text = "Datos de acceso",
@@ -129,26 +149,8 @@ fun RegisterScreen(
                 },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Next
+                    imeAction = ImeAction.Done
                 )
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-
-            Text(
-                text = "Datos del negocio (opcional)",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            OutlinedTextField(
-                value = businessName,
-                onValueChange = { businessName = it },
-                label = { Text("Nombre del negocio") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
             )
 
             // Error
@@ -170,7 +172,7 @@ fun RegisterScreen(
 
             Button(
                 onClick = {
-                    viewModel.register(username, email, password, confirmPassword, businessName)
+                    viewModel.register(username, email, password, confirmPassword, companyCode)
                 },
                 modifier = Modifier
                     .fillMaxWidth()

@@ -44,10 +44,14 @@ class AuthViewModel @Inject constructor(
         email: String,
         password: String,
         confirmPassword: String,
-        businessName: String
+        companyCode: String
     ) {
         if (username.isBlank() || email.isBlank() || password.isBlank()) {
             _uiState.value = AuthUiState(error = "Rellena los campos obligatorios")
+            return
+        }
+        if (companyCode.isBlank() || companyCode.length != 8) {
+            _uiState.value = AuthUiState(error = "El código de empresa debe tener 8 caracteres")
             return
         }
         if (password != confirmPassword) {
@@ -61,8 +65,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
             when (val result = authRepository.register(
-                username, email, password,
-                businessName.ifBlank { null }, null
+                username, email, password, companyCode.uppercase()
             )) {
                 is Result.Success -> _uiState.value = AuthUiState(isSuccess = true)
                 is Result.Error   -> _uiState.value = AuthUiState(error = result.message)
