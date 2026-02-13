@@ -67,30 +67,50 @@ public void validateSecretKey() {
 
 ## 2. Autorizacion
 
-### Control de Acceso por Roles
+### Control de Acceso por Roles (Multi-Tenancy)
 - **Estado:** Seguro
-- Roles disponibles: USER, ADMIN
-- ADMIN tiene acceso a `/api/admin/**` adicionalmente a todo lo de USER
-- Aplicado con `@PreAuthorize` en metodos del controlador
+- Tres roles disponibles:
+
+| Rol | Descripcion | Acceso |
+|-----|-------------|--------|
+| `ADMIN` | Super-admin de la plataforma | Control total: todos los usuarios, empresas, datos |
+| `COMPANY_ADMIN` | Admin de una empresa | Gestiona productos, empleados y datos de su empresa |
+| `EMPLOYEE` | Empleado de una empresa | Lectura y operaciones basicas dentro de su empresa |
+
+- Aplicado con `@PreAuthorize` a nivel de controlador y metodo
+- El aislamiento de datos se garantiza mediante `companyId` en el JWT
 
 ```java
-@GetMapping("/admin/stats")
+// AdminController: solo ADMIN de plataforma
 @PreAuthorize("hasRole('ADMIN')")
-public ResponseEntity<?> getStats() { ... }
+public class AdminController { ... }
+
+// AnalyticsController: COMPANY_ADMIN, EMPLOYEE y ADMIN
+@PreAuthorize("hasAnyRole('COMPANY_ADMIN', 'EMPLOYEE', 'ADMIN')")
+public class AnalyticsController { ... }
+
+// Crear empleados: solo COMPANY_ADMIN y ADMIN
+@PreAuthorize("hasAnyRole('COMPANY_ADMIN', 'ADMIN')")
+public ResponseEntity<?> createEmployee(...) { ... }
 ```
 
-### Verificacion de Propiedad de Recursos
+### Aislamiento de Datos por Empresa
 - **Estado:** Seguro
-- Un usuario USER solo puede acceder a sus propios productos
-- La verificacion se hace en la capa de servicio, no solo en el filtro de seguridad
-- Si un usuario intenta acceder a un recurso ajeno recibe 400 (no 404, para no filtrar existencia)
+- Cada usuario pertenece a una `Company` via foreign key
+- Todos los endpoints de productos filtran por `companyId`, no por `userId`
+- El `companyId` se extrae del JWT en cada peticion via `UserPrincipal`
+- Si un usuario intenta acceder a datos de otra empresa recibe 400
 
 ```java
-// ProductService.java
-if (!product.getUser().getId().equals(userId)) {
-    throw new BadRequestException("No tienes permiso para este producto");
-}
+// ProductService.java — aislamiento por empresa
+ProductResponse response = productService.getProduct(
+    userPrincipal.getCompanyId(), id);
 ```
+
+### Gestion de Empleados
+- COMPANY_ADMIN puede crear empleados para su propia empresa via `POST /api/auth/create-employee`
+- Los empleados se asignan automaticamente a la empresa del admin que los crea
+- Solo COMPANY_ADMIN y ADMIN pueden crear empleados
 
 ### Proteccion de Acciones Admin
 - Los admins no pueden desactivar su propia cuenta (Bug #16 resuelto)
@@ -119,6 +139,7 @@ private String password;
 - Sin uso de `rawQuery()` ni `execSQL()`: prevention de SQL Injection por diseno
 - Todas las queries usan parametros nombrados via Spring Data JPA
 - Constraints de unicidad en BD ademas de validacion en codigo
+- La tabla `companies` centraliza datos de empresa con plan y tipo de negocio
 
 ### Variables de Entorno
 - **Estado:** Seguro
@@ -171,20 +192,25 @@ un origen concreto (no con `*`), siguiendo la especificacion CORS.
 
 ### Mapa de Acceso por Endpoint
 
-| Endpoint                               | Acceso  | Notas                            |
-|----------------------------------------|---------|----------------------------------|
-| POST /api/auth/register                | Publico | Sin limite de tasa actualmente   |
-| POST /api/auth/login                   | Publico | Sin limite de tasa actualmente   |
-| GET  /api/health                       | Publico | No expone datos sensibles        |
-| GET  /api/competitors/status           | Publico | Solo boolean de disponibilidad   |
-| GET  /swagger-ui.html                  | Publico | Documentacion de la API          |
-| GET  /api-docs                         | Publico | Especificacion OpenAPI           |
-| GET  /actuator/**                      | Publico | Metricas basicas de Spring       |
-| GET  /api/auth/profile                 | USER    | Solo datos del usuario propio    |
-| POST /api/products                     | USER    | Solo crea productos propios      |
-| GET  /api/products/**                  | USER    | Solo productos propios           |
-| GET  /api/competitors/amazon/**        | USER    | Consultas Keepa autenticadas     |
-| GET  /api/admin/**                     | ADMIN   | Gestion global del sistema       |
+| Endpoint                               | Acceso         | Notas                                      |
+|----------------------------------------|----------------|--------------------------------------------|
+| Endpoint                               | Acceso         | Notas                                      |
+|----------------------------------------|----------------|--------------------------------------------|
+| POST /api/admin/companies              | ADMIN          | Crea empresa + COMPANY_ADMIN + código auto |
+| POST /api/auth/register                | Publico        | Requiere `companyCode` para unirse a empresa|
+| POST /api/auth/login                   | Publico        | Devuelve JWT con companyId y userId         |
+| GET  /api/health                       | Publico        | No expone datos sensibles                  |
+| GET  /api/competitors/status           | Publico        | Solo boolean de disponibilidad             |
+| GET  /swagger-ui.html                  | Publico        | Documentacion de la API                    |
+| GET  /api-docs                         | Publico        | Especificacion OpenAPI                     |
+| GET  /actuator/**                      | Publico        | Metricas basicas de Spring                 |
+| GET  /api/auth/profile                 | Autenticado    | Datos del usuario + empresa                |
+| POST /api/auth/create-employee         | COMPANY_ADMIN/ADMIN | Crea empleado en la empresa del admin |
+| POST /api/products                     | Autenticado    | Crea producto para su empresa              |
+| GET  /api/products/**                  | Autenticado    | Solo productos de su empresa               |
+| GET  /api/analytics/**                 | COMPANY_ADMIN/EMPLOYEE/ADMIN | Metricas de empresa      |
+| GET  /api/competitors/amazon/**        | Autenticado    | Consultas Keepa autenticadas               |
+| GET  /api/admin/**                     | ADMIN          | Gestion global de la plataforma            |
 
 ### Notas sobre Actuator
 El endpoint `/actuator/**` esta publico actualmente. En produccion se recomienda:

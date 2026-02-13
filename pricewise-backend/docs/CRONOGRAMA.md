@@ -31,7 +31,8 @@ docker-compose.yml                      # PostgreSQL 14 en contenedor
 ## Fase 2: Capa de Datos - Entidades y Repositorios (2026-01-26 - 2026-01-28)
 
 ### Entidades JPA
-- OK `User` con roles USER/ADMIN y constraints de unicidad
+- OK `User` con roles COMPANY_ADMIN/EMPLOYEE/ADMIN y constraints de unicidad
+- OK `Company` con nombre, tipo de negocio, plan y limites
 - OK `Product` con SKU, EAN, precio, coste y campo monitoringEnabled
 - OK `PriceHistory` con tipos INITIAL, INCREASE, DECREASE, NO_CHANGE
 - OK `Competitor` con sourceType API/SCRAPING/MANUAL
@@ -63,10 +64,11 @@ docker-compose.yml                      # PostgreSQL 14 en contenedor
 - OK `SecurityConfig` con cadena de filtros completa, CORS y BCrypt
 
 ### AuthService y AuthController
-- OK Registro con validacion de unicidad de email y username
-- OK Login con generacion de JWT de 24 horas
-- OK Endpoint de perfil autenticado
-- OK DTOs: `LoginRequest`, `RegisterRequest`, `AuthResponse`
+- OK Registro de usuarios con código de invitación (`companyCode`)
+- OK Validación de código de empresa y asignación automática
+- OK Endpoints de creación de empresas (Admin) y empleados (Company Admin)
+- OK Login con generación de JWT de 24 horas
+- OK DTOs actualizados para flujo de invitación
 
 ### Correcciones
 - Bug #2: Fuga de entidad User en respuesta de login, creado `AuthResponse` DTO
@@ -249,45 +251,105 @@ docker-compose.yml                      # PostgreSQL 14 en contenedor
 
 ---
 
-## Pendiente
+## Fase 13: Multi-Tenancy y RBAC (2026-02-12 - 2026-02-13)
 
-### Fase 13: Testing Completo
+### Modelo Multi-Empresa
+- OK Entidad `Company` con nombre, tipo de negocio, plan y limites
+- OK Migracion de datos: tabla `companies`, FK `company_id` en `users` y `products`
+- OK Aislamiento de datos por `companyId` en vez de `userId`
+- OK JWT incluye `companyId` ademas de `userId` y roles
+- OK `UserPrincipal` con metodo `getCompanyId()` para acceso al contexto de empresa
 
-#### Tests Unitarios
-- [ ] `AuthServiceTest` - registro, login, validaciones de unicidad
-- [ ] `ProductServiceTest` - CRUD, historial, calculo de margen
-- [ ] `KeepaServiceTest` - manejo de errores, backoff, semaforo
-- [ ] `PriceAnalysisServiceTest` - calculo de umbrales y generacion de alertas
-- [ ] `JwtServiceTest` - generacion, validacion, expiracion de tokens
+### Sistema de Roles (RBAC)
+- OK Tres roles: `ADMIN` (super-admin), `COMPANY_ADMIN` (admin de empresa), `EMPLOYEE`
+- OK `AdminController` restringido a `ADMIN`
+- OK `AnalyticsController` restringido a `COMPANY_ADMIN`, `EMPLOYEE` y `ADMIN`
+- OK `ProductController` accesible a cualquier usuario autenticado (aislado por empresa)
 
-#### Tests de Integracion
-- [ ] `ProductControllerIntegrationTest` - flujo completo con MockMvc y H2
-- [ ] `AuthControllerIntegrationTest` - registro, login, perfil
-- [ ] `AdminControllerIntegrationTest` - gestion de usuarios con rol ADMIN
-- [ ] Flujo completo: registro -> crear producto -> sync Amazon -> verificar alerta
+### Gestion de Empleados
+- OK Endpoint `POST /api/auth/create-employee` para crear empleados
+- OK Restringido a `COMPANY_ADMIN` y `ADMIN` via `@PreAuthorize`
+- OK DTO `CreateEmployeeRequest` con validaciones
+- OK `AuthService.createEmployee()` asigna rol EMPLOYEE y empresa del admin
 
-#### Tests de Repositorio
-- [ ] `ProductRepositoryTest` - queries con filtros, paginacion, unicidad SKU
-- [ ] `PriceHistoryRepositoryTest` - queries por rango de fecha
-- [ ] `AlertRepositoryTest` - queries de alertas no leidas
+### Correcciones
+- Bug #23: NPE en login por lazy-loading de Company, resuelto con LEFT JOIN FETCH
+- Bug #24: AnalyticsController usaba userId en vez de companyId en 3 metodos
+- Bug #25: Creado endpoint de creacion de empleados que no existia
 
-#### CI/CD
-- [ ] Configurar GitHub Actions para builds automatizados en PR
-- [ ] Ejecutar tests en cada push a main
-- [ ] Analisis de cobertura con JaCoCo
+### Archivos Creados / Modificados
+```
+entity/Company.java                    # [MOD] Added companyCode
+repository/CompanyRepository.java      # [MOD] findByCompanyCode
+dto/auth/AuthDTOs.java                 # [MOD] RegisterRequest, CreateCompanyRequest
+service/AuthService.java               # [MOD] register linked to company, createCompany
+controller/AdminController.java        # [MOD] POST /api/admin/companies
+```
 
 ---
 
-### Fase 14: Migraciones de Base de Datos con Flyway
+## Fase 14: Registro con Código de Empresa y Testing (2026-02-13)
+
+### Sistema de Invitación por Código
+- OK Campo `companyCode` (UUID 8 chars) en entidad `Company`
+- OK Endpoint `POST /api/admin/companies` para crear empresas (Solo ADMIN)
+- OK Registro de usuarios requiere `companyCode` para unirse a empresa existente
+- OK Asignación automática de rol `EMPLOYEE` al registrarse
+- OK Validación de código de empresa existente y activo
+
+### Actualización Android
+- OK `RegisterScreen` solicita código de empresa obligatorio
+- OK Validación de formato de código en tiempo real
+- OK Eliminado campo "Nombre de negocio" y "Tipo" del registro móvil
+- OK Conexión con nueva API de registro
+
+### Testing Completo (Backend)
+- OK Ejecución exitosa de 139 tests unitarios e integración
+- OK `AuthServiceTest`: Cobertura de registro con código, login, creación empleados
+- OK `AuthControllerTest`: Validación de endpoints de auth
+- OK `AdminControllerTest`: Gestión de usuarios y empresas
+- OK Mocking de dependencias (`AuthService`) en tests de controladores
+
+---
+
+---
+
+## Fase 15: Estadísticas y Datos de Prueba (2026-02-14)
+
+### Dashboard Admin
+- OK Endpoint `GET /api/admin/dashboard` mejorado con conteos de empresas y usuarios
+- OK `DashboardStatsDTO` incluye desglose de empresas activas y total de empleados
+- OK Integración con `CompanyRepository.countByActive(true)`
+
+### Datos de Prueba (Seeding)
+- OK `DatabaseSeeder` genera 3 empresas ficticias si no existen:
+  - Tech Solutions (TECH001)
+  - Global Retail (RETAIL01)
+  - Consulting Pro (CONSULT1)
+- OK Cada empresa creada con 1 Company Admin y 3 Empleados
+- OK Contraseñas predefinidas (`password123`) para facilitar pruebas manuales
+
+### Correcciones
+- Bug #26: Error de columna `company_code` faltante resuelto con recreación de esquema
+- Bug #27: Error 400 en Login desde Postman por nombre de campo incorrecto
+- Bug #28: Error de compilación en `AdminController` por dependencia faltante
+- Bug #29: Error de sintaxis JSON en colección Postman
+- Bug #30: Eliminación de archivo `index.json` obsoleto para evitar confusión
+
+---
+
+## Pendiente
+
+### Fase 16: Migraciones de Base de Datos con Flyway
 
 - [ ] Integrar Flyway para gestion de migraciones versionadas
 - [ ] Migrar de `ddl-auto: update` a scripts SQL versionados
-- [ ] Scripts iniciales V1__create_users.sql, V2__create_products.sql, etc.
+- [ ] Scripts iniciales V1__create_companies.sql, V2__create_users.sql, etc.
 - [ ] Documentar proceso de rollback de migraciones
 
 ---
 
-### Fase 15: Mejoras de Rendimiento
+### Fase 17: Mejoras de Rendimiento
 
 - [ ] Paginacion en historial de precios (endpoint `GET /api/products/{id}/history`)
 - [ ] Limite de registros devueltos por CompetitorPrice (actualmente sin limite)
@@ -296,10 +358,10 @@ docker-compose.yml                      # PostgreSQL 14 en contenedor
 
 ---
 
-### Fase 16: Nuevas Funcionalidades
+### Fase 18: Nuevas Funcionalidades
 
 #### Alertas y Notificaciones
-- [ ] Endpoint `GET /api/alerts` para listar alertas del usuario
+- [ ] Endpoint `GET /api/alerts` para listar alertas de la empresa
 - [ ] Endpoint `PUT /api/alerts/{id}/read` para marcar como leida
 - [ ] Endpoint `PUT /api/alerts/read-all` para marcar todas como leidas
 - [ ] Integracion con email (Spring Mail + plantilla HTML) para alertas CRITICAL
@@ -317,11 +379,11 @@ docker-compose.yml                      # PostgreSQL 14 en contenedor
 #### Competidores Adicionales
 - [ ] Implementar scraping con Jsoup para competidores sin API
 - [ ] UI de configuracion de competidores (MANUAL, SCRAPING)
-- [ ] Soporte para multiples locales de Amazon por usuario
+- [ ] Soporte para multiples locales de Amazon por empresa
 
 ---
 
-### Fase 17: Escalabilidad
+### Fase 19: Escalabilidad
 
 #### Cache Distribuida
 - [ ] Migrar Simple Cache a Redis para persistir cache entre reinicios
@@ -329,7 +391,7 @@ docker-compose.yml                      # PostgreSQL 14 en contenedor
 - [ ] Cache de respuestas de Keepa para no repetir misma consulta en 1 hora
 
 #### Rate Limiting
-- [ ] Limitar peticiones por usuario a endpoints costosos (Keepa sync)
+- [ ] Limitar peticiones por empresa a endpoints costosos (Keepa sync)
 - [ ] Bucket4j o similar para rate limiting por IP y por usuario
 
 #### Observabilidad
@@ -340,13 +402,14 @@ docker-compose.yml                      # PostgreSQL 14 en contenedor
 
 ---
 
-### Fase 18: Seguridad Avanzada
+### Fase 20: Seguridad Avanzada
 
 - [ ] Certificate pinning para la API de Keepa con OkHttp CertificatePinner
 - [ ] Audit log: registrar todas las operaciones ADMIN en tabla separada
-- [ ] 2FA opcional para cuentas ADMIN
+- [ ] 2FA opcional para cuentas ADMIN y COMPANY_ADMIN
 - [ ] Rotacion automatica de JWT_SECRET con periodo de gracia
 - [ ] OWASP dependency check integrado en el build de Maven
+- [ ] Rate limiting especifico en `/api/auth/login` y `/api/auth/register`
 
 ---
 
@@ -354,14 +417,15 @@ docker-compose.yml                      # PostgreSQL 14 en contenedor
 
 | Metrica                  | Valor    |
 |--------------------------|----------|
-| Lineas de codigo Java    | ~5.200   |
-| Archivos .java           | ~47      |
-| Entidades JPA            | 7        |
-| Repositorios             | 7        |
+| Lineas de codigo Java    | ~5.950   |
+| Archivos .java           | ~49      |
+| Entidades JPA            | 8        |
+| Repositorios             | 8        |
 | Servicios                | 4        |
 | Controladores            | 6        |
-| DTOs                     | ~20      |
-| Endpoints REST           | ~30      |
+| DTOs                     | ~23      |
+| Endpoints REST           | ~34      |
 | APIs externas            | 1 (Keepa)|
-| Bugs resueltos           | 22       |
+| Bugs resueltos           | 30       |
+| Roles de usuario         | 3        |
 | Version BD (DDL)         | update   |

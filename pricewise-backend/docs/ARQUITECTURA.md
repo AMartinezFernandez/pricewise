@@ -206,7 +206,8 @@ SOLUCION TECNICA:
 - Integracion asincrona con Keepa API para precios de Amazon
 - Motor de analisis que genera recomendaciones automaticas
 - Tarea programada cada 6 horas que actualiza precios de competencia
-- Seguridad JWT stateless con roles USER y ADMIN
+- Seguridad JWT stateless con roles COMPANY_ADMIN, EMPLOYEE y ADMIN
+- Aislamiento multi-tenant por empresa (Company)
 
 TECNOLOGIAS ELEGIDAS Y JUSTIFICACION:
 
@@ -261,7 +262,8 @@ pricewise-backend/
 │   │   │   │   ├── KeepaService.java       # Integracion Amazon/Keepa
 │   │   │   │   └── PriceAnalysisService.java # Alertas y recomendaciones
 │   │   │   ├── entity/
-│   │   │   │   ├── User.java               # Usuario con rol
+│   │   │   │   ├── User.java               # Usuario con rol y empresa
+│   │   │   │   ├── Company.java             # Empresa (multi-tenancy)
 │   │   │   │   ├── Product.java            # Producto con SKU/EAN
 │   │   │   │   ├── PriceHistory.java       # Historico de precios
 │   │   │   │   ├── Competitor.java         # Tienda competidora
@@ -269,7 +271,8 @@ pricewise-backend/
 │   │   │   │   ├── Alert.java              # Alertas de precio
 │   │   │   │   └── PriceRecommendation.java # Recomendaciones IA
 │   │   │   ├── repository/
-│   │   │   │   ├── UserRepository.java
+│   │   │   │   ├── UserRepository.java         # LEFT JOIN FETCH para Company
+│   │   │   │   ├── CompanyRepository.java      # findByCompanyCode
 │   │   │   │   ├── ProductRepository.java
 │   │   │   │   ├── PriceHistoryRepository.java
 │   │   │   │   ├── CompetitorRepository.java
@@ -575,16 +578,49 @@ public class User {
     private String businessName; // Nombre del negocio
     private String businessType; // Tipo de empresa
     @Enumerated(EnumType.STRING)
-    private Role role;           // USER o ADMIN
+    private Role role;           // COMPANY_ADMIN, EMPLOYEE o ADMIN
     private Boolean active;      // Soft-enable/disable
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Company company;     // Empresa a la que pertenece
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
 
+Roles del sistema:
+- ADMIN: Super-administrador de la plataforma (acceso total)
+- COMPANY_ADMIN: Administrador de una empresa (gestiona su empresa y empleados)
+- EMPLOYEE: Empleado de una empresa (operaciones basicas dentro de su empresa)
+
 Por que estos campos:
 - role como String en BD (no numero): legible en consultas directas
 - active para desactivar sin borrar (historial preservado)
+- company: FK a la tabla companies para aislamiento multi-tenant
 - businessName/businessType: contexto de negocio para personalizacion futura
+
+1b. COMPANY - Empresas del sistema (Multi-Tenancy)
+
+@Entity
+@Table(name = "companies")
+public class Company {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;          // Nombre de la empresa
+    private String companyCode;   // Codigo unico (UUID substring) para registro
+    private String businessType;  // Tipo de negocio
+    private String plan;          // Plan activo (FREE, PREMIUM, etc.)
+    private Integer maxProducts;  // Limite de productos
+    private Integer maxUsers;     // Limite de usuarios
+    private Boolean active;
+    @OneToMany(mappedBy = "company")
+    private List<User> users;     // Usuarios de la empresa
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}
+
+Por que esta entidad:
+- Centraliza la informacion de empresa para multi-tenancy
+- Permite escalar a modelo SaaS con planes y limites por empresa
+- Todos los datos (productos, alertas, etc.) se aislan via companyId
 
 2. PRODUCT - Productos del catalogo del usuario
 
@@ -747,6 +783,18 @@ REFERENCIAS:
 - JPA: https://jakarta.ee/specifications/persistence/
 - Hibernate: https://hibernate.org/orm/documentation/
 
+SEEDING DE DATOS (DatabaseSeeder):
+----------------------------------
+Al arrancar, si la base de datos esta vacia, se crea:
+1. Empresa "PriceWise Admin Corp" (ADMIN)
+2. Usuario "admin" (Role ADMIN)
+
+Adicionalmente, si no existen, se generan 3 empresas de prueba:
+- Tech Solutions (TECH001)
+- Global Retail (RETAIL01)
+- Consulting Pro (CONSULT1)
+Cada una con 1 admin y 3 empleados para pruebas manuales.
+
 
 ================================================================================
 7. REPOSITORIOS Y SPRING DATA JPA
@@ -907,13 +955,14 @@ Los controladores son finos (thin controllers): solo reciben la peticion,
 delegan al servicio y devuelven la respuesta. Sin logica de negocio.
 
 ENDPOINTS PUBLICOS (sin autenticacion):
-    POST   /api/auth/register          - Registro nuevo usuario
+    POST   /api/auth/register          - Registro nuevo usuario (requiere companyCode)
     POST   /api/auth/login             - Login, devuelve JWT
     GET    /api/health                 - Health check
     GET    /api/competitors/status     - Estado disponibilidad Keepa
 
 ENDPOINTS AUTENTICADOS (USER o ADMIN):
     GET    /api/auth/profile           - Perfil del usuario autenticado
+    POST   /api/auth/create-employee   - Crear empleado (solo COMPANY_ADMIN)
     POST   /api/products               - Crear producto
     GET    /api/products               - Listar productos (paginado)
     GET    /api/products/{id}          - Detalle producto
@@ -927,8 +976,9 @@ ENDPOINTS AUTENTICADOS (USER o ADMIN):
     POST   /api/competitors/amazon/sync/{productId} - Sincronizar con Amazon
 
 ENDPOINTS ADMIN (solo ADMIN):
+    POST   /api/admin/companies                 - Crear nueva empresa + admin
     GET    /api/admin/stats                     - Estadisticas del sistema
-    GET    /api/admin/dashboard                 - Metricas con desglose
+    GET    /api/admin/dashboard                 - Metricas con desglose por empresa
     GET    /api/admin/users                     - Listar usuarios
     GET    /api/admin/users/{id}                - Detalle usuario
     PUT    /api/admin/users/{id}                - Actualizar usuario

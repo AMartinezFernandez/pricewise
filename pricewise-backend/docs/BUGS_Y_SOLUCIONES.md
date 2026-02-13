@@ -3,7 +3,7 @@
 Este documento registra todos los errores encontrados durante el desarrollo de PriceWise Backend,
 junto con sus causas raiz y soluciones aplicadas.
 
-> Periodo cubierto: 2026-01-25 a 2026-02-10
+> Periodo cubierto: 2026-01-25 a 2026-02-13
 
 ---
 
@@ -33,6 +33,120 @@ junto con sus causas raiz y soluciones aplicadas.
 | 20 | Productos inactivos aparecen en busqueda          | 2026-02-09 | OK     |
 | 21 | Connection pool agotado bajo carga moderada       | 2026-02-09 | OK     |
 | 22 | ChangeType INITIAL sobreescrito al actualizar     | 2026-02-10 | OK     |
+| 23 | NPE en login tras migracion multi-tenancy         | 2026-02-12 | OK     |
+| 24 | AnalyticsController usa userId en vez de companyId| 2026-02-13 | OK     |
+| 25 | Sin endpoint para crear empleados en empresa      | 2026-02-13 | OK     |
+| 26 | Column "company_code" does not exist in login     | 2026-02-13 | OK     |
+| 27 | Error 400 Login: emailOrUsername obligatorio      | 2026-02-14 | OK     |
+| 28 | Compilation Error: competitorRepository missing   | 2026-02-13 | OK     |
+| 29 | JSON Syntax Error en Postman Collection           | 2026-02-13 | OK     |
+| 30 | Confusión con archivo index.json (OpenAPI stale)  | 2026-02-14 | OK     |
+| 31 | StackOverflowError (Recursion) en JSON response   | 2026-02-14 | OK     |
+| 32 | LazyInitializationException en Admin Dashboard    | 2026-02-14 | OK     |
+| 33 | DatabaseSeeder omite empresas si una existe       | 2026-02-14 | OK     |
+
+---
+
+## Bug #26: Column "company_code" does not exist in login
+
+**Fecha:** 2026-02-13
+**Estado:** OK
+
+### Sintomas
+- Login fallaba con `500 Internal Server Error`.
+- Logs: `PSQLException: ERROR: column c1_0.company_code does not exist`.
+
+### Causa Raiz
+- Se añadió el campo `companyCode` a la entidad `Company` como `nullable = false`.
+- Hibernate con `ddl-auto: update` no actualizó la tabla existente correctamente o falló al intentar añadir una columna no nula a registros existentes sin valor por defecto.
+
+### Solucion
+- Cambiar temporalmente a `ddl-auto: create` para recrear el esquema desde cero.
+- Restaurar a `ddl-auto: update`.
+- Seeding de datos iniciales vía `DatabaseSeeder`.
+
+### Archivos Modificados
+- `application.yml`
+
+---
+
+## Bug #27: Error 400 Login: emailOrUsername obligatorio
+
+**Fecha:** 2026-02-14
+**Estado:** OK
+
+### Sintomas
+- Al intentar login desde Postman: `400 Bad Request`.
+- Respuesta: `{"errors": ["emailOrUsername: El email o username es obligatorio"]}`.
+
+### Causa Raiz
+- La colección de Postman enviaba el cuerpo con el campo `email`.
+- El DTO `AuthDTOs.LoginRequest` en el backend espera `emailOrUsername`.
+
+### Solucion
+- Corregir el body de la request en Postman para usar `emailOrUsername`.
+
+### Archivos Modificados
+- `PriceWise_API.postman_collection.json`
+
+---
+
+## Bug #28: Compilation Error: competitorRepository missing
+
+**Fecha:** 2026-02-13
+**Estado:** OK
+
+### Sintomas
+- Error de compilación en `AdminController`.
+- Mensaje: `competitorRepository cannot be resolved`.
+
+### Causa Raiz
+- Se eliminó accidentalmente la inyección de `CompetitorRepository` durante un refactor para limpiar imports no usados, pero seguía usándose en el método `getStats`.
+
+### Solucion
+- Re-inyectar `CompetitorRepository` en el constructor de `AdminController`.
+
+### Archivos Modificados
+- `AdminController.java`
+
+---
+
+## Bug #29: JSON Syntax Error en Postman Collection
+
+**Fecha:** 2026-02-13
+**Estado:** OK
+
+### Sintomas
+- Postman fallaba al importar la colección modificada.
+
+### Causa Raiz
+- La descripción de la colección contenía comillas dobles no escapadas dentro de un string JSON: `"description": "API... "Productos" ..."`.
+
+### Solucion
+- Escapar las comillas internas: `\"Productos\"`.
+
+### Archivos Modificados
+- `PriceWise_API.postman_collection.json`
+
+---
+
+## Bug #30: Confusión con archivo index.json (OpenAPI stale)
+
+**Fecha:** 2026-02-14
+**Estado:** OK
+
+### Sintomas
+- El usuario intentaba abrir `index.json` pensando que era la colección de Postman actualizada y no veía los nuevos cambios.
+
+### Causa Raiz
+- Existía un archivo `index.json` antiguo en la raíz del proyecto (posiblemente una exportación OpenAPI previa) que no se estaba actualizando.
+
+### Solucion
+- Eliminar `index.json`.
+- Confirmar que la colección correcta está en `pricewise-backend/PriceWise_API.postman_collection.json`.
+
+### Archivos Modificados
+- `index.json` (Eliminado)
 
 ---
 
@@ -907,6 +1021,122 @@ public ProductResponse updateProduct(Long productId, ProductRequest request, Lon
 
 ---
 
+## Bug #23: NPE en login tras migracion multi-tenancy
+
+**Fecha:** 2026-02-12
+**Estado:** OK
+
+### Sintomas
+- Tras añadir la entidad `Company` y el campo `company_id` a `User`, el login
+  devolvía un 500 Internal Server Error.
+- Stack trace: `NullPointerException` en `UserPrincipal.create()` al acceder
+  a `user.getCompany().getId()`.
+
+### Causa Raiz
+La relación `@ManyToOne(fetch = FetchType.LAZY)` entre `User` y `Company`
+causaba que `user.getCompany()` fuese un proxy no inicializado fuera de la
+transacción de carga del usuario. Al intentar acceder a `.getId()` fuera
+del contexto transaccional, lanzaba NPE.
+
+### Solucion
+Usar `LEFT JOIN FETCH` en la query de `UserRepository` para cargar
+eagerly la relación User→Company en un solo SQL:
+
+```java
+@Query("SELECT u FROM User u LEFT JOIN FETCH u.company WHERE u.email = :email")
+Optional<User> findByEmail(@Param("email") String email);
+
+@Query("SELECT u FROM User u LEFT JOIN FETCH u.company WHERE u.username = :username")
+Optional<User> findByUsername(@Param("username") String username);
+```
+
+### Archivos Modificados
+- `UserRepository.java`
+
+---
+
+## Bug #24: AnalyticsController usa userId en vez de companyId
+
+**Fecha:** 2026-02-13
+**Estado:** OK
+
+### Sintomas
+- Los endpoints de analytics (`/api/analytics/recommendations`,
+  `/api/analytics/alerts`, `/api/analytics/analyze`) devolvían datos
+  incorrectos o vacíos.
+- Un usuario veía recomendaciones de otros usuarios en lugar de datos
+  de su empresa.
+
+### Causa Raiz
+Tres métodos en `AnalyticsController` usaban `userPrincipal.getId()` (el ID
+del usuario individual) cuando debían usar `userPrincipal.getCompanyId()` para
+filtrar datos a nivel de empresa. Esto rompía el aislamiento multi-tenant.
+
+### Solucion
+Reemplazar `userPrincipal.getId()` por `userPrincipal.getCompanyId()` en:
+
+```java
+// Antes (incorrecto):
+priceAnalysisService.getPendingRecommendations(userPrincipal.getId(), pageable);
+priceAnalysisService.getUnreadAlerts(userPrincipal.getId(), pageable);
+priceAnalysisService.analyzeAllProductsForUser(userPrincipal.getId());
+
+// Después (correcto):
+priceAnalysisService.getPendingRecommendations(userPrincipal.getCompanyId(), pageable);
+priceAnalysisService.getUnreadAlerts(userPrincipal.getCompanyId(), pageable);
+priceAnalysisService.analyzeAllProductsForUser(userPrincipal.getCompanyId());
+```
+
+### Archivos Modificados
+- `AnalyticsController.java`
+
+---
+
+## Bug #25: Sin endpoint para crear empleados en empresa
+
+**Fecha:** 2026-02-13
+**Estado:** OK
+
+### Sintomas
+- Tras implementar el modelo multi-tenancy con roles COMPANY_ADMIN y EMPLOYEE,
+  no existía ningún endpoint para que un COMPANY_ADMIN pudiera crear usuarios
+  de tipo EMPLOYEE dentro de su empresa.
+- La única vía de registro creaba siempre un COMPANY_ADMIN con una nueva empresa.
+
+### Causa Raiz
+El endpoint `/api/auth/register` fue diseñado como registro público (modelo SaaS)
+que crea una empresa y un COMPANY_ADMIN. No se implementó un flujo separado para
+añadir empleados a una empresa existente.
+
+### Solucion
+Crear un nuevo endpoint `POST /api/auth/create-employee` restringido a
+COMPANY_ADMIN y ADMIN:
+
+```java
+// AuthController.java
+@PostMapping("/create-employee")
+@PreAuthorize("hasAnyRole('COMPANY_ADMIN', 'ADMIN')")
+public ResponseEntity<ApiResponse<AuthResponse>> createEmployee(
+        @AuthenticationPrincipal UserPrincipal userPrincipal,
+        @Valid @RequestBody CreateEmployeeRequest request) {
+    AuthResponse response = authService.createEmployee(
+        userPrincipal.getCompanyId(), request);
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(ApiResponse.success(response, "Empleado creado exitosamente"));
+}
+```
+
+Nuevo DTO `CreateEmployeeRequest` con username, email y password.
+Nuevo método `AuthService.createEmployee()` que crea el usuario con rol EMPLOYEE
+y lo asocia a la empresa del admin autenticado.
+
+### Archivos Modificados
+- `AuthController.java`
+- `AuthService.java`
+- `AuthDTOs.java` (nuevo DTO `CreateEmployeeRequest`)
+
+---
+
 ## Advertencias Pendientes (No criticas)
 
 | Advertencia | Descripcion | Accion Recomendada |
@@ -938,3 +1168,67 @@ public ProductResponse updateProduct(Long productId, ProductRequest request, Lon
 ### Archivos Modificados
 - [lista de archivos]
 ```
+
+---
+
+## Bug #31: StackOverflowError (Recursion) en JSON response
+
+**Fecha:** 2026-02-14
+**Estado:** OK
+
+### Sintomas
+- Peticiones a endpoints que devuelven `User` o `Company` fallaban con `500 Internal Server Error` sin mensaje claro en la respuesta HTTP.
+- Logs mostraban `StackOverflowError` o timeouts por serialización infinita.
+
+### Causa Raiz
+- Relación bidireccional `Company <-> User` y `User <-> Product`.
+- Jackson intentaba serializar `Company -> users -> Company -> users...` infinitamente.
+
+### Solucion
+- Añadir `@JsonIgnore` en las relaciones inversas (`@OneToMany`) en las entidades.
+- `Company.users`, `Company.products`, `User.createdProducts`.
+
+### Archivos Modificados
+- `Company.java`
+- `User.java`
+
+---
+
+## Bug #32: LazyInitializationException en Admin Dashboard
+
+**Fecha:** 2026-02-14
+**Estado:** OK
+
+### Sintomas
+- `GET /api/admin/dashboard` retornaba `500 Internal Server Error`.
+- Logs: `org.hibernate.LazyInitializationException: could not initialize proxy - no Session`.
+
+### Causa Raiz
+- El controlador accedía a `user.getCompany().getName()` fuera de una transacción.
+- Al ser una relación `LAZY`, Hibernate intentaba cargar la empresa pero la sesión ya estaba cerrada.
+
+### Solucion
+- Añadir `@Transactional(readOnly = true)` a los métodos del `AdminController`.
+
+### Archivos Modificados
+- `AdminController.java`
+
+---
+
+## Bug #33: DatabaseSeeder omite empresas si una existe
+
+**Fecha:** 2026-02-14
+**Estado:** OK
+
+### Sintomas
+- Al borrar y recrear la BD, si existía la empresa "Tech Solutions", el seeder no creaba "Global Retail" ni "Consulting Pro" a pesar de ser solicitadas.
+
+### Causa Raiz
+- Lógica de comprobación global: `if (exists("TECH001")) return;`.
+- Si la primera empresa existía, abortaba todo el proceso de seed de pruebas.
+
+### Solucion
+- Refactorizar a comprobación individual por empresa (`createCompanyIfNotExists`).
+
+### Archivos Modificados
+- `DatabaseSeeder.java`
