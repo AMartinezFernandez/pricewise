@@ -38,11 +38,10 @@ class AuthRepository @Inject constructor(
         username: String,
         email: String,
         password: String,
-        businessName: String?,
-        businessType: String?
+        companyCode: String
     ): Result<Unit> {
         val result = safeApiCall {
-            api.register(RegisterRequest(username, email, password, businessName, businessType))
+            api.register(RegisterRequest(username, email, password, companyCode))
         }
         return when (result) {
             is Result.Success -> {
