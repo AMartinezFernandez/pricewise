@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  cache:
+    type: simple
+
+jwt:
+  secret: TestSecretKeyQueTieneQueTenerAlMenos256BitsParaQueNoFalle123456
+  expiration: 86400000
+
+cors:
+  allow-all: true
+
+keepa:
+  api-key: ""
+  default-locale: ES
+  history-days: 90
+  rate-limit: 10
+
+logging:
+  level:
+    root: WARN
+    com.alvaro.pricewise: DEBUG
