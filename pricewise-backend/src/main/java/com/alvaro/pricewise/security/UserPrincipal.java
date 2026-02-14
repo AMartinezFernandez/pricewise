@@ -18,9 +18,11 @@ public class UserPrincipal implements UserDetails {
 
     private Long id;
     private Long companyId;
+    private String companyName;
     private String email;
     private String username;
     private String password;
+    private String role;
     private Collection<? extends GrantedAuthority> authorities;
     private boolean active;
 
@@ -31,10 +33,12 @@ public class UserPrincipal implements UserDetails {
 
         return UserPrincipal.builder()
                 .id(user.getId())
-                .companyId(user.getCompany().getId())
+                .companyId(user.getCompany() != null ? user.getCompany().getId() : null)
+                .companyName(user.getCompany() != null ? user.getCompany().getName() : null)
                 .email(user.getEmail())
                 .username(user.getUsername())
                 .password(user.getPassword())
+                .role(user.getRole().name())
                 .authorities(authorities)
                 .active(user.getActive())
                 .build();
@@ -50,9 +54,20 @@ public class UserPrincipal implements UserDetails {
         return password;
     }
 
+    /**
+     * Spring Security usa este método como identificador de login.
+     * Devolvemos email porque es el campo usado para autenticación.
+     */
     @Override
     public String getUsername() {
-        return email; // Usamos email como username para Spring Security
+        return email;
+    }
+
+    /**
+     * Devuelve el nombre de usuario real (no el email).
+     */
+    public String getDisplayUsername() {
+        return username;
     }
 
     @Override

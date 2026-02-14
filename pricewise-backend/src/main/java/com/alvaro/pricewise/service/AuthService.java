@@ -22,6 +22,7 @@ import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.repository.UserRepository;
 import com.alvaro.pricewise.security.JwtService;
 import com.alvaro.pricewise.security.UserPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -104,27 +106,23 @@ public class AuthService {
         );
 
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-        
-        User user = userRepository.findByEmail(userPrincipal.getEmail())
-                .orElseThrow(() -> new BadRequestException("Usuario no encontrado"));
-
         String token = jwtService.generateToken(userPrincipal);
 
-        log.debug("Login exitoso: {}", user.getId());
+        log.debug("Login exitoso: {}", userPrincipal.getId());
 
         return AuthResponse.of(
                 token,
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getRole().name(),
-                user.getCompany().getId(),
-                user.getCompany().getName()
+                userPrincipal.getId(),
+                userPrincipal.getDisplayUsername(),
+                userPrincipal.getEmail(),
+                userPrincipal.getRole(),
+                userPrincipal.getCompanyId(),
+                userPrincipal.getCompanyName()
         );
     }
 
     @Transactional(readOnly = true)
-    public UserProfileResponse getProfile(Long userId) {
+    public UserProfileResponse getProfile(@org.springframework.lang.NonNull Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BadRequestException("Usuario no encontrado"));
 
@@ -148,7 +146,7 @@ public class AuthService {
      * Solo COMPANY_ADMIN y ADMIN pueden crear empleados.
      */
     @Transactional
-    public AuthResponse createEmployee(Long companyId, CreateEmployeeRequest request) {
+    public AuthResponse createEmployee(@org.springframework.lang.NonNull Long companyId, CreateEmployeeRequest request) {
         log.debug("Creando empleado para empresa: {}", companyId);
 
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -159,7 +157,49 @@ public class AuthService {
             throw new BadRequestException("El nombre de usuario ya esta en uso");
         }
 
-        Company company = companyRepository.findById(companyId)
+        // Logic for Company and Role selection
+        Long targetCompanyId = companyId;
+        User.Role targetRole = User.Role.EMPLOYEE;
+
+        User creator = userRepository.findById(SecurityContextHolder.getContext().getAuthentication() != null 
+                ? ((UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId() 
+                : 0L).orElse(null);
+
+        if (creator != null && creator.getRole() == User.Role.ADMIN) {
+            // ADMIN can select company and role
+            if (request.getCompanyId() != null) {
+                targetCompanyId = request.getCompanyId();
+            } else {
+                 throw new BadRequestException("El ID de la empresa es obligatorio para ADMIN");
+            }
+
+            if (request.getRole() != null) {
+                try {
+                    targetRole = User.Role.valueOf(request.getRole());
+                } catch (IllegalArgumentException e) {
+                    throw new BadRequestException("Rol inválido: " + request.getRole());
+                }
+            } else {
+                 // Default to EMPLOYEE if not specified, or force selection? User asked for selection.
+                 // Let's default to EMPLOYEE but allowing COMPANY_ADMIN request.
+            }
+        } else {
+            // COMPANY_ADMIN can only create for their own company
+            // And can mostly only create EMPLOYEEs, maybe COMPANY_ADMINs too?
+            // User request: "only can select employee or company admin"
+            if (request.getRole() != null) {
+                 try {
+                    targetRole = User.Role.valueOf(request.getRole());
+                    if (targetRole != User.Role.EMPLOYEE && targetRole != User.Role.COMPANY_ADMIN) {
+                          throw new BadRequestException("COMPANY_ADMIN solo puede crear EMPLOYEE o COMPANY_ADMIN");
+                    }
+                } catch (IllegalArgumentException e) {
+                    throw new BadRequestException("Rol inválido");
+                }
+            }
+        }
+
+        Company company = companyRepository.findById(targetCompanyId)
                 .orElseThrow(() -> new BadRequestException("Empresa no encontrada"));
 
         User employee = User.builder()
@@ -167,7 +207,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .company(company)
-                .role(User.Role.EMPLOYEE)
+                .role(targetRole)
                 .active(true)
                 .build();
 
@@ -239,6 +279,21 @@ public class AuthService {
                 .plan(company.getPlan().name())
                 .adminUsername(admin.getUsername())
                 .build();
+    }
+    @Transactional
+    public void changePassword(@org.springframework.lang.NonNull Long userId, String currentPassword, String newPassword) {
+        log.debug("Cambiando contraseña para usuario: {}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("Usuario no encontrado"));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new BadRequestException("La contraseña actual es incorrecta");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.debug("Contraseña actualizada para usuario: {}", userId);
     }
 }
 

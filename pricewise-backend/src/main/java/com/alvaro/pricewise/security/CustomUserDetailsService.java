@@ -1,13 +1,15 @@
 package com.alvaro.pricewise.security;
 
-import com.alvaro.pricewise.entity.User;
-import com.alvaro.pricewise.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.alvaro.pricewise.entity.User;
+import com.alvaro.pricewise.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +29,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Transactional(readOnly = true)
-    public UserDetails loadUserById(Long id) {
+    public UserDetails loadUserById(@org.springframework.lang.NonNull Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "Usuario no encontrado con id: " + id

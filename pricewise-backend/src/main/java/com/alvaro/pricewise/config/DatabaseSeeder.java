@@ -50,7 +50,7 @@ public class DatabaseSeeder {
                 User admin = new User();
                 admin.setUsername("admin");
                 admin.setEmail("admin@pricewise.io");
-                admin.setPassword(passwordEncoder.encode("admin123")); // Password conocida
+                admin.setPassword(passwordEncoder.encode("Admin123")); // Password conocida
                 admin.setRole(Role.ADMIN);
                 admin.setCompany(adminCompany);
                 admin.setActive(true);
@@ -60,7 +60,7 @@ public class DatabaseSeeder {
                 userRepository.save(admin);
                 log.info("Usuario ADMIN creado:");
                 log.info("Email: admin@pricewise.io");
-                log.info("Password: admin123");
+                log.info("Password: Admin123");
                 log.info("------------------------------------------------");
             } else {
                 log.info("La base de datos ya contiene datos. Omitiendo seed inicial.");
@@ -74,7 +74,7 @@ public class DatabaseSeeder {
     private void seedTestCompanies() {
         log.info("Sembrando datos de prueba adicionales...");
 
-        createCompanyIfNotExists("Tech Solutions", "TECH001", "TECHNOLOGY");
+        createCompanyIfNotExists("Tech Solutions", "TECH0001", "TECHNOLOGY");
         createCompanyIfNotExists("Global Retail", "RETAIL01", "RETAIL");
         createCompanyIfNotExists("Consulting Pro", "CONSULT1", "CONSULTING");
         
@@ -118,7 +118,7 @@ public class DatabaseSeeder {
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
-        user.setPassword(passwordEncoder.encode("password123"));
+        user.setPassword(passwordEncoder.encode("Password1"));
         user.setRole(role);
         user.setCompany(company);
         user.setActive(true);

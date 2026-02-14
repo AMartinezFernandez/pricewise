@@ -20,6 +20,7 @@ import com.alvaro.pricewise.dto.auth.AuthDTOs.CompanyResponse;
 import com.alvaro.pricewise.dto.auth.AuthDTOs.CreateCompanyRequest;
 import com.alvaro.pricewise.dto.common.ApiResponse;
 import com.alvaro.pricewise.entity.User;
+import com.alvaro.pricewise.exception.ResourceNotFoundException;
 import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.repository.UserRepository;
 
@@ -38,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Tag(name = "Administración", description = "Endpoints exclusivos para administradores")
 @PreAuthorize("hasRole('ADMIN')")
+@SuppressWarnings("null")
 public class AdminController {
 
     private final UserRepository userRepository;
@@ -57,9 +59,14 @@ public class AdminController {
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<List<UserSummary>>> getAllUsers() {
         List<UserSummary> users = userRepository.findAll().stream()
-                .map(UserSummary::from)
+                .map(user -> {
+                    long count = user.getCompany() != null
+                            ? productRepository.countByCompanyIdAndActiveTrue(user.getCompany().getId())
+                            : 0L;
+                    return UserSummary.from(user, count);
+                })
                 .toList();
-        
+
         return ResponseEntity.ok(ApiResponse.success(users));
     }
 
@@ -69,9 +76,9 @@ public class AdminController {
     @GetMapping("/users/{userId}")
     @Operation(summary = "Detalle de usuario", description = "Obtiene los detalles completos de un usuario")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse<UserDetail>> getUser(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<UserDetail>> getUser(@PathVariable @org.springframework.lang.NonNull Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         
         return ResponseEntity.ok(ApiResponse.success(UserDetail.from(user)));
     }
@@ -96,9 +103,9 @@ public class AdminController {
     @GetMapping("/companies/{companyId}")
     @Operation(summary = "Detalle de empresa", description = "Obtiene los detalles de una empresa")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse<CompanyResponse>> getCompany(@PathVariable Long companyId) {
+    public ResponseEntity<ApiResponse<CompanyResponse>> getCompany(@PathVariable @org.springframework.lang.NonNull Long companyId) {
         com.alvaro.pricewise.entity.Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa no encontrada"));
         
         return ResponseEntity.ok(ApiResponse.success(mapToCompanyResponse(company)));
     }
@@ -155,7 +162,7 @@ public class AdminController {
         
         long totalProducts = productRepository.count();
         long trackedProducts = productRepository.findAll().stream()
-                .filter(p -> p.getSku() != null && p.getSku().startsWith("B0"))
+                .filter(p -> p.getAsin() != null && !p.getAsin().isBlank())
                 .count();
         
         long competitorsTracked = competitorRepository.count();
@@ -165,7 +172,7 @@ public class AdminController {
             if (scheduler.isShutdown()) schedulerStatus = "SHUTDOWN";
             else if (scheduler.isInStandbyMode()) schedulerStatus = "STANDBY";
             else if (scheduler.isStarted()) schedulerStatus = "RUNNING";
-        } catch (Exception e) {
+        } catch (org.quartz.SchedulerException e) {
             schedulerStatus = "ERROR";
         }
 
@@ -235,12 +242,13 @@ public class AdminController {
      */
     @PutMapping("/users/{userId}")
     @Operation(summary = "Editar usuario", description = "Modifica los datos de un usuario")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<ApiResponse<UserDetail>> updateUser(
-            @PathVariable Long userId,
+            @PathVariable @org.springframework.lang.NonNull Long userId,
             @RequestBody UpdateUserRequest request
     ) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         
         if (request.username() != null && !request.username().isBlank()) {
             user.setUsername(request.username());
@@ -249,16 +257,20 @@ public class AdminController {
             user.setEmail(request.email());
         }
         if (request.role() != null && !request.role().isBlank()) {
-            user.setRole(User.Role.valueOf(request.role().toUpperCase()));
+            try {
+                user.setRole(User.Role.valueOf(request.role().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new com.alvaro.pricewise.exception.BadRequestException("Rol inválido: " + request.role());
+            }
         }
         if (request.active() != null) {
             user.setActive(request.active());
         }
-        
+
         user = userRepository.save(user);
-        
+
         return ResponseEntity.ok(ApiResponse.success(
-                UserDetail.from(user), 
+                UserDetail.from(user),
                 "Usuario actualizado correctamente"
         ));
     }
@@ -268,12 +280,13 @@ public class AdminController {
      */
     @PutMapping("/users/{userId}/password")
     @Operation(summary = "Cambiar contraseña", description = "Cambia la contraseña de un usuario")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<ApiResponse<Void>> changePassword(
-            @PathVariable Long userId,
+            @PathVariable @org.springframework.lang.NonNull Long userId,
             @RequestBody PasswordChangeRequest request
     ) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         
         String hashedPassword = passwordEncoder.encode(request.newPassword());
         user.setPassword(hashedPassword);
@@ -287,18 +300,23 @@ public class AdminController {
      */
     @PutMapping("/users/{userId}/role")
     @Operation(summary = "Cambiar rol", description = "Cambia el rol de un usuario")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<ApiResponse<UserSummary>> changeUserRole(
-            @PathVariable Long userId,
+            @PathVariable @org.springframework.lang.NonNull Long userId,
             @RequestBody RoleChangeRequest request
     ) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         
-        user.setRole(User.Role.valueOf(request.role().toUpperCase()));
+        try {
+            user.setRole(User.Role.valueOf(request.role().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new com.alvaro.pricewise.exception.BadRequestException("Rol inválido: " + request.role());
+        }
         user = userRepository.save(user);
-        
+
         return ResponseEntity.ok(ApiResponse.success(
-                UserSummary.from(user), 
+                UserSummary.from(user),
                 "Rol actualizado a " + user.getRole()
         ));
     }
@@ -308,12 +326,13 @@ public class AdminController {
      */
     @PutMapping("/users/{userId}/status")
     @Operation(summary = "Cambiar estado", description = "Activa o desactiva un usuario")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<ApiResponse<UserSummary>> changeUserStatus(
-            @PathVariable Long userId,
+            @PathVariable @org.springframework.lang.NonNull Long userId,
             @RequestBody StatusChangeRequest request
     ) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         
         user.setActive(request.active());
         user = userRepository.save(user);
@@ -327,9 +346,10 @@ public class AdminController {
      */
     @DeleteMapping("/users/{userId}")
     @Operation(summary = "Eliminar usuario", description = "Elimina un usuario del sistema permanentemente")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long userId) {
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable @org.springframework.lang.NonNull Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         
         userRepository.delete(user);
         
@@ -348,6 +368,10 @@ public class AdminController {
             Long productCount
     ) {
         public static UserSummary from(User user) {
+            return from(user, 0L);
+        }
+
+        public static UserSummary from(User user, long productCount) {
             return new UserSummary(
                     user.getId(),
                     user.getUsername(),
@@ -355,14 +379,8 @@ public class AdminController {
                     user.getCompany() != null ? user.getCompany().getName() : null,
                     user.getRole().name(),
                     user.getActive(),
-                    user.getCompany() != null ? productRepository_countByCompanyId() : 0L
+                    productCount
             );
-        }
-        
-        // Helper estático - no se puede acceder a productRepository desde un record
-        // Simplificamos el conteo
-        private static long productRepository_countByCompanyId() {
-            return 0L; // Se resolverá en la query del servicio
         }
     }
 
