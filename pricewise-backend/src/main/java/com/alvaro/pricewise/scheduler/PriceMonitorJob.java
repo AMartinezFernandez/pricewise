@@ -44,30 +44,30 @@ public class PriceMonitorJob implements Job {
             return;
         }
 
-        Set<Long> userIds = new HashSet<>();
+        Set<Long> companyIds = new HashSet<>();
 
         try {
-            userIds = processProductsInBatches();
+            companyIds = processProductsInBatches();
             log.info("Actualizacion de precios finalizada");
             
-            // Ejecutar analisis para cada usuario afectado
-            for (Long userId : userIds) {
+            // Ejecutar analisis para cada empresa afectada
+            for (Long companyId : companyIds) {
                 try {
-                    priceAnalysisService.analyzeAllProductsForUser(userId);
-                    log.debug("Analisis completado para usuario {}", userId);
+                    priceAnalysisService.analyzeAllProductsForUser(companyId);
+                    log.debug("Analisis completado para empresa {}", companyId);
                 } catch (Exception e) {
-                    log.error("Error en analisis para usuario {}: {}", userId, e.getMessage());
+                    log.error("Error en analisis para empresa {}: {}", companyId, e.getMessage());
                 }
             }
             
-            log.info("Job de Monitoreo finalizado. Usuarios analizados: {}", userIds.size());
+            log.info("Job de Monitoreo finalizado. Empresas analizadas: {}", companyIds.size());
         } catch (Exception e) {
             log.error("Error en PriceMonitorJob: {}", e.getMessage(), e);
         }
     }
 
     private Set<Long> processProductsInBatches() {
-        Set<Long> userIds = new HashSet<>();
+        Set<Long> companyIds = new HashSet<>();
         int page = 0;
         Page<Product> productPage;
 
@@ -84,8 +84,8 @@ public class PriceMonitorJob implements Job {
                 log.debug("Procesando lote {}: {} productos", page, trackableProducts.size());
                 processBatch(trackableProducts);
                 
-                // Guardar user IDs para analisis posterior
-                trackableProducts.forEach(p -> userIds.add(p.getUser().getId()));
+                // Guardar company IDs para analisis posterior
+                trackableProducts.forEach(p -> companyIds.add(p.getCompany().getId()));
             }
 
             page++;
@@ -95,7 +95,7 @@ public class PriceMonitorJob implements Job {
             }
         } while (productPage.hasNext());
 
-        return userIds;
+        return companyIds;
     }
 
     private void processBatch(List<Product> products) {

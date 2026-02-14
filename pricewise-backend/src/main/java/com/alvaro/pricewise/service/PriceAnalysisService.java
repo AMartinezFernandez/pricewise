@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Servicio de analisis de precios y generacion de recomendaciones.
+ * Opera a nivel de empresa (companyId) para multi-tenancy.
  */
 @Slf4j
 @Service
@@ -37,14 +38,10 @@ public class PriceAnalysisService {
     private final PriceRecommendationRepository recommendationRepository;
     private final AlertRepository alertRepository;
 
-    // Umbrales de configuracion
-    private static final BigDecimal HIGH_PRICE_THRESHOLD = new BigDecimal("0.10");  // 10% mas caro
-    private static final BigDecimal LOW_PRICE_THRESHOLD = new BigDecimal("0.10");   // 10% mas barato
-    private static final BigDecimal SUDDEN_CHANGE_THRESHOLD = new BigDecimal("0.15"); // 15% cambio brusco
+    private static final BigDecimal HIGH_PRICE_THRESHOLD = new BigDecimal("0.10");
+    private static final BigDecimal LOW_PRICE_THRESHOLD = new BigDecimal("0.10");
+    private static final BigDecimal SUDDEN_CHANGE_THRESHOLD = new BigDecimal("0.15");
 
-    /**
-     * Analiza un producto y genera recomendaciones si aplica.
-     */
     @Transactional
     public void analyzeProduct(Product product) {
         Optional<CompetitorPrice> latestPriceOpt = competitorPriceRepository
@@ -65,34 +62,31 @@ public class PriceAnalysisService {
         BigDecimal difference = ourPrice.subtract(theirPrice);
         BigDecimal percentDiff = difference.divide(theirPrice, 4, RoundingMode.HALF_UP);
 
-        // Nuestro precio es mayor (somos caros)
         if (percentDiff.compareTo(HIGH_PRICE_THRESHOLD) > 0) {
             createRecommendation(product, competitorPrice,
                     PriceRecommendation.RecommendationType.PRICE_TOO_HIGH,
-                    calculateSuggestedPrice(theirPrice, new BigDecimal("0.02")), // 2% por encima del competidor
+                    calculateSuggestedPrice(theirPrice, new BigDecimal("0.02")),
                     percentDiff,
                     "Precio " + formatPercent(percentDiff) + " por encima de la competencia");
         }
 
-        // Nuestro precio es menor (oportunidad)
         if (percentDiff.compareTo(LOW_PRICE_THRESHOLD.negate()) < 0) {
             createRecommendation(product, competitorPrice,
                     PriceRecommendation.RecommendationType.PRICE_TOO_LOW,
-                    calculateSuggestedPrice(theirPrice, new BigDecimal("-0.05")), // 5% por debajo del competidor
+                    calculateSuggestedPrice(theirPrice, new BigDecimal("-0.05")),
                     percentDiff.abs(),
                     "Oportunidad: precio " + formatPercent(percentDiff.abs()) + " por debajo de competencia");
         }
 
-        // Verificar cambio brusco comparando con precio anterior
         checkSuddenChange(product, competitorPrice);
     }
 
     /**
-     * Analiza todos los productos de un usuario.
+     * Analiza todos los productos de una empresa.
      */
     @Transactional
-    public int analyzeAllProductsForUser(Long userId) {
-        List<Product> products = productRepository.findByUserIdAndActiveTrue(userId);
+    public int analyzeAllProductsForUser(Long companyId) {
+        List<Product> products = productRepository.findByCompanyIdAndActiveTrue(companyId);
         int analyzed = 0;
 
         for (Product product : products) {
@@ -104,13 +98,10 @@ public class PriceAnalysisService {
             }
         }
 
-        log.info("Analizados {} productos para usuario {}", analyzed, userId);
+        log.info("Analizados {} productos para empresa {}", analyzed, companyId);
         return analyzed;
     }
 
-    /**
-     * Verifica cambios bruscos de precio del competidor.
-     */
     private void checkSuddenChange(Product product, CompetitorPrice currentPrice) {
         Page<CompetitorPrice> previousPrices = competitorPriceRepository
                 .findByProductIdOrderByScrapedAtDesc(product.getId(), PageRequest.of(1, 1));
@@ -138,6 +129,7 @@ public class PriceAnalysisService {
                     ? Alert.Severity.CRITICAL
                     : Alert.Severity.WARNING;
 
+            // Alerts still reference createdBy user for the product
             createAlert(product, alertType, severity,
                     "Cambio brusco de precio en competencia",
                     "El competidor " + (change.compareTo(BigDecimal.ZERO) < 0 ? "bajo" : "subio") +
@@ -150,7 +142,6 @@ public class PriceAnalysisService {
                                        PriceRecommendation.RecommendationType type,
                                        BigDecimal suggestedPrice, BigDecimal percentDiff, String reason) {
 
-        // Evitar duplicados
         List<PriceRecommendation> existing = recommendationRepository
                 .findByProductIdAndStatus(product.getId(), PriceRecommendation.Status.PENDING);
 
@@ -162,7 +153,6 @@ public class PriceAnalysisService {
         }
 
         BigDecimal potentialProfit = suggestedPrice.subtract(product.getCurrentPrice());
-
         PriceRecommendation.Priority priority = determinePriority(percentDiff);
 
         PriceRecommendation recommendation = PriceRecommendation.builder()
@@ -187,7 +177,7 @@ public class PriceAnalysisService {
                              BigDecimal newPrice, BigDecimal changePercent) {
 
         Alert alert = Alert.builder()
-                .user(product.getUser())
+                .user(product.getCreatedBy()) // Use createdBy user (audit field) for alert
                 .product(product)
                 .alertType(type)
                 .title(title)
@@ -224,12 +214,12 @@ public class PriceAnalysisService {
         return percent.multiply(new BigDecimal("100")).setScale(1, RoundingMode.HALF_UP) + "%";
     }
 
-    // Metodos de consulta
+    // Metodos de consulta — ahora basados en companyId
 
     @Transactional(readOnly = true)
-    public Page<PriceRecommendation> getPendingRecommendations(Long userId, Pageable pageable) {
-        return recommendationRepository.findByProductUserIdAndStatus(
-                userId, PriceRecommendation.Status.PENDING, pageable);
+    public Page<PriceRecommendation> getPendingRecommendations(Long companyId, Pageable pageable) {
+        return recommendationRepository.findByProductCompanyIdAndStatus(
+                companyId, PriceRecommendation.Status.PENDING, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -238,9 +228,9 @@ public class PriceAnalysisService {
     }
 
     @Transactional(readOnly = true)
-    public long countPendingRecommendations(Long userId) {
-        return recommendationRepository.countByProductUserIdAndStatus(
-                userId, PriceRecommendation.Status.PENDING);
+    public long countPendingRecommendations(Long companyId) {
+        return recommendationRepository.countByProductCompanyIdAndStatus(
+                companyId, PriceRecommendation.Status.PENDING);
     }
 
     @Transactional(readOnly = true)
@@ -249,8 +239,8 @@ public class PriceAnalysisService {
     }
 
     @Transactional(readOnly = true)
-    public BigDecimal getTotalPotentialSavings(Long userId) {
-        BigDecimal savings = recommendationRepository.sumPotentialSavingsForUser(userId);
+    public BigDecimal getTotalPotentialSavings(Long companyId) {
+        BigDecimal savings = recommendationRepository.sumPotentialSavingsForCompany(companyId);
         return savings != null ? savings : BigDecimal.ZERO;
     }
 

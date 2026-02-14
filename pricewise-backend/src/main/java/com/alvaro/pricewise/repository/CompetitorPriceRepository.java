@@ -69,12 +69,12 @@ public interface CompetitorPriceRepository extends JpaRepository<CompetitorPrice
     /**
      * Encuentra productos donde el competidor tiene mejor precio
      */
-    @Query("SELECT cp FROM CompetitorPrice cp WHERE cp.product.user.id = :userId " +
+    @Query("SELECT cp FROM CompetitorPrice cp WHERE cp.product.company.id = :companyId " +
            "AND cp.price < cp.product.currentPrice " +
            "AND cp.scrapedAt >= :since " +
            "ORDER BY (cp.product.currentPrice - cp.price) DESC")
     List<CompetitorPrice> findBetterPricesThanOurs(
-            @Param("userId") Long userId, 
+            @Param("companyId") Long companyId, 
             @Param("since") LocalDateTime since);
 
     /**

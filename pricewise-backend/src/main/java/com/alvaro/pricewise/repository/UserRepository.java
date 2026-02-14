@@ -2,6 +2,8 @@ package com.alvaro.pricewise.repository;
 
 import com.alvaro.pricewise.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -9,7 +11,8 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     
-    Optional<User> findByEmail(String email);
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.company WHERE u.email = :email")
+    Optional<User> findByEmail(@Param("email") String email);
     
     Optional<User> findByUsername(String username);
     
@@ -17,5 +20,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     Boolean existsByUsername(String username);
     
-    Optional<User> findByEmailOrUsername(String email, String username);
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.company WHERE u.email = :email OR u.username = :username")
+    Optional<User> findByEmailOrUsername(@Param("email") String email, @Param("username") String username);
 }
+

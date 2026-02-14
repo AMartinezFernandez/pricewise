@@ -15,11 +15,13 @@ import com.alvaro.pricewise.dto.product.ProductDTOs.CreateProductRequest;
 import com.alvaro.pricewise.dto.product.ProductDTOs.ProductListResponse;
 import com.alvaro.pricewise.dto.product.ProductDTOs.ProductResponse;
 import com.alvaro.pricewise.dto.product.ProductDTOs.UpdateProductRequest;
+import com.alvaro.pricewise.entity.Company;
 import com.alvaro.pricewise.entity.PriceHistory;
 import com.alvaro.pricewise.entity.Product;
 import com.alvaro.pricewise.entity.User;
 import com.alvaro.pricewise.exception.BadRequestException;
 import com.alvaro.pricewise.exception.ResourceNotFoundException;
+import com.alvaro.pricewise.repository.CompanyRepository;
 import com.alvaro.pricewise.repository.PriceHistoryRepository;
 import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.repository.UserRepository;
@@ -34,12 +36,20 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final CompanyRepository companyRepository;
     private final PriceHistoryRepository priceHistoryRepository;
+    private final KeepaService keepaService;
+
+    // Regex para validar formato ASIN (10 caracteres alfanuméricos que empiezan por B)
+    private static final String ASIN_PATTERN = "^[B0-9][A-Z0-9]{9}$";
 
     @Transactional
-    @CacheEvict(value = {"categories", "brands"}, key = "#userId")
-    public ProductResponse createProduct(Long userId, CreateProductRequest request) {
-        log.debug("Creando producto para usuario: {}", userId);
+    @CacheEvict(value = {"categories", "brands"}, key = "#companyId")
+    public ProductResponse createProduct(Long companyId, Long userId, CreateProductRequest request) {
+        log.debug("Creando producto para empresa: {}, usuario: {}", companyId, userId);
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa no encontrada"));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
@@ -63,8 +73,10 @@ public class ProductService {
                 .brand(request.getBrand())
                 .imageUrl(request.getImageUrl())
                 .monitoringEnabled(request.getMonitoringEnabled() != null ? request.getMonitoringEnabled() : true)
+                .stockQuantity(request.getStockQuantity() != null ? request.getStockQuantity() : 0)
                 .active(true)
-                .user(user)
+                .company(company)
+                .createdBy(user)
                 .build();
 
         product = productRepository.save(product);
@@ -77,34 +89,29 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public ProductResponse getProduct(Long userId, Long productId) {
-        Product product = findProductByUserAndId(userId, productId);
+    public ProductResponse getProduct(Long companyId, Long productId) {
+        Product product = findProductByCompanyAndId(companyId, productId);
         return ProductResponse.fromEntity(product);
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ProductListResponse> getProducts(Long userId, Pageable pageable) {
-        Page<Product> page = productRepository.findByUserIdAndActiveTrue(userId, pageable);
+    public PageResponse<ProductListResponse> getProducts(Long companyId, Pageable pageable) {
+        Page<Product> page = productRepository.findByCompanyIdAndActiveTrue(companyId, pageable);
         List<ProductListResponse> content = page.getContent().stream()
                 .map(ProductListResponse::fromEntity)
                 .toList();
         return PageResponse.from(page, content);
     }
 
-    private final KeepaService keepaService;
-
-    // Regex para validar formato ASIN (10 caracteres alfanuméricos que empiezan por B)
-    private static final String ASIN_PATTERN = "^[B0-9][A-Z0-9]{9}$";
-
     @Transactional(readOnly = true)
     public PageResponse<ProductListResponse> searchProducts(
-            Long userId,
+            Long companyId,
             String name,
             String category,
             String brand,
             Pageable pageable
     ) {
-        Page<Product> page = productRepository.searchProducts(userId, name, category, brand, pageable);
+        Page<Product> page = productRepository.searchProducts(companyId, name, category, brand, pageable);
         
         // Si no hay resultados y la búsqueda parece un ASIN, intentar buscar en Keepa
         if (page.isEmpty() && name != null && name.matches(ASIN_PATTERN)) {
@@ -128,18 +135,15 @@ public class ProductService {
         }
 
         try {
-            // Crear producto temporal para la consulta
             Product tempProduct = Product.builder()
                     .name("Consulta temporal - " + asin)
                     .currentPrice(BigDecimal.ZERO)
                     .build();
 
-            // Consultar Keepa (timeout 10s para no bloquear demasiado)
             return keepaService.fetchPriceByAsin(asin, tempProduct)
                     .thenApply(optPrice -> optPrice.map(price -> {
-                        // Mapear resultado de Keepa a ProductListResponse
                         ProductListResponse response = ProductListResponse.builder()
-                                .id(null) // ID nulo indica que no está persistido
+                                .id(null)
                                 .name(price.getCompetitorProductTitle())
                                 .sku(asin)
                                 .currentPrice(price.getPrice())
@@ -157,12 +161,12 @@ public class ProductService {
                                 .first(true)
                                 .last(true)
                                 .build();
-                    }).orElseGet(() -> PageResponse.<ProductListResponse>builder() // ASIN no encontrado en Keepa
+                    }).orElseGet(() -> PageResponse.<ProductListResponse>builder()
                             .content(List.of())
                             .totalElements(0)
                             .totalPages(0)
                             .build()))
-                    .join(); // Esperar resultado (bloqueante pero necesario para el controller actual)
+                    .join();
 
         } catch (Exception e) {
             log.error("Error buscando ASIN {} en Keepa: {}", asin, e.getMessage());
@@ -175,18 +179,16 @@ public class ProductService {
     }
 
     @Transactional
-    @CacheEvict(value = {"categories", "brands"}, key = "#userId")
-    public ProductResponse updateProduct(Long userId, Long productId, UpdateProductRequest request) {
-        log.debug("Actualizando producto: {} para usuario: {}", productId, userId);
+    @CacheEvict(value = {"categories", "brands"}, key = "#companyId")
+    public ProductResponse updateProduct(Long companyId, Long productId, UpdateProductRequest request) {
+        log.debug("Actualizando producto: {} para empresa: {}", productId, companyId);
 
-        Product product = findProductByUserAndId(userId, productId);
+        Product product = findProductByCompanyAndId(companyId, productId);
         BigDecimal oldPrice = product.getCurrentPrice();
 
-        // Actualizar campos si se proporcionan
         if (request.getName() != null) product.setName(request.getName());
         if (request.getDescription() != null) product.setDescription(request.getDescription());
         if (request.getSku() != null) {
-            // Validar SKU único
             productRepository.findBySku(request.getSku())
                     .filter(p -> !p.getId().equals(productId))
                     .ifPresent(p -> {
@@ -197,7 +199,6 @@ public class ProductService {
         if (request.getEan() != null) product.setEan(request.getEan());
         if (request.getCurrentPrice() != null) {
             product.setCurrentPrice(request.getCurrentPrice());
-            // Registrar cambio de precio
             if (oldPrice.compareTo(request.getCurrentPrice()) != 0) {
                 PriceHistory.ChangeType changeType = request.getCurrentPrice().compareTo(oldPrice) > 0
                         ? PriceHistory.ChangeType.INCREASE
@@ -211,6 +212,7 @@ public class ProductService {
         if (request.getImageUrl() != null) product.setImageUrl(request.getImageUrl());
         if (request.getMonitoringEnabled() != null) product.setMonitoringEnabled(request.getMonitoringEnabled());
         if (request.getActive() != null) product.setActive(request.getActive());
+        if (request.getStockQuantity() != null) product.setStockQuantity(request.getStockQuantity());
 
         product = productRepository.save(product);
         log.info("Producto actualizado: {}", productId);
@@ -219,12 +221,10 @@ public class ProductService {
     }
 
     @Transactional
-    public void deleteProduct(Long userId, Long productId) {
-        log.info("Eliminando producto: {} para usuario: {}", productId, userId);
+    public void deleteProduct(Long companyId, Long productId) {
+        log.info("Eliminando producto: {} para empresa: {}", productId, companyId);
         
-        Product product = findProductByUserAndId(userId, productId);
-        
-        // Soft delete
+        Product product = findProductByCompanyAndId(companyId, productId);
         product.setActive(false);
         productRepository.save(product);
         
@@ -232,27 +232,27 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "categories", key = "#userId")
-    public List<String> getCategories(Long userId) {
-        return productRepository.findDistinctCategoriesByUserId(userId);
+    @Cacheable(value = "categories", key = "#companyId")
+    public List<String> getCategories(Long companyId) {
+        return productRepository.findDistinctCategoriesByCompanyId(companyId);
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "brands", key = "#userId")
-    public List<String> getBrands(Long userId) {
-        return productRepository.findDistinctBrandsByUserId(userId);
+    @Cacheable(value = "brands", key = "#companyId")
+    public List<String> getBrands(Long companyId) {
+        return productRepository.findDistinctBrandsByCompanyId(companyId);
     }
 
     @Transactional(readOnly = true)
-    public long countProducts(Long userId) {
-        return productRepository.countByUserIdAndActiveTrue(userId);
+    public long countProducts(Long companyId) {
+        return productRepository.countByCompanyIdAndActiveTrue(companyId);
     }
 
     // --- Métodos privados ---
 
-    private Product findProductByUserAndId(Long userId, Long productId) {
+    private Product findProductByCompanyAndId(Long companyId, Long productId) {
         return productRepository.findById(productId)
-                .filter(p -> p.getUser().getId().equals(userId))
+                .filter(p -> p.getCompany().getId().equals(companyId))
                 .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
     }
 
