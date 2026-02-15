@@ -21,7 +21,9 @@ import com.alvaro.pricewise.entity.Product;
 import com.alvaro.pricewise.entity.User;
 import com.alvaro.pricewise.exception.BadRequestException;
 import com.alvaro.pricewise.exception.ResourceNotFoundException;
+import com.alvaro.pricewise.entity.CompetitorPrice;
 import com.alvaro.pricewise.repository.CompanyRepository;
+import com.alvaro.pricewise.repository.CompetitorPriceRepository;
 import com.alvaro.pricewise.repository.PriceHistoryRepository;
 import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.repository.UserRepository;
@@ -32,12 +34,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class ProductService {
 
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
     private final PriceHistoryRepository priceHistoryRepository;
+    private final CompetitorPriceRepository competitorPriceRepository;
     private final KeepaService keepaService;
 
     // Regex para validar formato ASIN (10 caracteres alfanuméricos que empiezan por B)
@@ -45,7 +49,7 @@ public class ProductService {
 
     @Transactional
     @CacheEvict(value = {"categories", "brands"}, key = "#companyId")
-    public ProductResponse createProduct(Long companyId, Long userId, CreateProductRequest request) {
+    public ProductResponse createProduct(@org.springframework.lang.NonNull Long companyId, @org.springframework.lang.NonNull Long userId, CreateProductRequest request) {
         log.debug("Creando producto para empresa: {}, usuario: {}", companyId, userId);
 
         Company company = companyRepository.findById(companyId)
@@ -54,26 +58,36 @@ public class ProductService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        // Validar SKU único si se proporciona
-        if (request.getSku() != null && !request.getSku().isBlank()) {
-            productRepository.findBySku(request.getSku())
+        // Determinar ASIN: puede venir en campo asin o en sku (compatibilidad)
+        String asin = request.getAsin();
+        if ((asin == null || asin.isBlank()) && request.getSku() != null && !request.getSku().isBlank()) {
+            asin = request.getSku();
+        }
+
+        // Validar ASIN único dentro de la misma empresa
+        if (asin != null && !asin.isBlank()) {
+            final String asinFinal = asin;
+            productRepository.findBySkuAndCompanyIdAndActiveTrue(asin, companyId)
                     .ifPresent(p -> {
-                        throw new BadRequestException("Ya existe un producto con el SKU: " + request.getSku());
+                        throw new BadRequestException("Ya existe un producto con el ASIN: " + asinFinal);
                     });
         }
 
         Product product = Product.builder()
                 .name(request.getName())
                 .description(request.getDescription())
-                .sku(request.getSku())
+                .sku(asin)
+                .asin(asin)
                 .ean(request.getEan())
                 .currentPrice(request.getCurrentPrice())
                 .costPrice(request.getCostPrice())
+                .minMargin(request.getMinMargin() != null ? request.getMinMargin() : new BigDecimal("0.10"))
                 .category(request.getCategory())
+
                 .brand(request.getBrand())
                 .imageUrl(request.getImageUrl())
-                .monitoringEnabled(request.getMonitoringEnabled() != null ? request.getMonitoringEnabled() : true)
-                .stockQuantity(request.getStockQuantity() != null ? request.getStockQuantity() : 0)
+                .monitoringEnabled(java.util.Optional.ofNullable(request.getMonitoringEnabled()).orElse(true))
+                .stockQuantity(java.util.Optional.ofNullable(request.getStockQuantity()).orElse(0))
                 .active(true)
                 .company(company)
                 .createdBy(user)
@@ -89,13 +103,24 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public ProductResponse getProduct(Long companyId, Long productId) {
-        Product product = findProductByCompanyAndId(companyId, productId);
-        return ProductResponse.fromEntity(product);
+    public ProductResponse getProduct(@org.springframework.lang.NonNull Long companyId, @org.springframework.lang.NonNull Long productId) {
+        Product product = productRepository.findByCompanyIdAndIdWithCreatedBy(companyId, productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
+        ProductResponse response = ProductResponse.fromEntity(product);
+
+        // Enriquecer con el último precio de Amazon persistido
+        competitorPriceRepository.findTopByProductIdOrderByScrapedAtDesc(productId)
+                .ifPresent(cp -> {
+                    response.setAmazonPrice(cp.getPrice());
+                    response.setAmazonProductTitle(cp.getCompetitorProductTitle());
+                    response.setAmazonPriceUpdatedAt(cp.getScrapedAt());
+                });
+
+        return response;
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ProductListResponse> getProducts(Long companyId, Pageable pageable) {
+    public PageResponse<ProductListResponse> getProducts(@org.springframework.lang.NonNull Long companyId, Pageable pageable) {
         Page<Product> page = productRepository.findByCompanyIdAndActiveTrue(companyId, pageable);
         List<ProductListResponse> content = page.getContent().stream()
                 .map(ProductListResponse::fromEntity)
@@ -105,18 +130,20 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public PageResponse<ProductListResponse> searchProducts(
-            Long companyId,
+            @org.springframework.lang.NonNull Long companyId,
             String name,
             String category,
             String brand,
             Pageable pageable
     ) {
-        Page<Product> page = productRepository.searchProducts(companyId, name, category, brand, pageable);
+        String searchTerm = name != null ? name.trim() : null;
+        Page<Product> page = productRepository.searchProducts(companyId, searchTerm, category, brand, pageable);
         
-        // Si no hay resultados y la búsqueda parece un ASIN, intentar buscar en Keepa
-        if (page.isEmpty() && name != null && name.matches(ASIN_PATTERN)) {
-            log.info("Búsqueda de producto vacía, intentando buscar ASIN en Keepa: {}", name);
-            return searchInKeepa(name, pageable);
+        // Si no hay resultados y la búsqueda parece un ASIN y no es un producto propio, intentar buscar en Keepa
+        // (La búsqueda local ya incluye ASIN en el repositorio modificado)
+        if (page.isEmpty() && searchTerm != null && searchTerm.matches(ASIN_PATTERN)) {
+            log.info("Búsqueda de producto vacía, intentando buscar ASIN en Keepa: {}", searchTerm);
+            return searchInKeepa(searchTerm, pageable);
         }
 
         List<ProductListResponse> content = page.getContent().stream()
@@ -127,6 +154,7 @@ public class ProductService {
 
     private PageResponse<ProductListResponse> searchInKeepa(String asin, Pageable pageable) {
         if (!keepaService.isAvailable()) {
+            log.warn("Se intentó buscar en Keepa pero el servicio no está disponible (API Key no configurada)");
             return PageResponse.<ProductListResponse>builder()
                     .content(List.of())
                     .totalElements(0)
@@ -143,9 +171,10 @@ public class ProductService {
             return keepaService.fetchPriceByAsin(asin, tempProduct)
                     .thenApply(optPrice -> optPrice.map(price -> {
                         ProductListResponse response = ProductListResponse.builder()
-                                .id(null)
+                                .id(-1L)
                                 .name(price.getCompetitorProductTitle())
                                 .sku(asin)
+                                .asin(asin)
                                 .currentPrice(price.getPrice())
                                 .category("Amazon Import")
                                 .brand("Amazon")
@@ -180,7 +209,7 @@ public class ProductService {
 
     @Transactional
     @CacheEvict(value = {"categories", "brands"}, key = "#companyId")
-    public ProductResponse updateProduct(Long companyId, Long productId, UpdateProductRequest request) {
+    public ProductResponse updateProduct(@org.springframework.lang.NonNull Long companyId, @org.springframework.lang.NonNull Long productId, UpdateProductRequest request) {
         log.debug("Actualizando producto: {} para empresa: {}", productId, companyId);
 
         Product product = findProductByCompanyAndId(companyId, productId);
@@ -188,13 +217,16 @@ public class ProductService {
 
         if (request.getName() != null) product.setName(request.getName());
         if (request.getDescription() != null) product.setDescription(request.getDescription());
-        if (request.getSku() != null) {
-            productRepository.findBySku(request.getSku())
+        // ASIN: puede venir en campo asin o sku (compatibilidad)
+        String newAsin = request.getAsin() != null ? request.getAsin() : request.getSku();
+        if (newAsin != null) {
+            productRepository.findBySkuAndCompanyIdAndActiveTrue(newAsin, companyId)
                     .filter(p -> !p.getId().equals(productId))
                     .ifPresent(p -> {
-                        throw new BadRequestException("Ya existe otro producto con el SKU: " + request.getSku());
+                        throw new BadRequestException("Ya existe otro producto con el ASIN: " + newAsin);
                     });
-            product.setSku(request.getSku());
+            product.setSku(newAsin);
+            product.setAsin(newAsin);
         }
         if (request.getEan() != null) product.setEan(request.getEan());
         if (request.getCurrentPrice() != null) {
@@ -207,7 +239,9 @@ public class ProductService {
             }
         }
         if (request.getCostPrice() != null) product.setCostPrice(request.getCostPrice());
+        if (request.getMinMargin() != null) product.setMinMargin(request.getMinMargin());
         if (request.getCategory() != null) product.setCategory(request.getCategory());
+
         if (request.getBrand() != null) product.setBrand(request.getBrand());
         if (request.getImageUrl() != null) product.setImageUrl(request.getImageUrl());
         if (request.getMonitoringEnabled() != null) product.setMonitoringEnabled(request.getMonitoringEnabled());
@@ -221,7 +255,7 @@ public class ProductService {
     }
 
     @Transactional
-    public void deleteProduct(Long companyId, Long productId) {
+    public void deleteProduct(@org.springframework.lang.NonNull Long companyId, @org.springframework.lang.NonNull Long productId) {
         log.info("Eliminando producto: {} para empresa: {}", productId, companyId);
         
         Product product = findProductByCompanyAndId(companyId, productId);
@@ -233,18 +267,18 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     @Cacheable(value = "categories", key = "#companyId")
-    public List<String> getCategories(Long companyId) {
+    public List<String> getCategories(@org.springframework.lang.NonNull Long companyId) {
         return productRepository.findDistinctCategoriesByCompanyId(companyId);
     }
 
     @Transactional(readOnly = true)
     @Cacheable(value = "brands", key = "#companyId")
-    public List<String> getBrands(Long companyId) {
+    public List<String> getBrands(@org.springframework.lang.NonNull Long companyId) {
         return productRepository.findDistinctBrandsByCompanyId(companyId);
     }
 
     @Transactional(readOnly = true)
-    public long countProducts(Long companyId) {
+    public long countProducts(@org.springframework.lang.NonNull Long companyId) {
         return productRepository.countByCompanyIdAndActiveTrue(companyId);
     }
 

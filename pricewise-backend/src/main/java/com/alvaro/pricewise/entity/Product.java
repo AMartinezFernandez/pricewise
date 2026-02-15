@@ -37,11 +37,14 @@ public class Product {
     @Column(length = 1000)
     private String description;
 
-    @Column(length = 50, unique = true)
-    private String sku;  // Código interno del producto
+    @Column(length = 50)
+    private String sku;  // Código interno del producto (almacena ASIN)
 
     @Column(length = 50)
     private String ean;  // Código de barras EAN-13
+
+    @Column(length = 20)
+    private String asin; // Amazon Standard Identification Number
 
     @NotNull(message = "El precio es obligatorio")
     @DecimalMin(value = "0.01", message = "El precio debe ser mayor a 0")
@@ -53,6 +56,14 @@ public class Product {
     @Digits(integer = 10, fraction = 2)
     @Column(precision = 12, scale = 2)
     private BigDecimal costPrice;  // Precio de coste (para calcular margen)
+
+
+    @DecimalMin(value = "0.00", message = "El margen mínimo no puede ser negativo")
+    @Digits(integer = 5, fraction = 2)
+    @Column(precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal minMargin = new BigDecimal("0.10"); // Margen mínimo por defecto (10%)
+
 
     @Column(length = 100)
     private String category;

@@ -27,18 +27,26 @@ public class ProductDTOs {
         @Size(max = 50, message = "El SKU no puede exceder 50 caracteres")
         private String sku;
 
+        @Size(max = 20, message = "El ASIN no puede exceder 20 caracteres")
+        private String asin;
+
         @Size(max = 50, message = "El EAN no puede exceder 50 caracteres")
         private String ean;
 
-        @NotNull(message = "El precio es obligatorio")
+        @NotNull(message = "El precio de venta es obligatorio")
         @DecimalMin(value = "0.01", message = "El precio debe ser mayor a 0")
         private BigDecimal currentPrice;
 
+        @NotNull(message = "El precio de coste es obligatorio")
         @DecimalMin(value = "0.00", message = "El coste no puede ser negativo")
         private BigDecimal costPrice;
 
+        @DecimalMin(value = "0.00", message = "El margen mínimo no puede ser negativo")
+        private BigDecimal minMargin;
+
         @Size(max = 100)
         private String category;
+
 
         @Size(max = 100)
         private String brand;
@@ -47,6 +55,9 @@ public class ProductDTOs {
         private String imageUrl;
 
         private Boolean monitoringEnabled;
+
+        @Min(value = 0, message = "El stock no puede ser negativo")
+        private Integer stockQuantity;
     }
 
     @Data
@@ -63,6 +74,9 @@ public class ProductDTOs {
         @Size(max = 50, message = "El SKU no puede exceder 50 caracteres")
         private String sku;
 
+        @Size(max = 20, message = "El ASIN no puede exceder 20 caracteres")
+        private String asin;
+
         @Size(max = 50, message = "El EAN no puede exceder 50 caracteres")
         private String ean;
 
@@ -72,8 +86,12 @@ public class ProductDTOs {
         @DecimalMin(value = "0.00", message = "El coste no puede ser negativo")
         private BigDecimal costPrice;
 
+        @DecimalMin(value = "0.00", message = "El margen mínimo no puede ser negativo")
+        private BigDecimal minMargin;
+
         @Size(max = 100)
         private String category;
+
 
         @Size(max = 100)
         private String brand;
@@ -84,6 +102,9 @@ public class ProductDTOs {
         private Boolean monitoringEnabled;
         
         private Boolean active;
+
+        @Min(value = 0, message = "El stock no puede ser negativo")
+        private Integer stockQuantity;
     }
 
     @Data
@@ -95,17 +116,28 @@ public class ProductDTOs {
         private String name;
         private String description;
         private String sku;
+        private String asin;
         private String ean;
         private BigDecimal currentPrice;
         private BigDecimal costPrice;
+        private BigDecimal minMargin;
         private BigDecimal margin;
+
         private String category;
         private String brand;
         private String imageUrl;
+
         private Boolean active;
         private Boolean monitoringEnabled;
+        private Integer stockQuantity;
+        private String createdByUsername;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
+
+        // Último precio de Amazon (persistido en competitor_prices)
+        private BigDecimal amazonPrice;
+        private String amazonProductTitle;
+        private LocalDateTime amazonPriceUpdatedAt;
 
         public static ProductResponse fromEntity(Product product) {
             return ProductResponse.builder()
@@ -113,15 +145,21 @@ public class ProductDTOs {
                     .name(product.getName())
                     .description(product.getDescription())
                     .sku(product.getSku())
+                    .asin(product.getAsin())
                     .ean(product.getEan())
                     .currentPrice(product.getCurrentPrice())
                     .costPrice(product.getCostPrice())
+                    .minMargin(product.getMinMargin())
                     .margin(product.getMargin())
+
                     .category(product.getCategory())
+
                     .brand(product.getBrand())
                     .imageUrl(product.getImageUrl())
                     .active(product.getActive())
                     .monitoringEnabled(product.getMonitoringEnabled())
+                    .stockQuantity(product.getStockQuantity())
+                    .createdByUsername(product.getCreatedBy() != null ? product.getCreatedBy().getUsername() : null)
                     .createdAt(product.getCreatedAt())
                     .updatedAt(product.getUpdatedAt())
                     .build();
@@ -136,22 +174,26 @@ public class ProductDTOs {
         private Long id;
         private String name;
         private String sku;
+        private String asin;
         private BigDecimal currentPrice;
         private BigDecimal margin;
         private String category;
         private String brand;
         private Boolean monitoringEnabled;
+        private Integer stockQuantity;
 
         public static ProductListResponse fromEntity(Product product) {
             return ProductListResponse.builder()
                     .id(product.getId())
                     .name(product.getName())
                     .sku(product.getSku())
+                    .asin(product.getAsin())
                     .currentPrice(product.getCurrentPrice())
                     .margin(product.getMargin())
                     .category(product.getCategory())
                     .brand(product.getBrand())
                     .monitoringEnabled(product.getMonitoringEnabled())
+                    .stockQuantity(product.getStockQuantity())
                     .build();
         }
     }

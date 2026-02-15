@@ -15,6 +15,10 @@ import com.alvaro.pricewise.entity.Product;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
     
+    // Buscar producto con createdBy precargado (evita N+1 en detalle)
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.createdBy WHERE p.company.id = :companyId AND p.id = :productId AND p.active = true")
+    Optional<Product> findByCompanyIdAndIdWithCreatedBy(@Param("companyId") Long companyId, @Param("productId") Long productId);
+
     // Buscar productos por empresa
     Page<Product> findByCompanyId(Long companyId, Pageable pageable);
 
@@ -27,7 +31,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findBySku(String sku);
     
     Optional<Product> findBySkuAndCompanyId(String sku, Long companyId);
-    
+
+    // Buscar por SKU + empresa solo entre activos (para validar duplicados ignorando soft-deleted)
+    Optional<Product> findBySkuAndCompanyIdAndActiveTrue(String sku, Long companyId);
+
     // Buscar por EAN
     Optional<Product> findByEan(String ean);
     
@@ -45,7 +52,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     
     // Búsqueda avanzada con filtros
     @Query("SELECT p FROM Product p WHERE p.company.id = :companyId " +
-           "AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+           "AND (:name IS NULL OR " +
+           "     LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%')) OR " +
+           "     LOWER(p.sku) LIKE LOWER(CONCAT('%', :name, '%')) OR " +
+           "     LOWER(p.ean) LIKE LOWER(CONCAT('%', :name, '%')) OR " +
+           "     LOWER(p.asin) LIKE LOWER(CONCAT('%', :name, '%'))) " +
            "AND (:category IS NULL OR p.category = :category) " +
            "AND (:brand IS NULL OR p.brand = :brand) " +
            "AND p.active = true")
