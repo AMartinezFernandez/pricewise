@@ -16,6 +16,7 @@ import com.alvaro.pricewise.entity.Alert;
 import com.alvaro.pricewise.entity.CompetitorPrice;
 import com.alvaro.pricewise.entity.PriceRecommendation;
 import com.alvaro.pricewise.entity.Product;
+import com.alvaro.pricewise.exception.ResourceNotFoundException;
 import com.alvaro.pricewise.repository.AlertRepository;
 import com.alvaro.pricewise.repository.CompetitorPriceRepository;
 import com.alvaro.pricewise.repository.PriceRecommendationRepository;
@@ -31,12 +32,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class PriceAnalysisService {
 
     private final ProductRepository productRepository;
     private final CompetitorPriceRepository competitorPriceRepository;
     private final PriceRecommendationRepository recommendationRepository;
     private final AlertRepository alertRepository;
+    private final NotificationService notificationService;
+
 
     private static final BigDecimal HIGH_PRICE_THRESHOLD = new BigDecimal("0.10");
     private static final BigDecimal LOW_PRICE_THRESHOLD = new BigDecimal("0.10");
@@ -71,9 +75,20 @@ public class PriceAnalysisService {
         }
 
         if (percentDiff.compareTo(LOW_PRICE_THRESHOLD.negate()) < 0) {
+            BigDecimal suggested = calculateSuggestedPrice(theirPrice, new BigDecimal("-0.05"));
+            
+            // Respetar margen minimo
+            BigDecimal minPrice = calculateMinimumPrice(product);
+            if (suggested.compareTo(minPrice) < 0) {
+                suggested = minPrice;
+            }
+
+            // Si aun con el precio minimo mejoramos la oferta o igualamos, recomendamos
+            // Si el precio minimo es mayor que el del competidor, quiza no podamos competir
+            
             createRecommendation(product, competitorPrice,
                     PriceRecommendation.RecommendationType.PRICE_TOO_LOW,
-                    calculateSuggestedPrice(theirPrice, new BigDecimal("-0.05")),
+                    suggested,
                     percentDiff.abs(),
                     "Oportunidad: precio " + formatPercent(percentDiff.abs()) + " por debajo de competencia");
         }
@@ -176,8 +191,13 @@ public class PriceAnalysisService {
                              String title, String message, BigDecimal previousPrice,
                              BigDecimal newPrice, BigDecimal changePercent) {
 
+        if (product.getCreatedBy() == null) {
+            log.warn("No se puede crear alerta para producto {} (sin usuario creador)", product.getId());
+            return;
+        }
+
         Alert alert = Alert.builder()
-                .user(product.getCreatedBy()) // Use createdBy user (audit field) for alert
+                .user(product.getCreatedBy())
                 .product(product)
                 .alertType(type)
                 .title(title)
@@ -190,13 +210,34 @@ public class PriceAnalysisService {
                 .build();
 
         alertRepository.save(alert);
+        
+        // Enviar notificacion websocket
+        try {
+            notificationService.sendAlert(alert);
+        } catch (Exception e) {
+            log.error("Error enviando notificacion websocket: {}", e.getMessage());
+        }
+
         log.debug("Alerta creada: {} para producto {}", type, product.getId());
+
     }
 
     private BigDecimal calculateSuggestedPrice(BigDecimal competitorPrice, BigDecimal marginPercent) {
-        return competitorPrice.multiply(BigDecimal.ONE.add(marginPercent))
+        // Precio base sugerido
+        BigDecimal suggested = competitorPrice.multiply(BigDecimal.ONE.add(marginPercent))
+                .setScale(2, RoundingMode.HALF_UP);
+        
+        return suggested;
+    }
+
+    private BigDecimal calculateMinimumPrice(Product product) {
+        if (product.getCostPrice() == null || product.getMinMargin() == null) {
+            return BigDecimal.ZERO;
+        }
+        return product.getCostPrice().multiply(BigDecimal.ONE.add(product.getMinMargin()))
                 .setScale(2, RoundingMode.HALF_UP);
     }
+
 
     private PriceRecommendation.Priority determinePriority(BigDecimal percentDiff) {
         BigDecimal abs = percentDiff.abs();
@@ -217,37 +258,49 @@ public class PriceAnalysisService {
     // Metodos de consulta — ahora basados en companyId
 
     @Transactional(readOnly = true)
-    public Page<PriceRecommendation> getPendingRecommendations(Long companyId, Pageable pageable) {
+    public Page<PriceRecommendation> getPendingRecommendations(@org.springframework.lang.NonNull Long companyId, Pageable pageable) {
         return recommendationRepository.findByProductCompanyIdAndStatus(
                 companyId, PriceRecommendation.Status.PENDING, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<Alert> getUnreadAlerts(Long userId, Pageable pageable) {
-        return alertRepository.findByUserIdAndIsReadFalse(userId, pageable);
+    public Page<Alert> getAlertsByCompany(@org.springframework.lang.NonNull Long companyId, boolean onlyUnread, Pageable pageable) {
+        if (onlyUnread) {
+            return alertRepository.findByCompanyIdAndIsReadFalse(companyId, pageable);
+        }
+        return alertRepository.findByCompanyId(companyId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public long countPendingRecommendations(Long companyId) {
+    public Page<Alert> getUnreadAlertsByCompany(@org.springframework.lang.NonNull Long companyId, Pageable pageable) {
+        return alertRepository.findByCompanyIdAndIsReadFalse(companyId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public long countPendingRecommendations(@org.springframework.lang.NonNull Long companyId) {
         return recommendationRepository.countByProductCompanyIdAndStatus(
                 companyId, PriceRecommendation.Status.PENDING);
     }
 
     @Transactional(readOnly = true)
-    public long countUnreadAlerts(Long userId) {
-        return alertRepository.countByUserIdAndIsReadFalse(userId);
+    public long countUnreadAlerts(@org.springframework.lang.NonNull Long companyId) {
+        return alertRepository.countByCompanyIdAndIsReadFalse(companyId);
     }
 
     @Transactional(readOnly = true)
-    public BigDecimal getTotalPotentialSavings(Long companyId) {
+    public BigDecimal getTotalPotentialSavings(@org.springframework.lang.NonNull Long companyId) {
         BigDecimal savings = recommendationRepository.sumPotentialSavingsForCompany(companyId);
         return savings != null ? savings : BigDecimal.ZERO;
     }
 
     @Transactional
-    public void applyRecommendation(Long recommendationId) {
+    public void applyRecommendation(@org.springframework.lang.NonNull Long companyId, @org.springframework.lang.NonNull Long recommendationId) {
         PriceRecommendation rec = recommendationRepository.findById(recommendationId)
-                .orElseThrow(() -> new IllegalArgumentException("Recomendacion no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Recomendacion no encontrada"));
+
+        if (!rec.getProduct().getCompany().getId().equals(companyId)) {
+            throw new ResourceNotFoundException("Recomendacion no encontrada");
+        }
 
         Product product = rec.getProduct();
         product.setCurrentPrice(rec.getSuggestedPrice());
@@ -261,9 +314,13 @@ public class PriceAnalysisService {
     }
 
     @Transactional
-    public void dismissRecommendation(Long recommendationId) {
+    public void dismissRecommendation(@org.springframework.lang.NonNull Long companyId, @org.springframework.lang.NonNull Long recommendationId) {
         PriceRecommendation rec = recommendationRepository.findById(recommendationId)
-                .orElseThrow(() -> new IllegalArgumentException("Recomendacion no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Recomendacion no encontrada"));
+
+        if (!rec.getProduct().getCompany().getId().equals(companyId)) {
+            throw new ResourceNotFoundException("Recomendacion no encontrada");
+        }
 
         rec.setStatus(PriceRecommendation.Status.DISMISSED);
         rec.setDismissedAt(LocalDateTime.now());
@@ -271,9 +328,13 @@ public class PriceAnalysisService {
     }
 
     @Transactional
-    public void markAlertAsRead(Long alertId) {
+    public void markAlertAsRead(@org.springframework.lang.NonNull Long companyId, @org.springframework.lang.NonNull Long alertId) {
         Alert alert = alertRepository.findById(alertId)
-                .orElseThrow(() -> new IllegalArgumentException("Alerta no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Alerta no encontrada"));
+
+        if (!alert.getProduct().getCompany().getId().equals(companyId)) {
+            throw new ResourceNotFoundException("Alerta no encontrada");
+        }
 
         alert.setIsRead(true);
         alert.setReadAt(LocalDateTime.now());

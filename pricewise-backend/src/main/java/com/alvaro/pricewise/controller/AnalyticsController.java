@@ -41,8 +41,9 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/analytics")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+@PreAuthorize("hasAnyRole('COMPANY_ADMIN', 'EMPLOYEE', 'ADMIN')")
 @Tag(name = "Analytics", description = "Metricas y recomendaciones de precios")
+@SuppressWarnings("null")
 public class AnalyticsController {
 
     private final PriceAnalysisService priceAnalysisService;
@@ -53,28 +54,28 @@ public class AnalyticsController {
     public ResponseEntity<ApiResponse<DashboardMetrics>> getDashboardMetrics(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
-        Long userId = userPrincipal.getId();
+        Long companyId = userPrincipal.getCompanyId();
 
-        long totalProducts = productRepository.countByUserId(userId);
-        long activeMonitoring = productRepository.findByUserIdAndActiveTrue(userId).stream()
+        long totalProducts = productRepository.countByCompanyIdAndActiveTrue(companyId);
+        long activeMonitoring = productRepository.findByCompanyIdAndActiveTrue(companyId).stream()
                 .filter(p -> p.getMonitoringEnabled() != null && p.getMonitoringEnabled())
                 .count();
 
-        long pendingRecs = priceAnalysisService.countPendingRecommendations(userId);
-        long unreadAlerts = priceAnalysisService.countUnreadAlerts(userId);
-        BigDecimal savings = priceAnalysisService.getTotalPotentialSavings(userId);
+        long pendingRecs = priceAnalysisService.countPendingRecommendations(companyId);
+        long unreadAlerts = priceAnalysisService.countUnreadAlerts(companyId);
+        BigDecimal savings = priceAnalysisService.getTotalPotentialSavings(companyId);
 
         Page<PriceRecommendation> topRecs = priceAnalysisService
-                .getPendingRecommendations(userId, PageRequest.of(0, 5));
+                .getPendingRecommendations(companyId, PageRequest.of(0, 5));
 
         List<RecommendationSummary> topRecommendations = topRecs.getContent().stream()
                 .map(RecommendationSummary::fromEntity)
                 .collect(Collectors.toList());
 
-        Page<Alert> alerts = priceAnalysisService.getUnreadAlerts(userId, PageRequest.of(0, 100));
+        Page<Alert> alerts = priceAnalysisService.getUnreadAlertsByCompany(companyId, PageRequest.of(0, 100));
         Map<String, Long> alertsByType = new HashMap<>();
         alerts.getContent().forEach(a ->
-                alertsByType.merge(a.getAlertType().name(), 1L, Long::sum));
+                alertsByType.merge(a.getAlertType().name(), 1L, (v1, v2) -> v1 + v2));
 
         DashboardMetrics metrics = DashboardMetrics.builder()
                 .totalProducts(totalProducts)
@@ -98,7 +99,7 @@ public class AnalyticsController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("priority").descending());
         Page<PriceRecommendation> recommendations = priceAnalysisService
-                .getPendingRecommendations(userPrincipal.getId(), pageable);
+                .getPendingRecommendations(userPrincipal.getCompanyId(), pageable);
 
         List<RecommendationSummary> content = recommendations.getContent().stream()
                 .map(RecommendationSummary::fromEntity)
@@ -122,18 +123,20 @@ public class AnalyticsController {
     @PostMapping("/recommendations/{id}/apply")
     @Operation(summary = "Aplicar recomendacion de precio")
     public ResponseEntity<ApiResponse<String>> applyRecommendation(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
 
-        priceAnalysisService.applyRecommendation(id);
+        priceAnalysisService.applyRecommendation(userPrincipal.getCompanyId(), id);
         return ResponseEntity.ok(ApiResponse.success("Recomendacion aplicada"));
     }
 
     @PostMapping("/recommendations/{id}/dismiss")
     @Operation(summary = "Descartar recomendacion")
     public ResponseEntity<ApiResponse<String>> dismissRecommendation(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
 
-        priceAnalysisService.dismissRecommendation(id);
+        priceAnalysisService.dismissRecommendation(userPrincipal.getCompanyId(), id);
         return ResponseEntity.ok(ApiResponse.success("Recomendacion descartada"));
     }
 
@@ -146,7 +149,7 @@ public class AnalyticsController {
             @RequestParam(defaultValue = "false") boolean onlyUnread) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Alert> alerts = priceAnalysisService.getUnreadAlerts(userPrincipal.getId(), pageable);
+        Page<Alert> alerts = priceAnalysisService.getAlertsByCompany(userPrincipal.getCompanyId(), onlyUnread, pageable);
 
         List<AlertSummary> content = alerts.getContent().stream()
                 .map(AlertSummary::fromEntity)
@@ -170,9 +173,10 @@ public class AnalyticsController {
     @PostMapping("/alerts/{id}/read")
     @Operation(summary = "Marcar alerta como leida")
     public ResponseEntity<ApiResponse<String>> markAlertAsRead(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
 
-        priceAnalysisService.markAlertAsRead(id);
+        priceAnalysisService.markAlertAsRead(userPrincipal.getCompanyId(), id);
         return ResponseEntity.ok(ApiResponse.success("Alerta marcada como leida"));
     }
 
@@ -181,7 +185,7 @@ public class AnalyticsController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> runAnalysis(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
-        int analyzed = priceAnalysisService.analyzeAllProductsForUser(userPrincipal.getId());
+        int analyzed = priceAnalysisService.analyzeAllProductsForUser(userPrincipal.getCompanyId());
         
         Map<String, Object> result = new HashMap<>();
         result.put("productsAnalyzed", analyzed);

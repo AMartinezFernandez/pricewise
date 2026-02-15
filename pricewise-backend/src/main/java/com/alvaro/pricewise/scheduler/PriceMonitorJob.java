@@ -77,7 +77,7 @@ public class PriceMonitorJob implements Job {
             );
 
             List<Product> trackableProducts = productPage.getContent().stream()
-                    .filter(p -> p.getSku() != null && p.getSku().startsWith("B0"))
+                    .filter(p -> p.getAsin() != null && !p.getAsin().isBlank())
                     .toList();
 
             if (!trackableProducts.isEmpty()) {
@@ -107,16 +107,21 @@ public class PriceMonitorJob implements Job {
     }
 
     private CompletableFuture<Void> updateProductPrice(Product product) {
-        return keepaService.fetchPriceByAsin(product.getSku(), product)
+        String asin = product.getAsin();
+        if (asin == null || asin.isBlank()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return keepaService.fetchPriceByAsin(asin, product)
                 .thenAccept(resultOpt -> {
                     if (resultOpt.isPresent()) {
-                        log.debug("Precio actualizado para {}", product.getSku());
+                        log.debug("Precio actualizado para ASIN {}", asin);
                     } else {
-                        log.debug("Sin precio para {}", product.getSku());
+                        log.debug("Sin precio para ASIN {}", asin);
                     }
                 })
                 .exceptionally(ex -> {
-                    log.error("Error actualizando {}: {}", product.getSku(), ex.getMessage());
+                    log.error("Error actualizando ASIN {}: {}", asin, ex.getMessage());
                     return null;
                 });
     }

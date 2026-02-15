@@ -18,7 +18,9 @@ public interface PriceRecommendationRepository extends JpaRepository<PriceRecomm
     // Queries ahora basadas en company (a través de product.company.id)
     Page<PriceRecommendation> findByProductCompanyId(Long companyId, Pageable pageable);
 
+    @Query("SELECT r FROM PriceRecommendation r JOIN FETCH r.product WHERE r.product.company.id = :companyId AND r.status = :status")
     Page<PriceRecommendation> findByProductCompanyIdAndStatus(Long companyId, Status status, Pageable pageable);
+
 
     List<PriceRecommendation> findByProductIdAndStatus(Long productId, Status status);
 

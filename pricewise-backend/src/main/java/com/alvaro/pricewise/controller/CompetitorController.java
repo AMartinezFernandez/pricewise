@@ -1,24 +1,31 @@
 package com.alvaro.pricewise.controller;
 
-import com.alvaro.pricewise.dto.common.ApiResponse;
-import com.alvaro.pricewise.entity.CompetitorPrice;
-import com.alvaro.pricewise.entity.Product;
-import com.alvaro.pricewise.repository.ProductRepository;
-import com.alvaro.pricewise.service.KeepaService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.alvaro.pricewise.dto.common.ApiResponse;
+import com.alvaro.pricewise.entity.CompetitorPrice;
+import com.alvaro.pricewise.entity.Product;
+import com.alvaro.pricewise.repository.ProductRepository;
+import com.alvaro.pricewise.service.KeepaService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Controller para operaciones de monitoreo de precios de competencia.
@@ -60,11 +67,11 @@ public class CompetitorController {
      * Este endpoint es para pruebas - no requiere tener el producto en nuestra BD.
      */
     @GetMapping("/amazon/price/{asin}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'COMPANY_ADMIN', 'ADMIN')")
     @Operation(summary = "Obtener precio de Amazon por ASIN",
                description = "Consulta el precio actual de un producto en Amazon usando Keepa API")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getAmazonPrice(@PathVariable String asin) {
-        
+    public ResponseEntity<ApiResponse<AmazonPriceDTO>> getAmazonPrice(@PathVariable String asin) {
+
         if (!keepaService.isAvailable()) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("Keepa API no configurada. Añade KEEPA_API_KEY en .env"));
@@ -82,25 +89,26 @@ public class CompetitorController {
                     .get(30, TimeUnit.SECONDS);
 
             if (result.isPresent()) {
-                CompetitorPrice price = result.get();
-                Map<String, Object> data = new HashMap<>();
-                data.put("asin", asin);
-                data.put("title", price.getCompetitorProductTitle());
-                data.put("price", price.getPrice());
-                data.put("currency", price.getCurrency());
-                data.put("available", price.isAvailable());
-                data.put("productUrl", price.getProductUrl());
-                data.put("scrapedAt", price.getScrapedAt());
-                data.put("source", price.getSource());
-                
-                return ResponseEntity.ok(ApiResponse.success(
-                        data, "Precio obtenido correctamente"));
+                CompetitorPrice cp = result.get();
+                AmazonPriceDTO dto = new AmazonPriceDTO(
+                        asin,
+                        cp.getCompetitorProductTitle(),
+                        cp.getCompetitorProductTitle(),
+                        cp.getPrice(),
+                        cp.getCurrency(),
+                        cp.isAvailable(),
+                        cp.getProductUrl(),
+                        cp.getScrapedAt() != null ? cp.getScrapedAt().toString() : null,
+                        cp.getSource()
+                );
+
+                return ResponseEntity.ok(ApiResponse.success(dto, "Precio obtenido correctamente"));
             } else {
                 return ResponseEntity.ok(ApiResponse.error(
                         "No se encontró precio para el ASIN: " + asin + ". Puede que el producto no exista o no tenga precio disponible."));
             }
 
-        } catch (Exception e) {
+        } catch (InterruptedException | java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException e) {
             log.error("Error consultando precio de Amazon para ASIN {}: {}", asin, e.getMessage());
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Error al consultar Keepa: " + e.getMessage()));
@@ -108,17 +116,34 @@ public class CompetitorController {
     }
 
     /**
+     * DTO tipado para la respuesta de precio de Amazon.
+     * Garantiza serialización correcta (scrapedAt como String ISO, price como BigDecimal).
+     */
+    public record AmazonPriceDTO(
+            String asin,
+            String title,
+            String competitorProductTitle,
+            BigDecimal price,
+            String currency,
+            boolean available,
+            String productUrl,
+            String scrapedAt,
+            String source
+    ) {}
+
+    /**
      * Busca el precio de un producto de nuestra BD en Amazon.
-     * Usa el campo EAN o SKU para buscar el ASIN correspondiente.
+     * Usa el campo ASIN del producto para la consulta.
      */
     @PostMapping("/amazon/sync/{productId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'COMPANY_ADMIN', 'ADMIN')")
     @Operation(summary = "Sincronizar precio de producto con Amazon",
                description = "Busca y guarda el precio de Amazon para un producto existente")
-    public ResponseEntity<ApiResponse<CompetitorPrice>> syncProductWithAmazon(
-            @PathVariable Long productId,
+    public ResponseEntity<ApiResponse<AmazonPriceDTO>> syncProductWithAmazon(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.alvaro.pricewise.security.UserPrincipal userPrincipal,
+            @PathVariable @org.springframework.lang.NonNull Long productId,
             @RequestParam(required = false) String asin) {
-        
+
         if (!keepaService.isAvailable()) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("Keepa API no configurada"));
@@ -131,12 +156,17 @@ public class CompetitorController {
         }
 
         Product product = productOpt.get();
-        
-        // Si no se proporciona ASIN, intentar usar el SKU del producto
-        String searchAsin = asin != null ? asin : product.getSku();
+
+        // Validar multi-tenancy
+        if (userPrincipal.getCompanyId() != null && !product.getCompany().getId().equals(userPrincipal.getCompanyId())) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Si no se proporciona ASIN, usar el campo asin del producto
+        String searchAsin = asin != null ? asin : product.getAsin();
         if (searchAsin == null || searchAsin.isEmpty()) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Proporciona un ASIN o asegúrate de que el producto tenga SKU"));
+                    .body(ApiResponse.error("Proporciona un ASIN o asegúrate de que el producto tenga ASIN"));
         }
 
         try {
@@ -144,14 +174,25 @@ public class CompetitorController {
                     .get(30, TimeUnit.SECONDS);
 
             if (result.isPresent()) {
-                return ResponseEntity.ok(ApiResponse.success(
-                        result.get(), "Precio sincronizado correctamente"));
+                CompetitorPrice cp = result.get();
+                AmazonPriceDTO dto = new AmazonPriceDTO(
+                        searchAsin,
+                        cp.getCompetitorProductTitle(),
+                        cp.getCompetitorProductTitle(),
+                        cp.getPrice(),
+                        cp.getCurrency(),
+                        cp.isAvailable(),
+                        cp.getProductUrl(),
+                        cp.getScrapedAt() != null ? cp.getScrapedAt().toString() : null,
+                        cp.getSource()
+                );
+                return ResponseEntity.ok(ApiResponse.success(dto, "Precio sincronizado correctamente"));
             } else {
                 return ResponseEntity.ok(ApiResponse.error(
                         "No se encontró precio en Amazon para este producto"));
             }
 
-        } catch (Exception e) {
+        } catch (InterruptedException | java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException e) {
             log.error("Error sincronizando producto {} con Amazon: {}", productId, e.getMessage());
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Error al sincronizar: " + e.getMessage()));

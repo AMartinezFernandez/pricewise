@@ -30,6 +30,16 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
 
     long countByUserIdAndSeverity(Long userId, Severity severity);
 
+    // Queries por empresa (multi-tenancy correcto)
+    @Query("SELECT a FROM Alert a WHERE a.product.company.id = :companyId")
+    Page<Alert> findByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
+
+    @Query("SELECT a FROM Alert a WHERE a.product.company.id = :companyId AND a.isRead = false")
+    Page<Alert> findByCompanyIdAndIsReadFalse(@Param("companyId") Long companyId, Pageable pageable);
+
+    @Query("SELECT COUNT(a) FROM Alert a WHERE a.product.company.id = :companyId AND a.isRead = false")
+    long countByCompanyIdAndIsReadFalse(@Param("companyId") Long companyId);
+
     @Query("SELECT a.alertType, COUNT(a) FROM Alert a " +
            "WHERE a.user.id = :userId AND a.isRead = false GROUP BY a.alertType")
     List<Object[]> countUnreadByTypeForUser(@Param("userId") Long userId);
