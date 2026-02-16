@@ -1,21 +1,5 @@
 package com.alvaro.pricewise.service;
 
-import com.alvaro.pricewise.entity.*;
-import com.alvaro.pricewise.repository.AlertRepository;
-import com.alvaro.pricewise.repository.CompetitorPriceRepository;
-import com.alvaro.pricewise.repository.PriceRecommendationRepository;
-import com.alvaro.pricewise.repository.ProductRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import org.springframework.data.domain.Page;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,9 +7,32 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import org.mockito.Mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+
+import com.alvaro.pricewise.entity.Alert;
+import com.alvaro.pricewise.entity.Company;
+import com.alvaro.pricewise.entity.CompetitorPrice;
+import com.alvaro.pricewise.entity.PriceRecommendation;
+import com.alvaro.pricewise.entity.Product;
+import com.alvaro.pricewise.entity.User;
+import com.alvaro.pricewise.exception.ResourceNotFoundException;
+import com.alvaro.pricewise.repository.AlertRepository;
+import com.alvaro.pricewise.repository.CompetitorPriceRepository;
+import com.alvaro.pricewise.repository.PriceRecommendationRepository;
+import com.alvaro.pricewise.repository.ProductRepository;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PriceAnalysisService Tests")
@@ -43,6 +50,9 @@ class PriceAnalysisServiceTest {
     @Mock
     private AlertRepository alertRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     private PriceAnalysisService priceAnalysisService;
 
     @BeforeEach
@@ -51,7 +61,8 @@ class PriceAnalysisServiceTest {
                 productRepository,
                 competitorPriceRepository,
                 recommendationRepository,
-                alertRepository
+                alertRepository,
+                notificationService
         );
     }
 
@@ -217,7 +228,7 @@ class PriceAnalysisServiceTest {
             when(recommendationRepository.findById(recommendationId))
                     .thenReturn(Optional.of(recommendation));
 
-            priceAnalysisService.applyRecommendation(recommendationId);
+            priceAnalysisService.applyRecommendation(1L, recommendationId);
 
             assertThat(recommendation.getStatus()).isEqualTo(PriceRecommendation.Status.APPLIED);
             assertThat(recommendation.getAppliedAt()).isNotNull();
@@ -225,15 +236,15 @@ class PriceAnalysisServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw IllegalArgumentException when recommendation does not exist")
+        @DisplayName("Should throw ResourceNotFoundException when recommendation does not exist")
         void applyRecommendation_nonExistentRecommendation_shouldThrowException() {
             Long recommendationId = 999L;
 
             when(recommendationRepository.findById(recommendationId))
                     .thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> priceAnalysisService.applyRecommendation(recommendationId))
-                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> priceAnalysisService.applyRecommendation(1L, recommendationId))
+                    .isInstanceOf(ResourceNotFoundException.class);
         }
     }
 
@@ -260,7 +271,7 @@ class PriceAnalysisServiceTest {
             when(recommendationRepository.findById(recommendationId))
                     .thenReturn(Optional.of(recommendation));
 
-            priceAnalysisService.dismissRecommendation(recommendationId);
+            priceAnalysisService.dismissRecommendation(1L, recommendationId);
 
             assertThat(recommendation.getStatus()).isEqualTo(PriceRecommendation.Status.DISMISSED);
             assertThat(recommendation.getDismissedAt()).isNotNull();
@@ -295,7 +306,7 @@ class PriceAnalysisServiceTest {
             when(alertRepository.findById(alertId))
                     .thenReturn(Optional.of(alert));
 
-            priceAnalysisService.markAlertAsRead(alertId);
+            priceAnalysisService.markAlertAsRead(1L, alertId);
 
             assertThat(alert.getIsRead()).isTrue();
             assertThat(alert.getReadAt()).isNotNull();

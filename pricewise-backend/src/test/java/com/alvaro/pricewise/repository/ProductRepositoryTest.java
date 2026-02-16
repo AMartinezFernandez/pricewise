@@ -143,6 +143,27 @@ class ProductRepositoryTest {
 
             assertThat(found).isEmpty();
         }
+
+        @Test
+        @DisplayName("findBySkuAndCompanyIdAndActiveTrue no encuentra producto inactivo (soft-deleted)")
+        void findBySkuAndCompanyIdAndActiveTrue_inactiveProduct_returnsEmpty() {
+            createProduct("Borrado", "SKU-DELETED", "Electro", "Sony", new BigDecimal("50"), company1, false);
+
+            Optional<Product> found = productRepository.findBySkuAndCompanyIdAndActiveTrue("SKU-DELETED", company1.getId());
+
+            assertThat(found).isEmpty();
+        }
+
+        @Test
+        @DisplayName("findBySkuAndCompanyIdAndActiveTrue encuentra producto activo")
+        void findBySkuAndCompanyIdAndActiveTrue_activeProduct_returnsProduct() {
+            createProduct("Activo", "SKU-ACTIVE", "Electro", "Sony", new BigDecimal("50"), company1, true);
+
+            Optional<Product> found = productRepository.findBySkuAndCompanyIdAndActiveTrue("SKU-ACTIVE", company1.getId());
+
+            assertThat(found).isPresent();
+            assertThat(found.get().getName()).isEqualTo("Activo");
+        }
     }
 
     @Nested

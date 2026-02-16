@@ -79,7 +79,7 @@ class AnalyticsControllerTest {
         @Test
         @DisplayName("Devuelve metricas del dashboard")
         void shouldReturnDashboardMetrics() throws Exception {
-            when(productRepository.countByCompanyId(1L)).thenReturn(10L);
+            when(productRepository.countByCompanyIdAndActiveTrue(1L)).thenReturn(10L);
             when(productRepository.findByCompanyIdAndActiveTrue(1L))
                     .thenReturn(Collections.emptyList());
             when(priceAnalysisService.countPendingRecommendations(1L)).thenReturn(5L);
@@ -88,7 +88,7 @@ class AnalyticsControllerTest {
                     .thenReturn(new BigDecimal("150.00"));
             when(priceAnalysisService.getPendingRecommendations(eq(1L), any()))
                     .thenReturn(Page.empty());
-            when(priceAnalysisService.getUnreadAlerts(eq(1L), any()))
+            when(priceAnalysisService.getUnreadAlertsByCompany(eq(1L), any()))
                     .thenReturn(Page.empty());
 
             mockMvc.perform(get("/api/analytics/dashboard"))
@@ -124,7 +124,7 @@ class AnalyticsControllerTest {
         @Test
         @DisplayName("Aplica recomendacion correctamente")
         void shouldApplyRecommendation() throws Exception {
-            doNothing().when(priceAnalysisService).applyRecommendation(1L);
+            doNothing().when(priceAnalysisService).applyRecommendation(1L, 1L);
 
             mockMvc.perform(post("/api/analytics/recommendations/1/apply"))
                     .andExpect(status().isOk())
@@ -139,7 +139,7 @@ class AnalyticsControllerTest {
         @Test
         @DisplayName("Descarta recomendacion correctamente")
         void shouldDismissRecommendation() throws Exception {
-            doNothing().when(priceAnalysisService).dismissRecommendation(1L);
+            doNothing().when(priceAnalysisService).dismissRecommendation(1L, 1L);
 
             mockMvc.perform(post("/api/analytics/recommendations/1/dismiss"))
                     .andExpect(status().isOk())
@@ -154,7 +154,7 @@ class AnalyticsControllerTest {
         @Test
         @DisplayName("Devuelve lista de alertas paginada")
         void shouldReturnAlerts() throws Exception {
-            when(priceAnalysisService.getUnreadAlerts(eq(1L), any()))
+            when(priceAnalysisService.getAlertsByCompany(eq(1L), eq(false), any()))
                     .thenReturn(Page.empty());
 
             mockMvc.perform(get("/api/analytics/alerts"))
@@ -171,7 +171,7 @@ class AnalyticsControllerTest {
         @Test
         @DisplayName("Marca alerta como leida")
         void shouldMarkAlertAsRead() throws Exception {
-            doNothing().when(priceAnalysisService).markAlertAsRead(1L);
+            doNothing().when(priceAnalysisService).markAlertAsRead(1L, 1L);
 
             mockMvc.perform(post("/api/analytics/alerts/1/read"))
                     .andExpect(status().isOk())

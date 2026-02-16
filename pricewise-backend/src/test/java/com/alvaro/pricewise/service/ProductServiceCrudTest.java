@@ -31,6 +31,7 @@ import com.alvaro.pricewise.entity.User;
 import com.alvaro.pricewise.exception.BadRequestException;
 import com.alvaro.pricewise.exception.ResourceNotFoundException;
 import com.alvaro.pricewise.repository.CompanyRepository;
+import com.alvaro.pricewise.repository.CompetitorPriceRepository;
 import com.alvaro.pricewise.repository.PriceHistoryRepository;
 import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.repository.UserRepository;
@@ -48,6 +49,8 @@ class ProductServiceCrudTest {
     @Mock
     private PriceHistoryRepository priceHistoryRepository;
     @Mock
+    private CompetitorPriceRepository competitorPriceRepository;
+    @Mock
     private KeepaService keepaService;
 
     private ProductService productService;
@@ -57,7 +60,7 @@ class ProductServiceCrudTest {
 
     @BeforeEach
     void setUp() {
-        productService = new ProductService(productRepository, userRepository, companyRepository, priceHistoryRepository, keepaService);
+        productService = new ProductService(productRepository, userRepository, companyRepository, priceHistoryRepository, competitorPriceRepository, keepaService);
 
         company = Company.builder()
                 .id(1L)
@@ -99,7 +102,7 @@ class ProductServiceCrudTest {
 
             when(companyRepository.findById(1L)).thenReturn(Optional.of(company));
             when(userRepository.findById(10L)).thenReturn(Optional.of(user));
-            when(productRepository.findBySku("SKU-001")).thenReturn(Optional.empty());
+            when(productRepository.findBySkuAndCompanyIdAndActiveTrue("SKU-001", 1L)).thenReturn(Optional.empty());
             when(productRepository.save(any(Product.class))).thenAnswer(invocation -> {
                 Product p = invocation.getArgument(0);
                 p.setId(100L);
@@ -142,13 +145,13 @@ class ProductServiceCrudTest {
 
             when(companyRepository.findById(1L)).thenReturn(Optional.of(company));
             when(userRepository.findById(10L)).thenReturn(Optional.of(user));
-            when(productRepository.findBySku("DUPLICATE-SKU")).thenReturn(Optional.of(existing));
+            when(productRepository.findBySkuAndCompanyIdAndActiveTrue("DUPLICATE-SKU", 1L)).thenReturn(Optional.of(existing));
 
             // Act & Assert
             BadRequestException ex = assertThrows(BadRequestException.class,
                     () -> productService.createProduct(1L, 10L, request));
 
-            assertEquals("Ya existe un producto con el SKU: DUPLICATE-SKU", ex.getMessage());
+            assertEquals("Ya existe un producto con el ASIN: DUPLICATE-SKU", ex.getMessage());
             verify(productRepository, never()).save(any());
         }
 
@@ -198,7 +201,7 @@ class ProductServiceCrudTest {
                     .createdBy(user)
                     .build();
 
-            when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+            when(productRepository.findByCompanyIdAndIdWithCreatedBy(1L, 1L)).thenReturn(Optional.of(product));
 
             // Act
             ProductResponse response = productService.getProduct(1L, 1L);
@@ -215,7 +218,7 @@ class ProductServiceCrudTest {
         @DisplayName("should throw ResourceNotFoundException when product does not exist")
         void getProduct_NotFound_ThrowsNotFound() {
             // Arrange
-            when(productRepository.findById(999L)).thenReturn(Optional.empty());
+            when(productRepository.findByCompanyIdAndIdWithCreatedBy(1L, 999L)).thenReturn(Optional.empty());
 
             // Act & Assert
             ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
@@ -227,17 +230,8 @@ class ProductServiceCrudTest {
         @Test
         @DisplayName("should throw ResourceNotFoundException when product belongs to a different company")
         void getProduct_WrongCompany_ThrowsNotFound() {
-            // Arrange
-            Company otherCompany = Company.builder().id(2L).name("Other Company").build();
-            Product product = Product.builder()
-                    .id(5L)
-                    .name("Foreign Product")
-                    .currentPrice(new BigDecimal("50.00"))
-                    .active(true)
-                    .company(otherCompany)
-                    .build();
-
-            when(productRepository.findById(5L)).thenReturn(Optional.of(product));
+            // Arrange: query by companyId=1 won't find product of companyId=2
+            when(productRepository.findByCompanyIdAndIdWithCreatedBy(1L, 5L)).thenReturn(Optional.empty());
 
             // Act & Assert
             ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
@@ -336,13 +330,13 @@ class ProductServiceCrudTest {
                     .build();
 
             when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-            when(productRepository.findBySku("TAKEN-SKU")).thenReturn(Optional.of(conflicting));
+            when(productRepository.findBySkuAndCompanyIdAndActiveTrue("TAKEN-SKU", 1L)).thenReturn(Optional.of(conflicting));
 
             // Act & Assert
             BadRequestException ex = assertThrows(BadRequestException.class,
                     () -> productService.updateProduct(1L, 1L, request));
 
-            assertEquals("Ya existe otro producto con el SKU: TAKEN-SKU", ex.getMessage());
+            assertEquals("Ya existe otro producto con el ASIN: TAKEN-SKU", ex.getMessage());
             verify(productRepository, never()).save(any());
         }
     }

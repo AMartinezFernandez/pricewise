@@ -44,6 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 @DisplayName("AdminController Tests")
+@SuppressWarnings("null")
 class AdminControllerTest {
 
     @Autowired
@@ -217,8 +218,8 @@ class AdminControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /users/{id} con usuario inexistente devuelve 500")
-    void updateUser_nonExistentUser_returns500() throws Exception {
+    @DisplayName("PUT /users/{id} con usuario inexistente devuelve 404")
+    void updateUser_nonExistentUser_returns404() throws Exception {
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
         AdminController.UpdateUserRequest request =
@@ -227,6 +228,6 @@ class AdminControllerTest {
         mockMvc.perform(put("/api/admin/users/999")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isNotFound());
     }
 }

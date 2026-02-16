@@ -212,7 +212,6 @@ class AuthServiceTest {
             Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
 
             when(authenticationManager.authenticate(any())).thenReturn(auth);
-            when(userRepository.findByEmail("test@email.com")).thenReturn(Optional.of(testUser));
             when(jwtService.generateToken(any(UserPrincipal.class))).thenReturn("jwt-token");
 
             AuthResponse response = authService.login(request);

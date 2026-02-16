@@ -24,7 +24,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.alvaro.pricewise.dto.auth.AuthDTOs.*;
 import com.alvaro.pricewise.dto.auth.AuthDTOs.AuthResponse;
 import com.alvaro.pricewise.dto.auth.AuthDTOs.CreateEmployeeRequest;
 import com.alvaro.pricewise.dto.auth.AuthDTOs.LoginRequest;
@@ -40,6 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 @DisplayName("AuthController Tests")
+@SuppressWarnings("null")
 class AuthControllerTest {
 
     @Autowired

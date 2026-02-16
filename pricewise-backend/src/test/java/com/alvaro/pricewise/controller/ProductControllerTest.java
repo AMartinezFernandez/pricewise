@@ -97,6 +97,7 @@ class ProductControllerTest {
             CreateProductRequest request = CreateProductRequest.builder()
                     .name("iPhone 15")
                     .currentPrice(new BigDecimal("999.99"))
+                    .costPrice(new BigDecimal("750.00"))
                     .sku("SKU-001")
                     .category("Electrónica")
                     .brand("Apple")
@@ -155,6 +156,21 @@ class ProductControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Crear producto sin precio de coste devuelve 400")
+        void createProduct_MissingCostPrice_Returns400() throws Exception {
+            CreateProductRequest request = CreateProductRequest.builder()
+                    .name("Producto sin coste")
+                    .currentPrice(new BigDecimal("29.99"))
+                    .build();
+
+            mockMvc.perform(post(BASE_URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false));
         }
     }
 

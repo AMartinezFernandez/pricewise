@@ -27,6 +27,7 @@ import com.alvaro.pricewise.dto.product.ProductDTOs.ProductListResponse;
 import com.alvaro.pricewise.entity.CompetitorPrice;
 import com.alvaro.pricewise.entity.Product;
 import com.alvaro.pricewise.repository.CompanyRepository;
+import com.alvaro.pricewise.repository.CompetitorPriceRepository;
 import com.alvaro.pricewise.repository.ProductRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,12 +43,14 @@ class ProductServiceSearchTest {
     private CompanyRepository companyRepository;
     @Mock
     private com.alvaro.pricewise.repository.PriceHistoryRepository priceHistoryRepository;
+    @Mock
+    private CompetitorPriceRepository competitorPriceRepository;
 
     private ProductService productService;
 
     @BeforeEach
     void setUp() {
-        productService = new ProductService(productRepository, userRepository, companyRepository, priceHistoryRepository, keepaService);
+        productService = new ProductService(productRepository, userRepository, companyRepository, priceHistoryRepository, competitorPriceRepository, keepaService);
     }
 
     @Test
@@ -119,7 +122,7 @@ class ProductServiceSearchTest {
 
         // Assert
         assertEquals(1, response.getTotalElements());
-        assertNull(response.getContent().get(0).getId());
+        assertEquals(-1L, response.getContent().get(0).getId());
         assertEquals("Keepa Product Title", response.getContent().get(0).getName());
         assertEquals(asin, response.getContent().get(0).getSku());
         
