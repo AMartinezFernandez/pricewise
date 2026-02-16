@@ -11,11 +11,12 @@ import androidx.navigation.navArgument
 import com.alvaro.pricewise.data.repository.TokenRepository
 import com.alvaro.pricewise.ui.auth.LoginScreen
 import com.alvaro.pricewise.ui.auth.RegisterScreen
+import com.alvaro.pricewise.ui.auth.RegisterScreen
 import com.alvaro.pricewise.ui.main.MainScreen
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.runBlocking
+import com.alvaro.pricewise.ui.settings.SettingsScreen
 
 sealed class Screen(val route: String) {
+
     object Login       : Screen("login")
     object Register    : Screen("register")
     object Main        : Screen("main")
@@ -25,7 +26,9 @@ sealed class Screen(val route: String) {
     object ProductDetail : Screen("products/{productId}") {
         fun createRoute(id: Long) = "products/$id"
     }
+    object Settings    : Screen("settings")
 }
+
 
 @Composable
 fun RootNavGraph(
@@ -34,10 +37,11 @@ fun RootNavGraph(
 ) {
     val navController = rememberNavController()
 
-    // Determinar si ya hay sesión guardada
-    val startDestination = remember {
-        val token = runBlocking { tokenRepository.getToken().firstOrNull() }
-        if (!token.isNullOrBlank()) Screen.Main.route else Screen.Login.route
+    // Observar token de forma reactiva (sin bloquear main thread)
+    val isLoggedIn by tokenRepository.isLoggedIn()
+        .collectAsState(initial = false)
+    val startDestination = remember(isLoggedIn) {
+        if (isLoggedIn) Screen.Main.route else Screen.Login.route
     }
 
     NavHost(
@@ -73,8 +77,23 @@ fun RootNavGraph(
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Main.route) { inclusive = true }
                     }
+                },
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route)
+                }
+            )
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Main.route) { inclusive = true }
+                    }
                 }
             )
         }
     }
 }
+

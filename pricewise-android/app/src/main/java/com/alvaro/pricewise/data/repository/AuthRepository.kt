@@ -23,7 +23,9 @@ class AuthRepository @Inject constructor(
                         token = data.token.removePrefix("Bearer "),
                         userId = data.userId,
                         username = data.username,
-                        role = data.role
+                        role = data.role,
+                        companyId = data.companyId,
+                        companyName = data.companyName
                     )
                     Result.Success(Unit)
                 } else {
@@ -51,7 +53,9 @@ class AuthRepository @Inject constructor(
                         token = data.token.removePrefix("Bearer "),
                         userId = data.userId,
                         username = data.username,
-                        role = data.role
+                        role = data.role,
+                        companyId = data.companyId,
+                        companyName = data.companyName
                     )
                     Result.Success(Unit)
                 } else {
