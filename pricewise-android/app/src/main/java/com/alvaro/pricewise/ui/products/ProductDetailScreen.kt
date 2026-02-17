@@ -1,5 +1,8 @@
 package com.alvaro.pricewise.ui.products
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -24,6 +27,7 @@ fun ProductDetailScreen(
 ) {
     val uiState by viewModel.detailState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showSyncDetails by remember { mutableStateOf(false) }
 
     LaunchedEffect(productId) {
         viewModel.loadProduct(productId)
@@ -31,6 +35,13 @@ fun ProductDetailScreen(
 
     LaunchedEffect(uiState.deleteSuccess) {
         if (uiState.deleteSuccess) onNavigateBack()
+    }
+
+    // Auto-expandir el desplegable cuando llega un nuevo resultado
+    LaunchedEffect(uiState.syncResult) {
+        if (uiState.syncResult != null) {
+            showSyncDetails = true
+        }
     }
 
     Scaffold(
@@ -77,38 +88,42 @@ fun ProductDetailScreen(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // ─── Precios ─────────────────────────────────────────
+                    // ─── Mis Precios ─────────────────────────────────────
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                "Precios",
+                                "Mis Precios",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Precio de venta", style = MaterialTheme.typography.bodyMedium)
+                                Text("Mi precio de venta", style = MaterialTheme.typography.bodyMedium)
                                 Text(
                                     formatPrice(product.currentPrice),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                            if (product.costPrice != null) {
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text("Precio de coste", style = MaterialTheme.typography.bodyMedium)
-                                    Text(formatPrice(product.costPrice), style = MaterialTheme.typography.bodyMedium)
-                                }
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Precio de coste", style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    if (product.costPrice != null) formatPrice(product.costPrice)
+                                    else "No especificado",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
-                            if (product.margin != null) {
+                            if (product.costPrice != null && product.costPrice > 0) {
+                                val profitMargin = ((product.currentPrice - product.costPrice) / product.costPrice) * 100
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text("Margen bruto", style = MaterialTheme.typography.bodyMedium)
+                                    Text("Margen sobre coste", style = MaterialTheme.typography.bodyMedium)
                                     Text(
-                                        "${"%.1f".format(product.margin)}%",
-                                        color = if (product.margin > 0) MaterialTheme.colorScheme.primary
+                                        "${"%.1f".format(profitMargin)}%",
+                                        color = if (profitMargin > 0) MaterialTheme.colorScheme.primary
                                                 else MaterialTheme.colorScheme.error,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -129,8 +144,10 @@ fun ProductDetailScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            if (!product.sku.isNullOrBlank()) {
-                                DetailRow("SKU / ASIN", product.sku)
+                            if (!product.asin.isNullOrBlank()) {
+                                DetailRow("ASIN", product.asin)
+                            } else if (!product.sku.isNullOrBlank()) {
+                                DetailRow("ASIN", product.sku)
                             }
                             if (!product.ean.isNullOrBlank()) {
                                 DetailRow("EAN", product.ean)
@@ -152,37 +169,96 @@ fun ProductDetailScreen(
                         }
                     }
 
-                    // ─── Amazon / Keepa ───────────────────────────────────
+                    // ─── Comparativa con Amazon ──────────────────────────
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(
                             modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Text(
-                                "Precio en Amazon",
+                                "Comparativa con Amazon",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
 
-                            if (product.sku.isNullOrBlank()) {
+                            if (product.asin.isNullOrBlank() && product.sku.isNullOrBlank()) {
                                 Text(
-                                    "Añade el ASIN de Amazon en el campo SKU para poder consultar su precio.",
+                                    "Añade el ASIN de Amazon para poder consultar su precio.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             } else {
-                                // Resultado del último sync
-                                if (uiState.syncResult != null) {
-                                    val sync = uiState.syncResult!!
-                                    SyncResultCard(
-                                        price = sync.price,
-                                        title = sync.competitorProductTitle ?: sync.title,
-                                        available = sync.available,
-                                        ownPrice = product.currentPrice
+                                // Datos para cálculos: usar syncResult si acaba de hacerse, si no, el precio persistido
+                                val amazonPrice = uiState.syncResult?.price ?: product.amazonPrice
+                                val diffVsSale = if (amazonPrice != null && product.currentPrice > 0)
+                                    ((amazonPrice - product.currentPrice) / product.currentPrice) * 100 else null
+                                val diffVsCost = if (amazonPrice != null && product.costPrice != null && product.costPrice > 0)
+                                    ((amazonPrice - product.costPrice) / product.costPrice) * 100 else null
+
+                                // ─── Campos fijos siempre visibles ───
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Mi precio de venta", style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        formatPrice(product.currentPrice),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Mi precio de coste", style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        if (product.costPrice != null) formatPrice(product.costPrice) else "—",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Precio en Amazon", style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        if (amazonPrice != null) formatPrice(amazonPrice) else "—",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (amazonPrice != null) MaterialTheme.colorScheme.onSurface
+                                                else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Diferencia vs Amazon", style = MaterialTheme.typography.bodyMedium)
+                                    if (diffVsSale != null) {
+                                        val color = when {
+                                            diffVsSale > 5 -> MaterialTheme.colorScheme.primary
+                                            diffVsSale < -5 -> MaterialTheme.colorScheme.error
+                                            else -> MaterialTheme.colorScheme.onSurface
+                                        }
+                                        Text(
+                                            "${if (diffVsSale > 0) "+" else ""}${"%.1f".format(diffVsSale)}%",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = color,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    } else {
+                                        Text("—", style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Amazon vs coste", style = MaterialTheme.typography.bodyMedium)
+                                    if (diffVsCost != null) {
+                                        Text(
+                                            "${if (diffVsCost > 0) "+" else ""}${"%.1f".format(diffVsCost)}%",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = if (diffVsCost > 0) MaterialTheme.colorScheme.primary
+                                                    else MaterialTheme.colorScheme.error,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    } else {
+                                        Text("—", style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
 
+                                // ─── Error de sync ───
                                 if (uiState.syncError != null) {
                                     Text(
                                         text = uiState.syncError!!,
@@ -191,6 +267,7 @@ fun ProductDetailScreen(
                                     )
                                 }
 
+                                // ─── Botón buscar precio ───
                                 Button(
                                     onClick = { viewModel.syncWithAmazon(productId) },
                                     modifier = Modifier.fillMaxWidth(),
@@ -203,11 +280,82 @@ fun ProductDetailScreen(
                                             color = MaterialTheme.colorScheme.onPrimary
                                         )
                                         Spacer(Modifier.width(8.dp))
-                                        Text("Consultando Keepa...")
+                                        Text("Consultando Amazon...")
                                     } else {
                                         Icon(Icons.Default.CloudSync, contentDescription = null)
                                         Spacer(Modifier.width(8.dp))
-                                        Text("Consultar precio en Amazon")
+                                        Text("Buscar precio ahora en Amazon")
+                                    }
+                                }
+
+                                // ─── Desplegable con detalle del resultado ───
+                                AnimatedVisibility(
+                                    visible = showSyncDetails && uiState.syncResult != null,
+                                    enter = expandVertically(),
+                                    exit = shrinkVertically()
+                                ) {
+                                    val sync = uiState.syncResult
+                                    if (sync != null) {
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.surfaceVariant,
+                                            shape = MaterialTheme.shapes.small,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.padding(12.dp),
+                                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Text(
+                                                    "Resultado de la consulta",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+
+                                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                    Text("Precio Amazon ES", style = MaterialTheme.typography.bodySmall)
+                                                    Text(
+                                                        formatPrice(sync.price),
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
+
+                                                Text(
+                                                    if (sync.available) "En stock" else "Sin stock",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = if (sync.available) MaterialTheme.colorScheme.primary
+                                                            else MaterialTheme.colorScheme.error
+                                                )
+
+                                                val syncTitle = sync.competitorProductTitle ?: sync.title
+                                                if (!syncTitle.isNullOrBlank()) {
+                                                    Text(
+                                                        syncTitle,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        maxLines = 2
+                                                    )
+                                                }
+
+                                                Spacer(Modifier.height(4.dp))
+
+                                                Button(
+                                                    onClick = {
+                                                        showSyncDetails = false
+                                                        // Limpiar syncResult para que al recargar use los datos
+                                                        // persistidos del backend (amazonPrice en ProductResponse)
+                                                        viewModel.clearDetailSyncResult()
+                                                        viewModel.loadProduct(productId)
+                                                    },
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Icon(Icons.Default.Refresh, contentDescription = null)
+                                                    Spacer(Modifier.width(8.dp))
+                                                    Text("Actualizar con los nuevos datos")
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -244,60 +392,5 @@ private fun DetailRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-    }
-}
-
-@Composable
-private fun SyncResultCard(
-    price: Double,
-    title: String?,
-    available: Boolean,
-    ownPrice: Double
-) {
-    val diff = ((price - ownPrice) / ownPrice) * 100
-    val diffColor = when {
-        diff > 10  -> MaterialTheme.colorScheme.primary   // Nuestro precio es más barato
-        diff < -10 -> MaterialTheme.colorScheme.error     // Nuestro precio es más caro
-        else       -> MaterialTheme.colorScheme.onSurface
-    }
-
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = MaterialTheme.shapes.small
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Precio Amazon ES", style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    formatPrice(price),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    if (available) "En stock" else "Sin stock",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (available) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                )
-                Text(
-                    "${if (diff > 0) "+" else ""}${"%.1f".format(diff)}% vs tu precio",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = diffColor,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            if (!title.isNullOrBlank()) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2
-                )
-            }
-        }
     }
 }

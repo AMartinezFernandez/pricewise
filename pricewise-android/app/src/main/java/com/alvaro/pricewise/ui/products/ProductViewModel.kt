@@ -81,11 +81,13 @@ class ProductViewModel @Inject constructor(
         viewModelScope.launch {
             _listState.value = ProductListUiState(isLoading = true, searchQuery = query)
             
-            // Check if query is an ASIN (Basic validation: 10 chars, usually starts with B0)
-            val isAsin = query.length == 10 && query.uppercase().startsWith("B0")
-            
+            val trimmedQuery = query.trim()
+            // Check if query is an ASIN (10 chars, alphanumeric, case-insensitive)
+            val upperQuery = trimmedQuery.uppercase()
+            val isAsin = upperQuery.length == 10 && upperQuery.matches(Regex("^[A-Z0-9]{10}$"))
+
             if (isAsin) {
-                 when (val result = repository.getAmazonPrice(query)) {
+                 when (val result = repository.getAmazonPrice(upperQuery)) {
                      is Result.Success -> {
                          val apiResponse = result.data
                          val data = apiResponse.data
@@ -96,6 +98,7 @@ class ProductViewModel @Inject constructor(
                                  id = -1L, // Temporary ID to indicate it's not in DB
                                  name = data.title ?: data.competitorProductTitle ?: "Producto de Amazon",
                                  sku = data.asin,
+                                 asin = data.asin,
                                  currentPrice = data.price,
                                  description = "Producto encontrado en Amazon. Pulsa para añadirlo.",
                                  category = "Amazon",
@@ -134,10 +137,11 @@ class ProductViewModel @Inject constructor(
     }
 
     private suspend fun performNormalSearch(query: String) {
-        val result = if (query.isBlank()) {
+        val trimmedQuery = query.trim()
+        val result = if (trimmedQuery.isBlank()) {
             repository.getProducts(0)
         } else {
-            repository.searchProducts(name = query)
+            repository.searchProducts(name = trimmedQuery)
         }
         when (result) {
             is Result.Success -> {
@@ -159,23 +163,26 @@ class ProductViewModel @Inject constructor(
 
     fun loadProduct(id: Long) {
         viewModelScope.launch {
-            _detailState.value = ProductDetailUiState(isLoading = true)
+            val previousSyncResult = _detailState.value.syncResult
+            _detailState.value = ProductDetailUiState(isLoading = true, syncResult = previousSyncResult)
             when (val result = repository.getProduct(id)) {
                 is Result.Success -> _detailState.value = ProductDetailUiState(
-                    product = result.data.data
+                    product = result.data.data,
+                    syncResult = previousSyncResult
                 )
                 is Result.Error -> _detailState.value = ProductDetailUiState(
-                    error = result.message
+                    error = result.message,
+                    syncResult = previousSyncResult
                 )
             }
         }
     }
 
     fun syncWithAmazon(productId: Long) {
-        val sku = _detailState.value.product?.sku
+        val asin = _detailState.value.product?.asin
         viewModelScope.launch {
             _detailState.value = _detailState.value.copy(isSyncing = true, syncError = null, syncResult = null)
-            when (val result = repository.syncWithAmazon(productId, sku)) {
+            when (val result = repository.syncWithAmazon(productId, asin)) {
                 is Result.Success -> _detailState.value = _detailState.value.copy(
                     isSyncing = false,
                     syncResult = result.data.data
@@ -206,7 +213,7 @@ class ProductViewModel @Inject constructor(
 
     fun createProduct(
         name: String,
-        sku: String,
+        asin: String,
         currentPrice: String,
         costPrice: String,
         category: String,
@@ -215,17 +222,22 @@ class ProductViewModel @Inject constructor(
         monitoringEnabled: Boolean
     ) {
         val price = currentPrice.toDoubleOrNull()
+        val cost = costPrice.toDoubleOrNull()
         if (name.isBlank() || price == null || price <= 0) {
-            _formState.value = ProductFormUiState(error = "Nombre y precio son obligatorios (precio > 0)")
+            _formState.value = ProductFormUiState(error = "Nombre y precio de venta son obligatorios (precio > 0)")
+            return
+        }
+        if (cost == null || cost < 0) {
+            _formState.value = ProductFormUiState(error = "El precio de coste es obligatorio (≥ 0)")
             return
         }
         viewModelScope.launch {
             _formState.value = ProductFormUiState(isLoading = true)
             val request = CreateProductRequest(
                 name = name,
-                sku = sku.ifBlank { null },
+                asin = asin.ifBlank { null },
                 currentPrice = price,
-                costPrice = costPrice.toDoubleOrNull(),
+                costPrice = cost,
                 category = category.ifBlank { null },
                 brand = brand.ifBlank { null },
                 description = description.ifBlank { null },
@@ -234,7 +246,8 @@ class ProductViewModel @Inject constructor(
             when (val result = repository.createProduct(request)) {
                 is Result.Success -> {
                     _formState.value = ProductFormUiState(success = true)
-                    loadProducts(refresh = true)
+                    // No llamar a loadProducts() aquí: TrackingScreen tiene su propio ViewModel
+                    // y recarga automáticamente. Llamarlo aquí contaminaba _listState de SearchScreen.
                 }
                 is Result.Error -> _formState.value = ProductFormUiState(error = result.message)
             }
@@ -243,6 +256,10 @@ class ProductViewModel @Inject constructor(
 
     fun resetFormState() {
         _formState.value = ProductFormUiState()
+    }
+
+    fun clearSearchResults() {
+        _listState.value = ProductListUiState()
     }
 
     fun clearDetailSyncResult() {

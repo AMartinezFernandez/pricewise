@@ -22,7 +22,7 @@ fun CreateProductScreen(
     onNavigateBack: () -> Unit,
     viewModel: ProductViewModel = hiltViewModel(),
     initialName: String = "",
-    initialSku: String = "",
+    initialAsin: String = "",
     initialPrice: String = "",
     initialCategory: String = "",
     initialBrand: String = "",
@@ -31,7 +31,7 @@ fun CreateProductScreen(
     val uiState by viewModel.formState.collectAsState()
 
     var name by remember { mutableStateOf(initialName) }
-    var sku by remember { mutableStateOf(initialSku) }
+    var asin by remember { mutableStateOf(initialAsin) }
     var currentPrice by remember { mutableStateOf(initialPrice) }
     var costPrice by remember { mutableStateOf("") }
     var category by remember { mutableStateOf(initialCategory) }
@@ -103,20 +103,21 @@ fun CreateProductScreen(
                 OutlinedTextField(
                     value = costPrice,
                     onValueChange = { costPrice = it },
-                    label = { Text("Precio coste (€)") },
+                    label = { Text("Precio coste (€) *") },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    isError = uiState.error != null && costPrice.isBlank()
                 )
             }
 
             OutlinedTextField(
-                value = sku,
-                onValueChange = { sku = it },
-                label = { Text("SKU / ASIN Amazon") },
+                value = asin,
+                onValueChange = { asin = it },
+                label = { Text("ASIN de Amazon") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                supportingText = { Text("Si el SKU es un ASIN de Amazon (B0...) se activará la monitorización") }
+                supportingText = { Text("Código ASIN de Amazon (10 caracteres, ej. B0D2QM4QBT)") }
             )
 
             // ─── Clasificación ────────────────────────────────────────
@@ -192,8 +193,14 @@ fun CreateProductScreen(
             Button(
                 onClick = {
                     viewModel.createProduct(
-                        name, sku, currentPrice, costPrice,
-                        category, brand, description, monitoringEnabled
+                        name = name,
+                        asin = asin,
+                        currentPrice = currentPrice,
+                        costPrice = costPrice,
+                        category = category,
+                        brand = brand,
+                        description = description,
+                        monitoringEnabled = monitoringEnabled
                     )
                 },
                 modifier = Modifier
@@ -203,12 +210,11 @@ fun CreateProductScreen(
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(24.dp),
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Guardar producto")
+                    Text("Crear Producto")
                 }
             }
 

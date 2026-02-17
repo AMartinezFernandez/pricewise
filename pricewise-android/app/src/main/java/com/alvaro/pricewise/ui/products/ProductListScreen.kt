@@ -101,26 +101,29 @@ fun ProductListScreen(
                             }
                         )
                     } else {
-                        Text("Mis productos")
+                        Text("Productos")
                     }
                 },
                 actions = {
-                    if (showSearch) {
-                        IconButton(onClick = {
-                            showSearch = false
-                            searchQuery = ""
-                            focusManager.clearFocus()
-                            viewModel.loadProducts(refresh = true)
-                        }) {
-                            Icon(Icons.Default.Close, contentDescription = "Cerrar búsqueda")
+                    if (!showSearch) {
+                        IconButton(onClick = { viewModel.loadProducts(refresh = true) }) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
                         }
-                    } else {
                         IconButton(onClick = { showSearch = true }) {
                             Icon(Icons.Default.Search, contentDescription = "Buscar")
                         }
-                        IconButton(onClick = onLogout) {
-                            Icon(Icons.Default.Logout, contentDescription = "Cerrar sesión")
+                    } else {
+                         IconButton(onClick = {
+                             showSearch = false
+                             searchQuery = ""
+                             focusManager.clearFocus()
+                             viewModel.loadProducts(refresh = true)
+                         }) {
+                            Icon(Icons.Default.Close, contentDescription = "Cerrar búsqueda")
                         }
+                    }
+                    IconButton(onClick = onLogout) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = "Cerrar sesión")
                     }
                 }
             )
@@ -174,7 +177,10 @@ fun ProductListScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        items(uiState.products, key = { it.id }) { product ->
+                        items(
+                            uiState.products.filter { it.id != -1L },
+                            key = { it.id }
+                        ) { product ->
                             ProductCard(
                                 product = product,
                                 onClick = { onProductClick(product.id) },
@@ -230,9 +236,9 @@ fun ProductCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                if (!product.sku.isNullOrBlank()) {
+                if (!product.asin.isNullOrBlank() || !product.sku.isNullOrBlank()) {
                     Text(
-                        text = "SKU: ${product.sku}",
+                        text = "ASIN: ${product.asin ?: product.sku}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

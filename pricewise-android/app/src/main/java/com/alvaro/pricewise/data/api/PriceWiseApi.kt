@@ -13,6 +13,14 @@ interface PriceWiseApi {
     @POST("api/auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<AuthData>>
 
+    @POST("api/auth/create-employee")
+    suspend fun createEmployee(@Body request: CreateEmployeeRequest): Response<ApiResponse<AuthData>>
+
+    @POST("api/auth/change-password")
+    suspend fun changePassword(@Body request: ChangePasswordRequest): Response<ApiResponse<String?>>
+
+
+
     @GET("api/auth/profile")
     suspend fun getProfile(): Response<ApiResponse<UserProfile>>
 
@@ -92,7 +100,18 @@ interface PriceWiseApi {
     @POST("api/analytics/alerts/{id}/read")
     suspend fun markAlertRead(@Path("id") id: Long): Response<ApiResponse<String>>
 
+    // ─── Admin / Empresas ────────────────────────────────────────────────
+    @GET("api/admin/companies")
+    suspend fun getCompanies(): Response<ApiResponse<List<CompanyResponse>>>
+
     // ─── Dashboard ───────────────────────────────────────────────────────
     @GET("api/analytics/dashboard")
     suspend fun getDashboard(): Response<ApiResponse<DashboardResponse>>
+
+    // ─── Usuarios ───────────────────────────────────────────────────────
+    @GET("api/users")
+    suspend fun getUsers(): Response<ApiResponse<List<UserSummaryResponse>>>
+
+    @GET("api/users/count")
+    suspend fun getUserCount(): Response<ApiResponse<Long>>
 }
