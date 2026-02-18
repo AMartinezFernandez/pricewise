@@ -24,10 +24,21 @@ class TokenRepository @Inject constructor(
         private val USER_ID_KEY = longPreferencesKey("user_id")
         private val USERNAME_KEY = stringPreferencesKey("username")
         private val ROLE_KEY = stringPreferencesKey("role")
+        private val COMPANY_ID_KEY = longPreferencesKey("company_id")
+        private val COMPANY_NAME_KEY = stringPreferencesKey("company_name")
     }
 
+    @Volatile
+    private var cachedToken: String? = null
+
     fun getToken(): Flow<String?> = context.dataStore.data
-        .map { prefs -> prefs[TOKEN_KEY] }
+        .map { prefs -> prefs[TOKEN_KEY]?.also { cachedToken = it } }
+
+    /**
+     * Devuelve el token cacheado de forma síncrona.
+     * Seguro para usar en interceptors de OkHttp (corren en thread pool, no en main).
+     */
+    fun getCachedToken(): String? = cachedToken
 
     fun getUserId(): Flow<Long?> = context.dataStore.data
         .map { prefs -> prefs[USER_ID_KEY] }
@@ -38,24 +49,39 @@ class TokenRepository @Inject constructor(
     fun getRole(): Flow<String?> = context.dataStore.data
         .map { prefs -> prefs[ROLE_KEY] }
 
+    fun getCompanyId(): Flow<Long?> = context.dataStore.data
+        .map { prefs -> prefs[COMPANY_ID_KEY] }
+
+    fun getCompanyName(): Flow<String?> = context.dataStore.data
+        .map { prefs -> prefs[COMPANY_NAME_KEY] }
+
     fun isLoggedIn(): Flow<Boolean> = context.dataStore.data
         .map { prefs -> !prefs[TOKEN_KEY].isNullOrBlank() }
 
-    suspend fun saveSession(token: String, userId: Long, username: String, role: String) {
+    suspend fun saveSession(
+        token: String, userId: Long, username: String, role: String,
+        companyId: Long? = null, companyName: String? = null
+    ) {
+        cachedToken = token
         context.dataStore.edit { prefs ->
             prefs[TOKEN_KEY] = token
             prefs[USER_ID_KEY] = userId
             prefs[USERNAME_KEY] = username
             prefs[ROLE_KEY] = role
+            companyId?.let { prefs[COMPANY_ID_KEY] = it }
+            companyName?.let { prefs[COMPANY_NAME_KEY] = it }
         }
     }
 
     suspend fun clearSession() {
+        cachedToken = null
         context.dataStore.edit { prefs ->
             prefs.remove(TOKEN_KEY)
             prefs.remove(USER_ID_KEY)
             prefs.remove(USERNAME_KEY)
             prefs.remove(ROLE_KEY)
+            prefs.remove(COMPANY_ID_KEY)
+            prefs.remove(COMPANY_NAME_KEY)
         }
     }
 }

@@ -26,7 +26,8 @@ suspend fun <T> safeApiCall(call: suspend () -> Response<T>): Result<T> {
                 Result.Error("Respuesta vacía del servidor", response.code())
             }
         } else {
-            Result.Error(httpErrorMessage(response.code()), response.code())
+            val serverMessage = parseErrorBody(response)
+            Result.Error(serverMessage ?: httpErrorMessage(response.code()), response.code())
         }
     } catch (e: java.net.ConnectException) {
         Result.Error("No se puede conectar con el servidor. ¿Está arrancado el backend?")
@@ -47,7 +48,8 @@ suspend fun safeApiCallNoBody(call: suspend () -> Response<*>): Result<Unit> {
         if (response.isSuccessful) {
             Result.Success(Unit)
         } else {
-            Result.Error(httpErrorMessage(response.code()), response.code())
+            val serverMessage = parseErrorBody(response)
+            Result.Error(serverMessage ?: httpErrorMessage(response.code()), response.code())
         }
     } catch (e: java.net.ConnectException) {
         Result.Error("No se puede conectar con el servidor. ¿Está arrancado el backend?")
@@ -58,9 +60,24 @@ suspend fun safeApiCallNoBody(call: suspend () -> Response<*>): Result<Unit> {
     }
 }
 
+/**
+ * Intenta extraer el campo "message" del cuerpo de error JSON devuelto por el backend.
+ * El backend siempre devuelve ApiResponse con formato: {"success":false,"message":"...","data":null}
+ */
+private fun parseErrorBody(response: Response<*>): String? {
+    return try {
+        val errorBody = response.errorBody()?.string() ?: return null
+        // Extraer "message" del JSON sin depender de Moshi/Gson para evitar dependencias circulares
+        val messageRegex = """"message"\s*:\s*"([^"]+)"""".toRegex()
+        messageRegex.find(errorBody)?.groupValues?.getOrNull(1)
+    } catch (_: Exception) {
+        null
+    }
+}
+
 private fun httpErrorMessage(code: Int) = when (code) {
     400 -> "Datos incorrectos. Revisa los campos."
-    401 -> "Sesión expirada. Vuelve a iniciar sesión."
+    401 -> "Credenciales incorrectas o sesión expirada."
     403 -> "No tienes permisos para esta acción."
     404 -> "El recurso no fue encontrado."
     409 -> "El registro ya existe."

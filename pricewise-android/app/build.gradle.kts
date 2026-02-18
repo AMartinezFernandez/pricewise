@@ -17,18 +17,21 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // URL base del backend. 10.0.2.2 es localhost desde el emulador de Android
-        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:9090/\"")
     }
 
     buildTypes {
+        debug {
+            // Emulador: 10.0.2.2 es localhost desde el emulador de Android
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:9090/\"")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // TODO: Reemplazar con la URL real de producción (HTTPS)
+            buildConfigField("String", "BASE_URL", "\"https://api.pricewise.example.com/\"")
         }
     }
 
