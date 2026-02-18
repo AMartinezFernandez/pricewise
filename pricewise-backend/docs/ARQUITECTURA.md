@@ -282,8 +282,9 @@ pricewise-backend/
 │   │   │   ├── security/
 │   │   │   │   ├── JwtService.java         # Generacion y validacion JWT
 │   │   │   │   ├── JwtAuthenticationFilter.java  # Filtro por peticion HTTP
+│   │   │   │   ├── RateLimitingFilter.java # Rate limiting en auth endpoints
 │   │   │   │   ├── UserPrincipal.java      # Objeto autenticado en contexto
-│   │   │   │   └── UserDetailsServiceImpl.java # Carga usuario desde BD
+│   │   │   │   └── CustomUserDetailsService.java # Carga usuario desde BD
 │   │   │   ├── scheduler/
 │   │   │   │   └── PriceMonitorJob.java    # Tarea Quartz cada 6 horas
 │   │   │   ├── dto/
@@ -818,25 +819,29 @@ TIPOS DE QUERIES EN PRICEWISE:
 
 interface ProductRepository extends JpaRepository<Product, Long> {
 
-    // Spring genera: SELECT * FROM products WHERE user_id = ? AND active = true
-    List<Product> findByUserIdAndActiveTrue(Long userId);
+    // Spring genera: SELECT * FROM products WHERE company_id = ? AND active = true
+    List<Product> findByCompanyIdAndActiveTrue(Long companyId);
 
-    // Spring genera: SELECT COUNT(*) FROM products WHERE user_id = ?
-    long countByUserId(Long userId);
+    // Spring genera: SELECT COUNT(*) FROM products WHERE company_id = ? AND active = true
+    long countByCompanyIdAndActiveTrue(Long companyId);
 
-    // Spring genera: SELECT DISTINCT category FROM products WHERE user_id = ?
-    // y active = true
-    @Query("SELECT DISTINCT p.category FROM Product p WHERE p.user.id = :userId AND p.active = true")
-    List<String> findDistinctCategoriesByUserId(@Param("userId") Long userId);
+    // JPQL con DISTINCT para filtros de busqueda
+    @Query("SELECT DISTINCT p.category FROM Product p WHERE p.company.id = :companyId AND p.active = true")
+    List<String> findDistinctCategoriesByCompanyId(@Param("companyId") Long companyId);
 }
 
-2. CUSTOM JPQL QUERIES:
+2. CUSTOM JPQL QUERIES (con JOIN FETCH para prevenir N+1):
 
-@Query("SELECT p FROM Product p WHERE p.user.id = :userId " +
+@Query("SELECT p FROM Product p LEFT JOIN FETCH p.createdBy " +
+       "WHERE p.company.id = :companyId AND p.id = :productId AND p.active = true")
+Optional<Product> findByCompanyIdAndIdWithCreatedBy(
+        @Param("companyId") Long companyId, @Param("productId") Long productId);
+
+@Query("SELECT p FROM Product p WHERE p.company.id = :companyId " +
        "AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
        "AND (:category IS NULL OR p.category = :category) " +
        "AND p.active = true")
-Page<Product> searchProducts(@Param("userId") Long userId,
+Page<Product> searchProducts(@Param("companyId") Long companyId,
                               @Param("name") String name,
                               @Param("category") String category,
                               Pageable pageable);
@@ -874,39 +879,54 @@ AUTHSERVICE:
 Responsabilidades:
 - Registro de usuario con validacion de unicidad
 - Login con generacion de JWT
+- Creacion de empleados (COMPANY_ADMIN)
 - Recuperacion de perfil autenticado
 
 Flujo de registro:
 1. Verificar que el email no existe: userRepository.existsByEmail()
 2. Verificar que el username no existe: userRepository.existsByUsername()
-3. Codificar contrasena: passwordEncoder.encode(rawPassword)
-4. Guardar usuario con rol USER por defecto
-5. Generar JWT y devolver AuthResponse
+3. Validar companyCode y asociar a empresa existente
+4. Codificar contrasena: passwordEncoder.encode(rawPassword)
+5. Guardar usuario con rol EMPLOYEE por defecto
+6. Generar JWT y devolver AuthResponse
+
+Flujo de login (optimizado):
+1. Autenticar con authenticationManager.authenticate()
+2. Extraer UserPrincipal del contexto de seguridad (ya cargado por Spring Security)
+3. Generar JWT con los datos del UserPrincipal
+4. Devolver AuthResponse con id, username, email, role, companyId, companyName
+   NOTA: No se re-consulta la BD; UserPrincipal ya contiene todos los datos necesarios
+   (companyName, role, displayUsername) desde la carga inicial en CustomUserDetailsService
 
 PRODUCTSERVICE:
 --------------
 
 Responsabilidades:
-- CRUD completo con validacion de propiedad del usuario
+- CRUD completo con aislamiento por empresa (companyId)
 - Registro automatico de historial de precios al crear/actualizar
 - Busqueda con filtros y paginacion
 - Invalidacion de cache al modificar productos
+- Busqueda fallback por ASIN en Keepa cuando no hay resultados locales
 
 Flujo de creacion de producto:
-1. Verificar unicidad de SKU si se proporciona
-2. Obtener entidad User del repositorio
-3. Construir Product con builder de Lombok
+1. Obtener Company y User del repositorio
+2. Verificar unicidad de SKU si se proporciona
+3. Construir Product con builder de Lombok (asociado a Company y createdBy)
 4. Guardar en BD: productRepository.save(product)
 5. Registrar PriceHistory con tipo INITIAL
-6. Invalidar cache de categorias y marcas del usuario
+6. Invalidar cache de categorias y marcas de la empresa
 
 Flujo de actualizacion:
-1. Cargar producto y verificar que pertenece al usuario
+1. Cargar producto y verificar que pertenece a la empresa (companyId)
 2. Detectar si el precio ha cambiado
 3. Si cambia: calcular ChangeType (INCREASE o DECREASE)
 4. Registrar nueva entrada en PriceHistory
 5. Guardar producto actualizado
 6. Devolver ProductResponse mapeado
+
+Flujo de consulta de detalle:
+1. findByCompanyIdAndIdWithCreatedBy() con JOIN FETCH para cargar createdBy
+2. Evita N+1 al acceder a createdBy.getUsername() en el mapeo a DTO
 
 KEEPASERVICE:
 ------------
@@ -1099,8 +1119,9 @@ RESUMEN DE LA IMPLEMENTACION:
    }
 
 CONFIGURACION DE CORS:
-    dev:  allowedOrigins = "*"  (permisivo para desarrollo local)
-    prod: allowedOrigins configurado por variable de entorno
+    dev:  allowedOriginPatterns = "*", allowCredentials = false (seguro con wildcard)
+    prod: allowedOrigins configurado por variable de entorno, allowCredentials = true
+    Headers permitidos: Authorization, Content-Type, Accept, Origin, X-Requested-With
 
 REFERENCIAS:
 - Spring Security: https://spring.io/projects/spring-security
@@ -1310,28 +1331,40 @@ Solo se cachean queries costosas y relativamente estaticas.
 
 QUERIES CACHEADAS:
 
-@Cacheable(value = "categories", key = "#userId")
-public List<String> getProductCategories(Long userId) {
-    return productRepository.findDistinctCategoriesByUserId(userId);
+@Cacheable(value = "categories", key = "#companyId")
+public List<String> getCategories(Long companyId) {
+    return productRepository.findDistinctCategoriesByCompanyId(companyId);
 }
 
-@Cacheable(value = "brands", key = "#userId")
-public List<String> getProductBrands(Long userId) {
-    return productRepository.findDistinctBrandsByUserId(userId);
+@Cacheable(value = "brands", key = "#companyId")
+public List<String> getBrands(Long companyId) {
+    return productRepository.findDistinctBrandsByCompanyId(companyId);
 }
 
 INVALIDACION DE CACHE:
 
-@CacheEvict(value = {"categories", "brands"}, key = "#userId")
-public ProductResponse createProduct(ProductRequest request, Long userId) { ... }
+@CacheEvict(value = {"categories", "brands"}, key = "#companyId")
+public ProductResponse createProduct(Long companyId, Long userId, CreateProductRequest request) { ... }
 
-@CacheEvict(value = {"categories", "brands"}, key = "#userId")
-public ProductResponse updateProduct(...) { ... }
+@CacheEvict(value = {"categories", "brands"}, key = "#companyId")
+public ProductResponse updateProduct(Long companyId, Long productId, UpdateProductRequest request) { ... }
 
 POR QUE CACHEAR CATEGORIAS Y MARCAS:
 - Se usan en filtros de busqueda, se piden frecuentemente
 - Cambian raramente (solo al crear/modificar productos)
 - Sin cache: query DISTINCT en tabla products en cada request
+
+PREVENCION DE N+1 QUERIES:
+
+Ademas de la cache, se aplican dos estrategias para prevenir N+1:
+
+1. Hibernate batch fetch size (global):
+   spring.jpa.properties.hibernate.default_batch_fetch_size: 16
+   Cuando se accede a colecciones LAZY, Hibernate carga hasta 16 proxies en una sola query.
+
+2. JOIN FETCH en queries criticas:
+   findByCompanyIdAndIdWithCreatedBy() usa LEFT JOIN FETCH p.createdBy
+   para cargar el usuario creador en una sola query al consultar detalle de producto.
 
 INDICES DE POSTGRESQL:
 Los indices definidos en las entidades (ver seccion 6) son la primera
@@ -1468,12 +1501,14 @@ prod:
 
 VARIABLES DE ENTORNO REQUERIDAS:
 
-| Variable                  | Descripcion                          | Ejemplo                         |
-|---------------------------|--------------------------------------|---------------------------------|
-| JWT_SECRET                | Clave HMAC-SHA256 (min 32 chars)     | un-secreto-de-32-o-mas-chars    |
-| DB_PASSWORD               | Contrasena PostgreSQL                | mi_password_segura              |
-| SPRING_PROFILES_ACTIVE    | Perfil activo                        | dev o prod                      |
-| KEEPA_API_KEY             | API key de keepa.com                 | xxxxxxxxxxxxxxxxxxx             |
+| Variable                  | Descripcion                          | Ejemplo                                            |
+|---------------------------|--------------------------------------|----------------------------------------------------|
+| JWT_SECRET                | Clave HMAC-SHA256 (min 32 chars)     | un-secreto-de-32-o-mas-chars                       |
+| DB_URL                    | URL JDBC de PostgreSQL               | jdbc:postgresql://localhost:5432/pricewise          |
+| DB_USERNAME               | Usuario de PostgreSQL                | postgres                                           |
+| DB_PASSWORD               | Contrasena PostgreSQL                | mi_password_segura                                 |
+| SPRING_PROFILES_ACTIVE    | Perfil activo                        | dev o prod                                         |
+| KEEPA_API_KEY             | API key de keepa.com                 | xxxxxxxxxxxxxxxxxxx                                |
 
 CONFIGURACION BASICA (application.yml):
 
@@ -1482,8 +1517,8 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/pricewise
-    username: postgres
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pricewise}
+    username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD}
     hikari:
       maximum-pool-size: 20
@@ -1495,6 +1530,9 @@ spring:
       ddl-auto: update
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        default_batch_fetch_size: 16  # Previene N+1 en relaciones LAZY
 
 jwt:
   secret: ${JWT_SECRET}

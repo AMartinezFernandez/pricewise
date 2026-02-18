@@ -44,8 +44,135 @@ junto con sus causas raiz y soluciones aplicadas.
 | 31 | StackOverflowError (Recursion) en JSON response   | 2026-02-14 | OK     |
 | 32 | LazyInitializationException en Admin Dashboard    | 2026-02-14 | OK     |
 | 33 | DatabaseSeeder omite empresas si una existe       | 2026-02-14 | OK     |
+| 34 | ASIN no se autofinancia al buscar en Keepa        | 2026-02-16 | OK     |
+| 35 | Mensaje error login generico (401)                | 2026-02-16 | OK     |
+| 36 | Lista de productos no refresca tras añadir/borrar | 2026-02-16 | OK     |
+| 37 | Dashboard no actualiza contadores al entrar       | 2026-02-16 | OK     |
+| 38 | Creación de usuarios no permitía elegir empresa   | 2026-02-16 | OK     |
+| 39 | Error creación usuario - Campos faltantes en DTO  | 2026-02-16 | OK     |
+
 
 ---
+
+## Bug #34: ASIN no se autofinancia al buscar en Keepa
+
+**Fecha:** 2026-02-16
+**Estado:** OK
+
+### Sintomas
+- Al buscar un producto en Keepa y pulsar "Añadir", el campo ASIN en la pantalla de creación aparecía vacío.
+
+### Causa Raiz
+- El mapeo del objeto `ProductResponse` temporal (con ID -1) no estaba asignando el campo `asin` correctamente desde el resultado de Keepa.
+
+### Solucion
+- Actualizar `ProductViewModel.kt` para asignar `asin = data.asin` al crear el objeto temporal.
+
+### Archivos Modificados
+- `ProductViewModel.kt`
+
+---
+
+## Bug #35: Mensaje error login generico (401)
+
+**Fecha:** 2026-02-16
+**Estado:** OK
+
+### Sintomas
+- Al introducir credenciales incorrectas, el usuario veía "Session expired" en lugar de "Credenciales incorrectas".
+
+### Causa Raiz
+- El manejo de errores en `Result.kt` trataba todos los 401 como expiración de sesión.
+
+### Solucion
+- Diferenciar el mensaje de error para 401 en la capa de UI/Repository o generalizar el mensaje a "Credenciales incorrectas o sesión expirada".
+
+### Archivos Modificados
+- `Result.kt`
+
+---
+
+## Bug #36: Lista de productos no refresca tras añadir/borrar
+
+**Fecha:** 2026-02-16
+**Estado:** OK
+
+### Sintomas
+- El usuario añadía o borraba un producto y la lista principal no reflejaba los cambios inmediatamente.
+
+### Causa Raiz
+- La lista de productos se cargaba solo al iniciar el ViewModel y no escuchaba cambios globales o no se forzaba la recarga al volver a la pantalla.
+
+### Solucion
+- Añadir un botón de refresco manual en la `TopAppBar` de `ProductListScreen`.
+- (Mejora futura: Implementar flujo de eventos o `SharedFlow` para refresco automático).
+
+### Archivos Modificados
+- `ProductListScreen.kt`
+
+---
+
+## Bug #37: Dashboard no actualiza contadores al entrar
+
+**Fecha:** 2026-02-16
+**Estado:** OK
+
+### Sintomas
+- Los contadores del Dashboard (productos, alertas) no se actualizaban si se cambiaban datos en otras pantallas y se volvía al Dashboard.
+
+### Causa Raiz
+- `DashboardViewModel` cargaba datos solo en `init {}`.
+
+### Solucion
+- Añadir `LaunchedEffect(Unit) { viewModel.refresh() }` en `DashboardScreen` para recargar al entrar.
+
+### Archivos Modificados
+- `DashboardScreen.kt`
+- `DashboardViewModel.kt`
+
+---
+
+## Bug #38: Creación de usuarios no permitía elegir empresa
+
+**Fecha:** 2026-02-16
+**Estado:** OK
+
+### Sintomas
+- El administrador global no podía asignar una empresa específica al crear un usuario.
+- El administrador de empresa no veía feedback de a qué empresa estaba añadiendo el usuario.
+
+### Causa Raiz
+- Falta de implementación de selectores de empresa en `CreateUserScreen`.
+
+### Solucion
+- Implementar lógica condicional en `CreateUserScreen`: Dropdown para ADMIN, Texto fijo para COMPANY_ADMIN.
+- Cargar lista de empresas desde `AdminRepository`.
+
+### Archivos Modificados
+- `CreateUserScreen.kt`
+- `CreateUserViewModel.kt` (Mejora: soporte "ROLE_ADMIN")
+
+---
+
+## Bug #39: Error creación usuario - Campos faltantes en petición
+
+**Fecha:** 2026-02-16
+**Estado:** OK
+
+### Sintomas
+- Al pulsar "Crear Usuario", la petición fallaba o creaba el usuario sin asignar empresa/rol correctamente (backend recibía nulls).
+
+### Causa Raiz
+- El modelo `CreateEmployeeRequest` en `ApiModels.kt` no incluía los campos `companyId` ni `role`.
+
+### Solucion
+- Añadir campos `companyId` y `role` al data class `CreateEmployeeRequest`.
+
+### Archivos Modificados
+- `ApiModels.kt`
+
+- `CreateUserViewModel.kt`
+
 
 ## Bug #26: Column "company_code" does not exist in login
 

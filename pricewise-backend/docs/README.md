@@ -51,6 +51,8 @@ cp .env.example .env
 Editar el archivo .env con tus valores:
 
 JWT_SECRET=tu_clave_secreta_aqui
+DB_URL=jdbc:postgresql://localhost:5432/pricewise_db
+DB_USERNAME=postgres
 DB_PASSWORD=tu_password_de_bd
 SPRING_PROFILES_ACTIVE=dev
 KEEPA_API_KEY=tu_api_key_de_keepa
@@ -197,9 +199,11 @@ SEGURIDAD
 
 - Autenticacion JWT stateless
 - Contraseñas hasheadas con BCrypt
-- CORS configurable
+- CORS configurable por perfil (restrictivo en produccion)
 - CSRF deshabilitado (apropiado para APIs REST)
 - Proteccion de endpoints por rol
+- Rate limiting en login y registro (10 intentos/minuto por IP)
+- Todas las credenciales externalizadas a variables de entorno
 
 Recomendaciones:
 - No subir .env a Git
@@ -236,7 +240,7 @@ COMANDOS UTILES
 mvn spring-boot:run          Ejecutar en desarrollo
 mvn clean package            Compilar
 mvn test                     Ejecutar tests
-psql -U alvaromartinez -d pricewise_db   Conectar a PostgreSQL
+psql -U postgres -d pricewise_db         Conectar a PostgreSQL
 
 
 AUTOR

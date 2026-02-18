@@ -1,7 +1,7 @@
 # Informe de Seguridad - PriceWise Backend
 
-**Fecha:** 2026-02-10
-**Version:** 1.0
+**Fecha:** 2026-02-16
+**Version:** 1.1
 
 ---
 
@@ -97,14 +97,19 @@ public ResponseEntity<?> createEmployee(...) { ... }
 ### Aislamiento de Datos por Empresa
 - **Estado:** Seguro
 - Cada usuario pertenece a una `Company` via foreign key
-- Todos los endpoints de productos filtran por `companyId`, no por `userId`
+- Todos los endpoints (productos, alertas, recomendaciones) filtran por `companyId`, no por `userId`
 - El `companyId` se extrae del JWT en cada peticion via `UserPrincipal`
-- Si un usuario intenta acceder a datos de otra empresa recibe 400
+- Si un usuario intenta acceder a datos de otra empresa recibe 404
+- Las alertas se consultan via `product.company.id` en JPQL para garantizar aislamiento
 
 ```java
 // ProductService.java — aislamiento por empresa
 ProductResponse response = productService.getProduct(
     userPrincipal.getCompanyId(), id);
+
+// AlertRepository.java — alertas aisladas por empresa
+@Query("SELECT a FROM Alert a WHERE a.product.company.id = :companyId")
+Page<Alert> findByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
 ```
 
 ### Gestion de Empleados
@@ -143,11 +148,14 @@ private String password;
 
 ### Variables de Entorno
 - **Estado:** Seguro
+- URL de BD via variable `DB_URL`
+- Username de BD via variable `DB_USERNAME`
 - Credenciales de BD via variable `DB_PASSWORD`
 - JWT secret via variable `JWT_SECRET`
 - API key de Keepa via variable `KEEPA_API_KEY`
 - El `.env.example` no contiene valores reales, solo ejemplos
 - El `.gitignore` excluye `.env` del control de versiones
+- Ninguna credencial esta hardcodeada en `application.yml`
 
 ---
 
@@ -165,7 +173,7 @@ private String password;
 En desarrollo (`SPRING_PROFILES_ACTIVE=dev`):
 ```yaml
 cors:
-  allow-all: true  # Acepta cualquier origen
+  allow-all: true  # Acepta cualquier origen, credentials deshabilitado
 ```
 
 En produccion (`SPRING_PROFILES_ACTIVE=prod`):
@@ -177,8 +185,9 @@ cors:
     - https://www.miapp.com
 ```
 
-El flag `allowCredentials: true` esta habilitado solo cuando se especifica
-un origen concreto (no con `*`), siguiendo la especificacion CORS.
+- En desarrollo: `allowCredentials: false` con `allowedOriginPatterns: *` (seguro)
+- En produccion: `allowCredentials: true` solo con origenes especificos
+- Headers permitidos restringidos: `Authorization`, `Content-Type`, `Accept`, `Origin`, `X-Requested-With`
 
 ### CSRF
 - **Estado:** Adecuado
@@ -192,8 +201,6 @@ un origen concreto (no con `*`), siguiendo la especificacion CORS.
 
 ### Mapa de Acceso por Endpoint
 
-| Endpoint                               | Acceso         | Notas                                      |
-|----------------------------------------|----------------|--------------------------------------------|
 | Endpoint                               | Acceso         | Notas                                      |
 |----------------------------------------|----------------|--------------------------------------------|
 | POST /api/admin/companies              | ADMIN          | Crea empresa + COMPANY_ADMIN + código auto |
@@ -321,8 +328,14 @@ spring:
     hibernate:
       ddl-auto: validate  # Solo verifica, no modifica esquema
     show-sql: false
+    properties:
+      hibernate:
+        default_batch_fetch_size: 16  # Previene N+1 en relaciones LAZY
 
   datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pricewise}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
     hikari:
       maximum-pool-size: 20
 
@@ -342,10 +355,6 @@ cors:
 ## Acciones Recomendadas
 
 ### Pendientes (Prioridad Media)
-
-1. **Rate Limiting** en `/api/auth/login` y `/api/auth/register`
-   Actualmente sin limite de intentos. Un atacante puede intentar fuerza bruta.
-   Implementar con Bucket4j o Spring Security's brute-force protection.
 
 2. **Certificate Pinning para Keepa API**
    Implementar `CertificatePinner` de OkHttp para prevenir ataques man-in-the-middle
@@ -371,13 +380,21 @@ cors:
 - JWT_SECRET validado al arrancar con error fatal en produccion
 - BCrypt para contrasenas con salt automatico
 - CORS configurado por perfil (restrictivo en produccion)
+- CORS: `allowCredentials` deshabilitado con wildcard origins (fix seguridad)
+- CORS: headers permitidos restringidos a whitelist explicita
 - CSRF deshabilitado correctamente para API REST stateless
 - Verificacion de propiedad de recursos en capa de servicio
 - Soft delete sin exponer datos borrados en queries
 - Admin no puede desactivarse a si mismo
 - Token expirado devuelve 401 claro (no 403 generico)
 - Logs de BD sin parametros sensibles en produccion
-- Variables de entorno para todos los secretos
+- Variables de entorno para todos los secretos (incluidos DB_URL y DB_USERNAME)
+- Rate limiting en `/api/auth/login` y `/api/auth/register` (10 intentos/minuto por IP)
+- Dependencia Keepa fijada a version concreta (2.04) en lugar de LATEST
+- Multi-tenancy: alertas corregidas para filtrar por `companyId` via JPQL en lugar de `userId`
+- Prevencion N+1: `default_batch_fetch_size: 16` + JOIN FETCH en consultas criticas
+- Login optimizado: eliminada query redundante a `userRepository.findByEmail()`, datos extraidos de `UserPrincipal`
+- `UserPrincipal` enriquecido con `companyName`, `role` y `displayUsername` para evitar re-queries
 
 ---
 

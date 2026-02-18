@@ -44,3 +44,6 @@ application-local.properties
 NOTES.md
 TODO.md
 SECRETS.md
+
+# Postman
+PriceWise_API.postman_collection.json

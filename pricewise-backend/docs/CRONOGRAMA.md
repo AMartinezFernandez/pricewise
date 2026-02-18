@@ -338,9 +338,30 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 ---
 
+
+---
+
+## Fase 16: Refinamiento de UI y Mejora de UX (2026-02-16)
+
+### Mejoras en Cliente Android
+- OK **Refresco Manual:** Botón de actualizar en listado de productos.
+- OK **Auto-Refresco Dashboard:** Actualización de métricas al entrar en la pantalla.
+- OK **Creación de Usuarios:**
+    - Selector de empresas para Global Admin.
+    - Visualización de empresa para Company Admin.
+    - **Fix:** Modelo de datos `CreateEmployeeRequest` corregido (`companyId`, `role`).
+- OK **Feedback Autenticación:** Mensajes de error más claros (401 vs sesión expirada).
+- OK **Correcciones:** Autofill de ASIN en creación de producto desde búsqueda Keepa.
+
+### Estado
+- Bugs resueltos: 39 (Total acumulado)
+- Documentación actualizada.
+
+---
+
 ## Pendiente
 
-### Fase 16: Migraciones de Base de Datos con Flyway
+### Fase 17: Migraciones de Base de Datos con Flyway
 
 - [ ] Integrar Flyway para gestion de migraciones versionadas
 - [ ] Migrar de `ddl-auto: update` a scripts SQL versionados
@@ -349,7 +370,7 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 ---
 
-### Fase 17: Mejoras de Rendimiento
+### Fase 18: Mejoras de Rendimiento
 
 - [ ] Paginacion en historial de precios (endpoint `GET /api/products/{id}/history`)
 - [ ] Limite de registros devueltos por CompetitorPrice (actualmente sin limite)
@@ -358,7 +379,7 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 ---
 
-### Fase 18: Nuevas Funcionalidades
+### Fase 19: Nuevas Funcionalidades
 
 #### Alertas y Notificaciones
 - [ ] Endpoint `GET /api/alerts` para listar alertas de la empresa
@@ -383,7 +404,7 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 ---
 
-### Fase 19: Escalabilidad
+### Fase 20: Escalabilidad
 
 #### Cache Distribuida
 - [ ] Migrar Simple Cache a Redis para persistir cache entre reinicios
@@ -402,7 +423,7 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 ---
 
-### Fase 20: Seguridad Avanzada
+### Fase 21: Seguridad Avanzada
 
 - [ ] Certificate pinning para la API de Keepa con OkHttp CertificatePinner
 - [ ] Audit log: registrar todas las operaciones ADMIN en tabla separada
@@ -417,15 +438,15 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 | Metrica                  | Valor    |
 |--------------------------|----------|
-| Lineas de codigo Java    | ~5.950   |
-| Archivos .java           | ~49      |
+| Lineas de codigo Java    | ~6.100   |
+| Archivos .java           | ~50      |
 | Entidades JPA            | 8        |
 | Repositorios             | 8        |
 | Servicios                | 4        |
 | Controladores            | 6        |
-| DTOs                     | ~23      |
-| Endpoints REST           | ~34      |
+| DTOs                     | ~25      |
+| Endpoints REST           | ~35      |
 | APIs externas            | 1 (Keepa)|
-| Bugs resueltos           | 30       |
+| Bugs resueltos           | 39       |
 | Roles de usuario         | 3        |
 | Version BD (DDL)         | update   |
