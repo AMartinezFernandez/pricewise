@@ -3,9 +3,13 @@ package com.alvaro.pricewise.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alvaro.pricewise.dto.auth.AuthDTOs.CompanyResponse;
@@ -48,6 +53,7 @@ public class AdminController {
     private final com.alvaro.pricewise.repository.CompetitorRepository competitorRepository;
     private final com.alvaro.pricewise.service.KeepaService keepaService;
     private final com.alvaro.pricewise.service.AuthService authService;
+    private final com.alvaro.pricewise.service.AuditService auditService;
     private final PasswordEncoder passwordEncoder;
     private final org.quartz.Scheduler scheduler;
 
@@ -137,8 +143,11 @@ public class AdminController {
     @Operation(summary = "Crear empresa", 
                description = "Crea una nueva empresa con su administrador. Devuelve el código de empresa para registro de empleados.")
     public ResponseEntity<ApiResponse<CompanyResponse>> createCompany(
+            @AuthenticationPrincipal com.alvaro.pricewise.security.UserPrincipal userPrincipal,
             @Valid @RequestBody CreateCompanyRequest request) {
         CompanyResponse response = authService.createCompany(request);
+        auditService.logAction(userPrincipal, "CREATE_COMPANY", "COMPANY", response.getId(),
+                "Empresa creada: " + request.getName());
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Empresa creada exitosamente"));
@@ -347,13 +356,34 @@ public class AdminController {
     @DeleteMapping("/users/{userId}")
     @Operation(summary = "Eliminar usuario", description = "Elimina un usuario del sistema permanentemente")
     @org.springframework.transaction.annotation.Transactional
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable @org.springframework.lang.NonNull Long userId) {
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @AuthenticationPrincipal com.alvaro.pricewise.security.UserPrincipal userPrincipal,
+            @PathVariable @org.springframework.lang.NonNull Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-        
+
+        auditService.logAction(userPrincipal, "DELETE_USER", "USER", userId,
+                "Usuario eliminado: " + user.getUsername());
         userRepository.delete(user);
-        
+
         return ResponseEntity.ok(ApiResponse.success(null, "Usuario eliminado permanentemente"));
+    }
+
+    /**
+     * Consulta el log de auditoria.
+     */
+    @GetMapping("/audit-logs")
+    @Operation(summary = "Consultar audit log", description = "Lista las operaciones registradas en el audit log")
+    public ResponseEntity<ApiResponse<com.alvaro.pricewise.dto.common.PageResponse<com.alvaro.pricewise.entity.AuditLog>>> getAuditLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String action) {
+
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
+        Page<com.alvaro.pricewise.entity.AuditLog> logs = auditService.getAuditLogs(pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                com.alvaro.pricewise.dto.common.PageResponse.from(logs)));
     }
 
     // ========== DTOs internos ==========

@@ -72,6 +72,9 @@ class AdminControllerTest {
     private AuthService authService;
 
     @MockBean
+    private com.alvaro.pricewise.service.AuditService auditService;
+
+    @MockBean
     private PasswordEncoder passwordEncoder;
 
     @MockBean
