@@ -39,4 +39,7 @@ public interface PriceHistoryRepository extends JpaRepository<PriceHistory, Long
     @Query("SELECT COUNT(ph) FROM PriceHistory ph WHERE ph.product.id = :productId " +
            "AND ph.recordedAt >= :since")
     long countPriceChangesSince(@Param("productId") Long productId, @Param("since") LocalDateTime since);
+
+    // Eliminar registros anteriores a una fecha (para limpieza TTL)
+    void deleteByRecordedAtBefore(LocalDateTime before);
 }

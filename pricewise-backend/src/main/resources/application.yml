@@ -88,6 +88,14 @@ keepa:
   # Límite de requests por minuto (depende de tu plan)
   rate-limit: 10
 
+# =========================================
+# Limpieza automatica de datos historicos
+# =========================================
+pricewise:
+  cleanup:
+    competitor-prices-days: 365
+    price-history-days: 730
+
 # Swagger/OpenAPI
 springdoc:
   api-docs:
