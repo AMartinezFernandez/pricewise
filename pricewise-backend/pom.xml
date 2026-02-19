@@ -85,6 +85,16 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         
+        <!-- Flyway - Migraciones de base de datos -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
         <!-- Base de Datos -->
         <dependency>
             <groupId>org.postgresql</groupId>
