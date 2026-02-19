@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -43,4 +44,9 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     @Query("SELECT a.alertType, COUNT(a) FROM Alert a " +
            "WHERE a.user.id = :userId AND a.isRead = false GROUP BY a.alertType")
     List<Object[]> countUnreadByTypeForUser(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("UPDATE Alert a SET a.isRead = true, a.readAt = CURRENT_TIMESTAMP " +
+           "WHERE a.product.company.id = :companyId AND a.isRead = false")
+    int markAllAsReadByCompanyId(@Param("companyId") Long companyId);
 }

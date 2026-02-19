@@ -340,4 +340,9 @@ public class PriceAnalysisService {
         alert.setReadAt(LocalDateTime.now());
         alertRepository.save(alert);
     }
+
+    @Transactional
+    public int markAllAlertsAsRead(@org.springframework.lang.NonNull Long companyId) {
+        return alertRepository.markAllAsReadByCompanyId(companyId);
+    }
 }

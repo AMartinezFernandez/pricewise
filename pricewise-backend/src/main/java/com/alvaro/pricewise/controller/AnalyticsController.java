@@ -180,6 +180,17 @@ public class AnalyticsController {
         return ResponseEntity.ok(ApiResponse.success("Alerta marcada como leida"));
     }
 
+    @PostMapping("/alerts/read-all")
+    @Operation(summary = "Marcar todas las alertas como leidas")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> markAllAlertsAsRead(
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        int updated = priceAnalysisService.markAllAlertsAsRead(userPrincipal.getCompanyId());
+        Map<String, Object> result = new HashMap<>();
+        result.put("alertsMarkedAsRead", updated);
+        return ResponseEntity.ok(ApiResponse.success(result, "Todas las alertas marcadas como leidas"));
+    }
+
     @PostMapping("/analyze")
     @Operation(summary = "Ejecutar analisis de precios")
     public ResponseEntity<ApiResponse<Map<String, Object>>> runAnalysis(
