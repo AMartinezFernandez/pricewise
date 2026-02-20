@@ -359,94 +359,107 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 ---
 
-## Pendiente
+## Fase 17: Migraciones de Base de Datos con Flyway (2026-02-22)
 
-### Fase 17: Migraciones de Base de Datos con Flyway
-
-- [ ] Integrar Flyway para gestion de migraciones versionadas
-- [ ] Migrar de `ddl-auto: update` a scripts SQL versionados
-- [ ] Scripts iniciales V1__create_companies.sql, V2__create_users.sql, etc.
-- [ ] Documentar proceso de rollback de migraciones
-
----
-
-### Fase 18: Mejoras de Rendimiento
-
-- [ ] Paginacion en historial de precios (endpoint `GET /api/products/{id}/history`)
-- [ ] Limite de registros devueltos por CompetitorPrice (actualmente sin limite)
-- [ ] Indices adicionales en `price_history.recorded_at` para queries de rango de fecha
-- [ ] Caducidad de datos historicos: TTL configurable para purgar registros antiguos
+- OK Integrar Flyway para gestion de migraciones versionadas
+- OK Migrar de `ddl-auto: update` a `ddl-auto: validate` con scripts SQL
+- OK `V1__baseline.sql` con DDL completo de las 8 tablas e indices
+- OK `baseline-on-migrate: true` para bases de datos existentes
+- OK Flyway deshabilitado en perfil test (H2 con create-drop)
+- OK Documentado en `docs/FLYWAY.md`
 
 ---
 
-### Fase 19: Nuevas Funcionalidades
+## Fase 18: Mejoras de Rendimiento (2026-02-22)
 
-#### Alertas y Notificaciones
-- [ ] Endpoint `GET /api/alerts` para listar alertas de la empresa
-- [ ] Endpoint `PUT /api/alerts/{id}/read` para marcar como leida
-- [ ] Endpoint `PUT /api/alerts/read-all` para marcar todas como leidas
+- OK Indices compuestos en `competitor_prices(product_id, scraped_at)` y `price_history(product_id, recorded_at)` via `V2__add_composite_indexes.sql`
+- OK `DataCleanupService` con limpieza TTL programada (diario a las 3 AM)
+- OK Retencion configurable: competitor_prices 365 dias, price_history 730 dias
+- OK 2 tests unitarios para DataCleanupService
+
+---
+
+## Fase 19: Nuevas Funcionalidades (2026-02-22)
+
+### Alertas y Notificaciones
+- OK Endpoint `GET /api/analytics/alerts` para listar alertas de la empresa
+- OK Endpoint `POST /api/analytics/alerts/{id}/read` para marcar como leida
+- OK Endpoint `POST /api/analytics/alerts/read-all` para marcar todas como leidas
 - [ ] Integracion con email (Spring Mail + plantilla HTML) para alertas CRITICAL
 
-#### Recomendaciones
-- [ ] Endpoint `GET /api/recommendations` para listar recomendaciones pendientes
-- [ ] Endpoint `PUT /api/recommendations/{id}/apply` para aplicar precio sugerido
-- [ ] Endpoint `PUT /api/recommendations/{id}/dismiss` para descartar
+### Recomendaciones
+- OK Endpoint `GET /api/analytics/recommendations` para listar recomendaciones pendientes
+- OK Endpoint `POST /api/analytics/recommendations/{id}/apply` para aplicar precio sugerido
+- OK Endpoint `POST /api/analytics/recommendations/{id}/dismiss` para descartar
 
-#### Historial
-- [ ] Endpoint `GET /api/products/{id}/history` con paginacion y filtro por fechas
-- [ ] Graficos de evolucion de precio (datos para el frontend)
-- [ ] Comparativa historica precio propio vs competencia
-
-#### Competidores Adicionales
-- [ ] Implementar scraping con Jsoup para competidores sin API
-- [ ] UI de configuracion de competidores (MANUAL, SCRAPING)
-- [ ] Soporte para multiples locales de Amazon por empresa
+### Historial de Precios
+- OK `PriceHistoryController` con 3 endpoints:
+  - `GET /api/products/{id}/history` con paginacion y filtro por fechas
+  - `GET /api/products/{id}/history/recent` ultimas 10 entradas
+- OK `PriceHistoryDTOs` con mapeo desde entidad
+- OK 6 tests unitarios para PriceHistoryController
 
 ---
 
-### Fase 20: Escalabilidad
+## Fase 20: Escalabilidad — Observabilidad (2026-02-22)
 
-#### Cache Distribuida
+### Observabilidad
+- OK Metricas custom de Micrometer para peticiones Keepa (exito, fallo, latencia)
+- OK `MetricsConfig` con contadores y timers registrados en Prometheus
+- OK Exportacion de metricas via `/actuator/prometheus`
+- OK Endpoints actuator expuestos: health, info, prometheus, metrics
+
+---
+
+## Fase 21: Seguridad Avanzada (2026-02-22)
+
+- OK Audit log: entidad `AuditLog`, `AuditService`, `AuditLogRepository`
+- OK Migracion `V3__create_audit_logs.sql` para tabla audit_logs
+- OK Logging automatico en operaciones de `AdminController` (createCompany, deleteUser)
+- OK Endpoint `GET /api/admin/audit-logs` con paginacion
+- OK 2 tests unitarios para AuditService
+- OK OWASP dependency-check plugin integrado en Maven (failBuildOnCVSS >= 8)
+- OK Rate limiting en `/api/auth/login` y `/api/auth/register` (RateLimitingFilter existente)
+
+---
+
+## Futuro (Diferido)
+
+### Funcionalidades
+- [ ] Integracion con email (Spring Mail) para alertas CRITICAL
+- [ ] Comparativa historica precio propio vs competencia (graficos)
+- [ ] Scraping con Jsoup para competidores sin API
+- [ ] Soporte para multiples locales de Amazon por empresa
+
+### Escalabilidad
 - [ ] Migrar Simple Cache a Redis para persistir cache entre reinicios
-- [ ] TTL configurable por tipo de cache
-- [ ] Cache de respuestas de Keepa para no repetir misma consulta en 1 hora
-
-#### Rate Limiting
-- [ ] Limitar peticiones por empresa a endpoints costosos (Keepa sync)
-- [ ] Bucket4j o similar para rate limiting por IP y por usuario
-
-#### Observabilidad
-- [ ] Metricas custom de Micrometer para peticiones Keepa (exito, fallo, latencia)
-- [ ] Exportacion de metricas a Prometheus
+- [ ] Cache de respuestas de Keepa (1 hora TTL)
+- [ ] Bucket4j para rate limiting avanzado por IP y usuario
 - [ ] Dashboard Grafana con KPIs del sistema
 - [ ] Tracing distribuido con Zipkin
 
----
-
-### Fase 21: Seguridad Avanzada
-
-- [ ] Certificate pinning para la API de Keepa con OkHttp CertificatePinner
-- [ ] Audit log: registrar todas las operaciones ADMIN en tabla separada
+### Seguridad
+- [ ] Certificate pinning para la API de Keepa
 - [ ] 2FA opcional para cuentas ADMIN y COMPANY_ADMIN
 - [ ] Rotacion automatica de JWT_SECRET con periodo de gracia
-- [ ] OWASP dependency check integrado en el build de Maven
-- [ ] Rate limiting especifico en `/api/auth/login` y `/api/auth/register`
 
 ---
 
 ## Estadisticas del Proyecto
 
-| Metrica                  | Valor    |
-|--------------------------|----------|
-| Lineas de codigo Java    | ~6.100   |
-| Archivos .java           | ~50      |
-| Entidades JPA            | 8        |
-| Repositorios             | 8        |
-| Servicios                | 4        |
-| Controladores            | 6        |
-| DTOs                     | ~25      |
-| Endpoints REST           | ~35      |
-| APIs externas            | 1 (Keepa)|
-| Bugs resueltos           | 39       |
-| Roles de usuario         | 3        |
-| Version BD (DDL)         | update   |
+| Metrica                  | Valor      |
+|--------------------------|------------|
+| Lineas de codigo Java    | ~7.100     |
+| Archivos .java           | ~55        |
+| Entidades JPA            | 9          |
+| Repositorios             | 9          |
+| Servicios                | 7          |
+| Controladores            | 7          |
+| DTOs                     | ~28        |
+| Endpoints REST           | ~40        |
+| APIs externas            | 1 (Keepa)  |
+| Tests unitarios          | 155        |
+| Bugs resueltos           | 39         |
+| Roles de usuario         | 3          |
+| Migraciones Flyway       | 3          |
+| Version BD (DDL)         | validate   |
