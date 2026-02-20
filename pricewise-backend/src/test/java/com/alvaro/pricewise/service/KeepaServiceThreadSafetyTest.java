@@ -22,6 +22,10 @@ import com.alvaro.pricewise.config.KeepaConfig;
 import com.alvaro.pricewise.repository.CompetitorPriceRepository;
 import com.alvaro.pricewise.repository.CompetitorRepository;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
 /**
  * Tests para KeepaService enfocados en concurrencia y thread-safety.
  * Usa ReflectionTestUtils para evitar problemas de Mockito con Java 25.
@@ -42,7 +46,12 @@ class KeepaServiceThreadSafetyTest {
     void setUp() {
         // Crear KeepaConfig real en lugar de mock (evita problemas con ByteBuddy/Java 25)
         keepaConfig = new KeepaConfig();
-        keepaService = new KeepaService(keepaConfig, competitorRepository, competitorPriceRepository);
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        Counter successCounter = Counter.builder("pricewise.keepa.requests").tag("result", "success").register(registry);
+        Counter errorCounter = Counter.builder("pricewise.keepa.requests").tag("result", "error").register(registry);
+        Timer timer = Timer.builder("pricewise.keepa.duration").register(registry);
+        keepaService = new KeepaService(keepaConfig, competitorRepository, competitorPriceRepository,
+                successCounter, errorCounter, timer);
     }
 
     @Test

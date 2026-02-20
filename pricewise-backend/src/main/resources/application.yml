@@ -96,6 +96,21 @@ pricewise:
     competitor-prices-days: 365
     price-history-days: 730
 
+# =========================================
+# Actuator / Prometheus
+# =========================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: pricewise
+
 # Swagger/OpenAPI
 springdoc:
   api-docs:

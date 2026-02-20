@@ -22,6 +22,8 @@ import com.keepa.api.backend.helper.ProductAnalyzer;
 import com.keepa.api.backend.structs.AmazonLocale;
 import com.keepa.api.backend.structs.Request;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,9 @@ public class KeepaService {
     private final KeepaConfig keepaConfig;
     private final CompetitorRepository competitorRepository;
     private final CompetitorPriceRepository competitorPriceRepository;
+    private final Counter keepaRequestsSuccess;
+    private final Counter keepaRequestsError;
+    private final Timer keepaDuration;
 
     private KeepaAPI keepaAPI;
     private volatile Competitor amazonCompetitor;
@@ -112,7 +117,16 @@ public class KeepaService {
      */
     @Async("keepaExecutor")
     public CompletableFuture<Optional<CompetitorPrice>> fetchPriceByAsin(String asin, Product product) {
-        return fetchPriceWithRetry(asin, product, 0);
+        Timer.Sample sample = Timer.start();
+        return fetchPriceWithRetry(asin, product, 0)
+                .whenComplete((result, ex) -> {
+                    sample.stop(keepaDuration);
+                    if (ex != null || result == null || result.isEmpty()) {
+                        keepaRequestsError.increment();
+                    } else {
+                        keepaRequestsSuccess.increment();
+                    }
+                });
     }
 
     private CompletableFuture<Optional<CompetitorPrice>> fetchPriceWithRetry(String asin, Product product, int attempt) {
