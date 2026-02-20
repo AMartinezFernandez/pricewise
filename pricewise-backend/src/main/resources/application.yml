@@ -18,9 +18,16 @@ spring:
       pool-name: PriceWisePool
       leak-detection-threshold: 60000
   
-  # Cache en memoria
+  # Cache Redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   cache:
-    type: simple
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
   
   # JPA / Hibernate
   jpa:
