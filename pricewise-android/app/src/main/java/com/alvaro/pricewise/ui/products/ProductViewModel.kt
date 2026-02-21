@@ -27,7 +27,9 @@ data class ProductDetailUiState(
     val syncResult: CompetitorPriceResponse? = null,
     val isSyncing: Boolean = false,
     val syncError: String? = null,
-    val deleteSuccess: Boolean = false
+    val deleteSuccess: Boolean = false,
+    val priceHistory: List<PriceHistoryResponse> = emptyList(),
+    val isLoadingHistory: Boolean = false
 )
 
 data class ProductFormUiState(
@@ -264,5 +266,22 @@ class ProductViewModel @Inject constructor(
 
     fun clearDetailSyncResult() {
         _detailState.value = _detailState.value.copy(syncResult = null, syncError = null)
+    }
+
+    // ─── Historial de precios ─────────────────────────────────────────
+
+    fun loadPriceHistory(productId: Long) {
+        viewModelScope.launch {
+            _detailState.value = _detailState.value.copy(isLoadingHistory = true)
+            when (val result = repository.getRecentPriceHistory(productId)) {
+                is Result.Success -> _detailState.value = _detailState.value.copy(
+                    priceHistory = result.data.data ?: emptyList(),
+                    isLoadingHistory = false
+                )
+                is Result.Error -> _detailState.value = _detailState.value.copy(
+                    isLoadingHistory = false
+                )
+            }
+        }
     }
 }

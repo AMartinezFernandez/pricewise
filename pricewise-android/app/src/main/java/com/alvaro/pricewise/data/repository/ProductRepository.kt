@@ -44,4 +44,7 @@ class ProductRepository @Inject constructor(
 
     suspend fun getAmazonPrice(asin: String) =
         safeApiCall { api.getAmazonPrice(asin) }
+
+    suspend fun getRecentPriceHistory(productId: Long) =
+        safeApiCall { api.getRecentPriceHistory(productId) }
 }

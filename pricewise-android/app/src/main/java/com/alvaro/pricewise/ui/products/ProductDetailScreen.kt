@@ -31,6 +31,7 @@ fun ProductDetailScreen(
 
     LaunchedEffect(productId) {
         viewModel.loadProduct(productId)
+        viewModel.loadPriceHistory(productId)
     }
 
     LaunchedEffect(uiState.deleteSuccess) {
@@ -355,6 +356,73 @@ fun ProductDetailScreen(
                                                     Text("Actualizar con los nuevos datos")
                                                 }
                                             }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ─── Historial de precios ──────────────────────────
+                    if (uiState.priceHistory.isNotEmpty() || uiState.isLoadingHistory) {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    "Historial de precios",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+
+                                if (uiState.isLoadingHistory) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally),
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    uiState.priceHistory.forEach { entry ->
+                                        Row(
+                                            Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                val (icon, color) = when (entry.changeType) {
+                                                    "INCREASE" -> Icons.Default.TrendingUp to MaterialTheme.colorScheme.error
+                                                    "DECREASE" -> Icons.Default.TrendingDown to MaterialTheme.colorScheme.primary
+                                                    "INITIAL" -> Icons.Default.FiberNew to MaterialTheme.colorScheme.onSurfaceVariant
+                                                    else -> Icons.Default.Remove to MaterialTheme.colorScheme.onSurfaceVariant
+                                                }
+                                                Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = color)
+                                                Column {
+                                                    Text(
+                                                        formatPrice(entry.price),
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Medium
+                                                    )
+                                                    if (entry.percentageChange != null && entry.changeType != "INITIAL") {
+                                                        Text(
+                                                            "${if (entry.percentageChange > 0) "+" else ""}${"%.1f".format(entry.percentageChange)}%",
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = color
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            Text(
+                                                entry.recordedAt?.take(10) ?: "",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (entry != uiState.priceHistory.last()) {
+                                            HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
                                         }
                                     }
                                 }

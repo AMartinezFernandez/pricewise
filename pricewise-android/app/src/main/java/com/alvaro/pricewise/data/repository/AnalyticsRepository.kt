@@ -26,4 +26,7 @@ class AnalyticsRepository @Inject constructor(
 
     suspend fun markAlertRead(id: Long) =
         safeApiCall { api.markAlertRead(id) }
+
+    suspend fun markAllAlertsAsRead() =
+        safeApiCall { api.markAllAlertsAsRead() }
 }

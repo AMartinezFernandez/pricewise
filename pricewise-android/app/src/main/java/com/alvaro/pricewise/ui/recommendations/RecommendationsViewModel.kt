@@ -129,6 +129,27 @@ class RecommendationsViewModel @Inject constructor(
         }
     }
 
+    fun markAllAlertsAsRead() {
+        viewModelScope.launch {
+            when (repository.markAllAlertsAsRead()) {
+                is Result.Success -> {
+                    val updatedAlerts = _uiState.value.alerts.map { it.copy(isRead = true) }
+                    val updatedDash = _uiState.value.dashboard?.let {
+                        it.copy(unreadAlerts = 0)
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        alerts = updatedAlerts,
+                        dashboard = updatedDash,
+                        actionMessage = "Todas las alertas marcadas como leídas"
+                    )
+                }
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    actionMessage = "Error al marcar alertas como leídas"
+                )
+            }
+        }
+    }
+
     fun clearActionMessage() {
         _uiState.value = _uiState.value.copy(actionMessage = null)
     }

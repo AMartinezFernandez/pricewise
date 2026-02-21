@@ -163,10 +163,29 @@ fun RecommendationsScreen(
                                     onDismiss = { viewModel.dismissRecommendation(it) }
                                 )
                             } else {
-                                AlertsList(
-                                    alerts = uiState.alerts,
-                                    onMarkRead = { viewModel.markAlertRead(it) }
-                                )
+                                Column(modifier = Modifier.fillMaxSize()) {
+                                    val hasUnread = uiState.alerts.any { !it.isRead }
+                                    if (hasUnread) {
+                                        TextButton(
+                                            onClick = { viewModel.markAllAlertsAsRead() },
+                                            modifier = Modifier
+                                                .align(Alignment.End)
+                                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.DoneAll,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(Modifier.width(4.dp))
+                                            Text("Marcar todas como leídas")
+                                        }
+                                    }
+                                    AlertsList(
+                                        alerts = uiState.alerts,
+                                        onMarkRead = { viewModel.markAlertRead(it) }
+                                    )
+                                }
                             }
                         }
                     }

@@ -63,6 +63,12 @@ interface PriceWiseApi {
     @GET("api/products/brands")
     suspend fun getBrands(): Response<ApiResponse<List<String>>>
 
+    // ─── Historial de precios ───────────────────────────────────────────
+    @GET("api/products/{productId}/history/recent")
+    suspend fun getRecentPriceHistory(
+        @Path("productId") productId: Long
+    ): Response<ApiResponse<List<PriceHistoryResponse>>>
+
     // ─── Keepa / Competidores ────────────────────────────────────────────
     @GET("api/competitors/status")
     suspend fun getKeepaStatus(): Response<ApiResponse<KeepaStatus>>
@@ -99,6 +105,9 @@ interface PriceWiseApi {
 
     @POST("api/analytics/alerts/{id}/read")
     suspend fun markAlertRead(@Path("id") id: Long): Response<ApiResponse<String>>
+
+    @POST("api/analytics/alerts/read-all")
+    suspend fun markAllAlertsAsRead(): Response<ApiResponse<Map<String, Any>>>
 
     // ─── Admin / Empresas ────────────────────────────────────────────────
     @GET("api/admin/companies")
