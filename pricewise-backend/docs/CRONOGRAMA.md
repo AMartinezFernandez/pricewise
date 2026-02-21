@@ -423,6 +423,17 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 ---
 
+## Fase 22: Cache Distribuida con Redis (2026-02-22)
+
+- OK Dependencia `spring-boot-starter-data-redis` (Lettuce client)
+- OK `RedisCacheConfig.java` con TTL 1 hora, serializacion JSON, prefix `pricewise::`
+- OK Configuracion Redis en `application.yml` (`spring.cache.type: redis`)
+- OK Servicio Redis 7 Alpine en `docker-compose.yml` con healthcheck y volumen persistente
+- OK Tests aislados de Redis: `@ConditionalOnProperty` + exclusion de auto-config en perfiles test/dev
+- OK 155 tests pasan sin necesidad de Redis
+
+---
+
 ## Futuro (Diferido)
 
 ### Funcionalidades
@@ -432,7 +443,6 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 - [ ] Soporte para multiples locales de Amazon por empresa
 
 ### Escalabilidad
-- [ ] Migrar Simple Cache a Redis para persistir cache entre reinicios
 - [ ] Cache de respuestas de Keepa (1 hora TTL)
 - [ ] Bucket4j para rate limiting avanzado por IP y usuario
 - [ ] Dashboard Grafana con KPIs del sistema
@@ -449,8 +459,8 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 | Metrica                  | Valor      |
 |--------------------------|------------|
-| Lineas de codigo Java    | ~7.100     |
-| Archivos .java           | ~55        |
+| Lineas de codigo Java    | ~7.200     |
+| Archivos .java           | ~56        |
 | Entidades JPA            | 9          |
 | Repositorios             | 9          |
 | Servicios                | 7          |
@@ -462,4 +472,5 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 | Bugs resueltos           | 39         |
 | Roles de usuario         | 3          |
 | Migraciones Flyway       | 3          |
+| Cache                    | Redis      |
 | Version BD (DDL)         | validate   |
