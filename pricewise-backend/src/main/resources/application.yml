@@ -48,6 +48,19 @@ spring:
     baseline-version: 0
     locations: classpath:db/migration
 
+  # Email (SMTP) - Solo activo si pricewise.email.enabled=true
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
   # Perfiles
   profiles:
     active: dev
@@ -102,6 +115,9 @@ pricewise:
   cleanup:
     competitor-prices-days: 365
     price-history-days: 730
+  email:
+    from: ${MAIL_FROM:noreply@pricewise.app}
+    enabled: ${MAIL_ENABLED:false}
 
 # =========================================
 # Actuator / Prometheus
