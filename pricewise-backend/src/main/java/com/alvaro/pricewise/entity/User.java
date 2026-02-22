@@ -41,8 +41,6 @@ public class User {
     @Column(nullable = false, length = 100)
     private String email;
 
-    @NotBlank(message = "La contraseña es obligatoria")
-    @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
     @Column(nullable = false)
     private String password;
 
@@ -61,6 +59,11 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role = Role.EMPLOYEE;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private AuthProvider authProvider = AuthProvider.LOCAL;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -81,5 +84,10 @@ public class User {
         COMPANY_ADMIN,
         EMPLOYEE,
         ADMIN
+    }
+
+    public enum AuthProvider {
+        LOCAL,
+        GOOGLE
     }
 }

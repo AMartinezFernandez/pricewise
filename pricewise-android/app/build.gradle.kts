@@ -17,6 +17,10 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Google OAuth Web Client ID (from Google Cloud Console)
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID",
+            "\"${project.findProperty("GOOGLE_WEB_CLIENT_ID") ?: "placeholder"}\"")
     }
 
     buildTypes {
@@ -86,6 +90,11 @@ dependencies {
 
     // Coil - Carga de imágenes
     implementation(libs.coil.compose)
+
+    // Google Sign-In (Credential Manager)
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     debugImplementation(libs.androidx.ui.tooling)
 }

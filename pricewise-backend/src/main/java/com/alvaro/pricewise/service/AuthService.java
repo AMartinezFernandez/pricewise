@@ -11,9 +11,14 @@ import com.alvaro.pricewise.dto.auth.AuthDTOs.AuthResponse;
 import com.alvaro.pricewise.dto.auth.AuthDTOs.CompanyResponse;
 import com.alvaro.pricewise.dto.auth.AuthDTOs.CreateCompanyRequest;
 import com.alvaro.pricewise.dto.auth.AuthDTOs.CreateEmployeeRequest;
+import com.alvaro.pricewise.dto.auth.AuthDTOs.GoogleCompleteJoinRequest;
+import com.alvaro.pricewise.dto.auth.AuthDTOs.GoogleCompleteNewCompanyRequest;
+import com.alvaro.pricewise.dto.auth.AuthDTOs.GoogleLoginRequest;
+import com.alvaro.pricewise.dto.auth.AuthDTOs.GoogleLoginResponse;
 import com.alvaro.pricewise.dto.auth.AuthDTOs.LoginRequest;
 import com.alvaro.pricewise.dto.auth.AuthDTOs.RegisterRequest;
 import com.alvaro.pricewise.dto.auth.AuthDTOs.UserProfileResponse;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.alvaro.pricewise.entity.Company;
 import com.alvaro.pricewise.entity.User;
 import com.alvaro.pricewise.exception.BadRequestException;
@@ -43,6 +48,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final GoogleTokenService googleTokenService;
 
     /**
      * Registro público: el usuario proporciona un código de empresa para vincularse como EMPLOYEE.
@@ -294,6 +300,142 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         log.debug("Contraseña actualizada para usuario: {}", userId);
+    }
+
+    // ─── Google OAuth2 ─────────────────────────
+
+    /**
+     * Primer paso de Google Sign-In: valida token y comprueba si el usuario ya existe.
+     */
+    public GoogleLoginResponse googleLogin(GoogleLoginRequest request) {
+        GoogleIdToken.Payload payload = googleTokenService.verify(request.getIdToken());
+        String email = payload.getEmail();
+        String name = (String) payload.get("name");
+
+        log.debug("Google login para: {}", email);
+
+        return userRepository.findByEmail(email)
+                .map(user -> {
+                    UserPrincipal userPrincipal = UserPrincipal.create(user);
+                    String token = jwtService.generateToken(userPrincipal);
+                    return GoogleLoginResponse.authenticated(AuthResponse.of(
+                            token,
+                            user.getId(),
+                            user.getUsername(),
+                            user.getEmail(),
+                            user.getRole().name(),
+                            user.getCompany().getId(),
+                            user.getCompany().getName()
+                    ));
+                })
+                .orElseGet(() -> {
+                    log.debug("Usuario Google no encontrado, requiere setup: {}", email);
+                    return GoogleLoginResponse.needsSetup(email, name != null ? name : email.split("@")[0]);
+                });
+    }
+
+    /**
+     * Completa Google Sign-In creando una nueva empresa (usuario sera COMPANY_ADMIN).
+     */
+    @Transactional
+    public AuthResponse googleCompleteNewCompany(GoogleCompleteNewCompanyRequest request) {
+        GoogleIdToken.Payload payload = googleTokenService.verify(request.getGoogleIdToken());
+        String email = payload.getEmail();
+        String name = (String) payload.get("name");
+
+        if (userRepository.existsByEmail(email)) {
+            throw new BadRequestException("El email ya esta registrado");
+        }
+
+        String username = generateUniqueUsername(name != null ? name : email.split("@")[0]);
+
+        Company company = Company.builder()
+                .name(request.getCompanyName())
+                .businessType(request.getBusinessType())
+                .build();
+        company = companyRepository.save(company);
+
+        User user = User.builder()
+                .username(username)
+                .email(email)
+                .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
+                .company(company)
+                .role(User.Role.COMPANY_ADMIN)
+                .authProvider(User.AuthProvider.GOOGLE)
+                .active(true)
+                .build();
+        user = userRepository.save(user);
+
+        log.debug("Google: empresa {} creada con admin {} ({})", company.getCompanyCode(), user.getId(), email);
+
+        UserPrincipal userPrincipal = UserPrincipal.create(user);
+        String token = jwtService.generateToken(userPrincipal);
+
+        return AuthResponse.of(token, user.getId(), user.getUsername(), user.getEmail(),
+                user.getRole().name(), company.getId(), company.getName());
+    }
+
+    /**
+     * Completa Google Sign-In uniendose a una empresa existente (usuario sera EMPLOYEE).
+     */
+    @Transactional
+    public AuthResponse googleCompleteJoin(GoogleCompleteJoinRequest request) {
+        GoogleIdToken.Payload payload = googleTokenService.verify(request.getGoogleIdToken());
+        String email = payload.getEmail();
+        String name = (String) payload.get("name");
+
+        if (userRepository.existsByEmail(email)) {
+            throw new BadRequestException("El email ya esta registrado");
+        }
+
+        Company company = companyRepository.findByCompanyCode(request.getCompanyCode().toUpperCase())
+                .orElseThrow(() -> new BadRequestException("Codigo de empresa no valido"));
+
+        if (!company.getActive()) {
+            throw new BadRequestException("La empresa no esta activa");
+        }
+
+        String username = generateUniqueUsername(name != null ? name : email.split("@")[0]);
+
+        User user = User.builder()
+                .username(username)
+                .email(email)
+                .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
+                .company(company)
+                .role(User.Role.EMPLOYEE)
+                .authProvider(User.AuthProvider.GOOGLE)
+                .active(true)
+                .build();
+        user = userRepository.save(user);
+
+        log.debug("Google: usuario {} unido a empresa {} ({})", user.getId(), company.getCompanyCode(), email);
+
+        UserPrincipal userPrincipal = UserPrincipal.create(user);
+        String token = jwtService.generateToken(userPrincipal);
+
+        return AuthResponse.of(token, user.getId(), user.getUsername(), user.getEmail(),
+                user.getRole().name(), company.getId(), company.getName());
+    }
+
+    /**
+     * Genera un username unico basado en el nombre de Google.
+     */
+    private String generateUniqueUsername(String baseName) {
+        String sanitized = baseName.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();
+        if (sanitized.length() < 3) {
+            sanitized = sanitized + "user";
+        }
+        if (sanitized.length() > 45) {
+            sanitized = sanitized.substring(0, 45);
+        }
+
+        String candidate = sanitized;
+        int suffix = 1;
+        while (userRepository.existsByUsername(candidate)) {
+            candidate = sanitized + suffix;
+            suffix++;
+        }
+        return candidate;
     }
 }
 

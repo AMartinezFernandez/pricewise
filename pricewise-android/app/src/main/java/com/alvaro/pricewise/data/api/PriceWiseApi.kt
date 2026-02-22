@@ -19,7 +19,15 @@ interface PriceWiseApi {
     @POST("api/auth/change-password")
     suspend fun changePassword(@Body request: ChangePasswordRequest): Response<ApiResponse<String?>>
 
+    // ─── Google OAuth2 ────────────────────────────────────────────────────
+    @POST("api/auth/google")
+    suspend fun googleLogin(@Body request: GoogleLoginRequest): Response<ApiResponse<GoogleLoginResponse>>
 
+    @POST("api/auth/google/complete-new-company")
+    suspend fun googleCompleteNewCompany(@Body request: GoogleCompleteNewCompanyRequest): Response<ApiResponse<AuthData>>
+
+    @POST("api/auth/google/complete-join")
+    suspend fun googleCompleteJoin(@Body request: GoogleCompleteJoinRequest): Response<ApiResponse<AuthData>>
 
     @GET("api/auth/profile")
     suspend fun getProfile(): Response<ApiResponse<UserProfile>>

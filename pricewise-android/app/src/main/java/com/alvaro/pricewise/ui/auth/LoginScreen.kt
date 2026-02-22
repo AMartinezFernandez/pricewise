@@ -1,5 +1,6 @@
 package com.alvaro.pricewise.ui.auth
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -11,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -18,16 +20,26 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.alvaro.pricewise.BuildConfig
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit,
+    onGoogleSetupNeeded: (idToken: String, email: String, name: String) -> Unit = { _, _, _ -> },
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var emailOrUsername by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -35,6 +47,17 @@ fun LoginScreen(
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) onLoginSuccess()
+    }
+
+    LaunchedEffect(uiState.googleSetupNeeded) {
+        if (uiState.googleSetupNeeded) {
+            onGoogleSetupNeeded(
+                uiState.googleIdToken ?: "",
+                uiState.googleEmail ?: "",
+                uiState.googleName ?: ""
+            )
+            viewModel.clearGoogleSetup()
+        }
     }
 
     Column(
@@ -146,6 +169,56 @@ fun LoginScreen(
             } else {
                 Text("Iniciar sesión", style = MaterialTheme.typography.labelLarge)
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Divider "o"
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            HorizontalDivider(modifier = Modifier.weight(1f))
+            Text(
+                text = "  o  ",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            HorizontalDivider(modifier = Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Google Sign-In button
+        OutlinedButton(
+            onClick = {
+                scope.launch {
+                    try {
+                        val credentialManager = CredentialManager.create(context)
+                        val googleIdOption = GetGoogleIdOption.Builder()
+                            .setFilterByAuthorizedAccounts(false)
+                            .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
+                            .build()
+                        val request = GetCredentialRequest.Builder()
+                            .addCredentialOption(googleIdOption)
+                            .build()
+                        val result = credentialManager.getCredential(context, request)
+                        val googleIdTokenCredential = GoogleIdTokenCredential
+                            .createFrom(result.credential.data)
+                        viewModel.handleGoogleSignIn(googleIdTokenCredential.idToken)
+                    } catch (_: GetCredentialCancellationException) {
+                        // User cancelled — do nothing
+                    } catch (e: Exception) {
+                        Log.e("LoginScreen", "Google Sign-In error", e)
+                    }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            enabled = !uiState.isLoading
+        ) {
+            Text("Iniciar sesión con Google", style = MaterialTheme.typography.labelLarge)
         }
 
         Spacer(modifier = Modifier.height(16.dp))

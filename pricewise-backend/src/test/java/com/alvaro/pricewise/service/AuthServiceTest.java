@@ -54,6 +54,8 @@ class AuthServiceTest {
     private JwtService jwtService;
     @Mock
     private AuthenticationManager authenticationManager;
+    @Mock
+    private GoogleTokenService googleTokenService;
 
     private AuthService authService;
 
@@ -63,7 +65,7 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         authService = new AuthService(userRepository, companyRepository, productRepository,
-                passwordEncoder, jwtService, authenticationManager);
+                passwordEncoder, jwtService, authenticationManager, googleTokenService);
 
         testCompany = Company.builder()
                 .id(1L)

@@ -75,4 +75,40 @@ public class AuthController {
         authService.changePassword(userPrincipal.getId(), request.getCurrentPassword(), request.getNewPassword());
         return ResponseEntity.ok(ApiResponse.success(null, "Contraseña actualizada exitosamente"));
     }
+
+    // ─── Google OAuth2 ─────────────────────────
+
+    @PostMapping("/google")
+    @Operation(summary = "Login con Google", description = "Valida un ID token de Google. Devuelve JWT si el usuario existe o NEEDS_SETUP si es nuevo")
+    public ResponseEntity<ApiResponse<GoogleLoginResponse>> googleLogin(
+            @Valid @RequestBody GoogleLoginRequest request
+    ) {
+        GoogleLoginResponse response = authService.googleLogin(request);
+        String message = "AUTHENTICATED".equals(response.getStatus())
+                ? "Login con Google exitoso"
+                : "Usuario nuevo, requiere configuracion de empresa";
+        return ResponseEntity.ok(ApiResponse.success(response, message));
+    }
+
+    @PostMapping("/google/complete-new-company")
+    @Operation(summary = "Completar registro Google (empresa nueva)", description = "Crea empresa + usuario COMPANY_ADMIN via Google")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleCompleteNewCompany(
+            @Valid @RequestBody GoogleCompleteNewCompanyRequest request
+    ) {
+        AuthResponse response = authService.googleCompleteNewCompany(request);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response, "Empresa y usuario creados exitosamente"));
+    }
+
+    @PostMapping("/google/complete-join")
+    @Operation(summary = "Completar registro Google (unirse a empresa)", description = "Crea usuario EMPLOYEE via Google en empresa existente")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleCompleteJoin(
+            @Valid @RequestBody GoogleCompleteJoinRequest request
+    ) {
+        AuthResponse response = authService.googleCompleteJoin(request);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response, "Usuario creado y unido a la empresa exitosamente"));
+    }
 }

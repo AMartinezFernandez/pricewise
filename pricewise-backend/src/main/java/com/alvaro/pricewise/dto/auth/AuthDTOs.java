@@ -193,5 +193,85 @@ public class AuthDTOs {
         private String plan;
         private String adminUsername;
     }
+
+    // ─── Google OAuth2 DTOs ────────────────────
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class GoogleLoginRequest {
+        @NotBlank(message = "El token de Google es obligatorio")
+        private String idToken;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class GoogleLoginResponse {
+        private String status; // "AUTHENTICATED" | "NEEDS_SETUP"
+        private String token;
+        private String type;
+        private Long userId;
+        private String username;
+        private String email;
+        private String role;
+        private Long companyId;
+        private String companyName;
+        private String googleEmail;
+        private String googleName;
+
+        public static GoogleLoginResponse authenticated(AuthResponse auth) {
+            return GoogleLoginResponse.builder()
+                    .status("AUTHENTICATED")
+                    .token(auth.getToken())
+                    .type("Bearer")
+                    .userId(auth.getUserId())
+                    .username(auth.getUsername())
+                    .email(auth.getEmail())
+                    .role(auth.getRole())
+                    .companyId(auth.getCompanyId())
+                    .companyName(auth.getCompanyName())
+                    .build();
+        }
+
+        public static GoogleLoginResponse needsSetup(String googleEmail, String googleName) {
+            return GoogleLoginResponse.builder()
+                    .status("NEEDS_SETUP")
+                    .googleEmail(googleEmail)
+                    .googleName(googleName)
+                    .build();
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class GoogleCompleteNewCompanyRequest {
+        @NotBlank(message = "El token de Google es obligatorio")
+        private String googleIdToken;
+
+        @NotBlank(message = "El nombre de la empresa es obligatorio")
+        @Size(max = 100, message = "El nombre no puede exceder 100 caracteres")
+        private String companyName;
+
+        @Size(max = 50, message = "El tipo de negocio no puede exceder 50 caracteres")
+        private String businessType;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class GoogleCompleteJoinRequest {
+        @NotBlank(message = "El token de Google es obligatorio")
+        private String googleIdToken;
+
+        @NotBlank(message = "El codigo de empresa es obligatorio")
+        @Size(min = 8, max = 8, message = "El codigo de empresa debe tener 8 caracteres")
+        private String companyCode;
+    }
 }
 
