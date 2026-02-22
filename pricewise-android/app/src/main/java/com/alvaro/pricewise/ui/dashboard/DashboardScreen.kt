@@ -87,7 +87,7 @@ class DashboardViewModel @Inject constructor(
                         _uiState.value = _uiState.value.copy(
                             totalProducts = metrics.totalProducts.toLong(),
                             totalSavings = formatCurrency(metrics.potentialSavings),
-                            pendingAlerts = metrics.pendingRecommendations.toLong(),
+                            pendingAlerts = metrics.unreadAlerts.toLong(),
                             isLoading = false
                         )
                     }

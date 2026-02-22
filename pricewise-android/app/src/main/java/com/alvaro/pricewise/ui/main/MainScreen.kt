@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,6 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.alvaro.pricewise.data.repository.AuthRepository
+import com.alvaro.pricewise.ui.alerts.AlertsScreen
 import com.alvaro.pricewise.ui.dashboard.DashboardScreen
 import com.alvaro.pricewise.ui.products.ProductDetailScreen
 import com.alvaro.pricewise.ui.search.SearchScreen
@@ -49,10 +51,8 @@ private sealed class Tab(val route: String) {
     object Dashboard : Tab("tab_dashboard")
     object Tracking : Tab("tab_tracking")
     object Search : Tab("tab_search")
+    object Alerts : Tab("tab_alerts")
     object Users : Tab("tab_users")
-
-    // object Products : Tab("tab_products") // Deprecated/Moved to Stock/Search
-    // object Recommendations : Tab("tab_recommendations") // Kept if needed or removed
 }
 
 @Composable
@@ -70,7 +70,8 @@ fun MainScreen(
     val bottomItems = listOf(
         Triple(Tab.Dashboard.route, "Inicio", Icons.Default.Dashboard),
         Triple(Tab.Tracking.route, "Seguimiento", Icons.Default.Inventory),
-        Triple(Tab.Search.route, "Buscar", Icons.Default.Search)
+        Triple(Tab.Search.route, "Buscar", Icons.Default.Search),
+        Triple(Tab.Alerts.route, "Alertas", Icons.Default.Notifications)
     )
 
 
@@ -118,6 +119,13 @@ fun MainScreen(
                             restoreState = true
                         }
                     },
+                    onNavigateToAlerts = {
+                        innerNav.navigate(Tab.Alerts.route) {
+                            popUpTo(innerNav.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                     onNavigateToUsers = {
                         innerNav.navigate(Tab.Users.route)
                     },
@@ -131,6 +139,9 @@ fun MainScreen(
                 )
             }
 
+            composable(Tab.Alerts.route) {
+                AlertsScreen()
+            }
 
             composable(Tab.Search.route) {
                 SearchScreen(
