@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.alvaro.pricewise.entity.Company;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Configuration
+@Profile("dev")
 @RequiredArgsConstructor
 @Slf4j
 public class DatabaseSeeder {
@@ -58,10 +60,7 @@ public class DatabaseSeeder {
                 admin.setUpdatedAt(LocalDateTime.now());
 
                 userRepository.save(admin);
-                log.info("Usuario ADMIN creado:");
-                log.info("Email: admin@pricewise.io");
-                log.info("Password: Admin123");
-                log.info("------------------------------------------------");
+                log.info("Usuario ADMIN de desarrollo creado: admin@pricewise.io");
             } else {
                 log.info("La base de datos ya contiene datos. Omitiendo seed inicial.");
             }

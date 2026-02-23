@@ -90,13 +90,14 @@ class TrackingViewModel @Inject constructor(
                     // For now, show all but sort/highlight.
                     
                     val currentProducts = if (refresh) emptyList() else _uiState.value.products
+                    val isLast = page?.last ?: true
                     _uiState.value = _uiState.value.copy(
                         products = currentProducts + newProducts,
                         totalElements = page?.totalElements ?: 0,
-                        hasMore = !page?.last!!,
+                        hasMore = !isLast,
                         isLoading = false
                     )
-                    if (!page.last) currentPage++
+                    if (!isLast) currentPage++
                 }
                 is Result.Error -> {
                     _uiState.value = _uiState.value.copy(isLoading = false, error = result.message)

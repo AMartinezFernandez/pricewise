@@ -278,9 +278,16 @@ public class AdminController {
             @PathVariable @org.springframework.lang.NonNull Long userId,
             @RequestBody PasswordChangeRequest request
     ) {
+        if (request.newPassword() == null || request.newPassword().isBlank()) {
+            throw new com.alvaro.pricewise.exception.BadRequestException("La nueva contraseña es obligatoria");
+        }
+        if (request.newPassword().length() < 6) {
+            throw new com.alvaro.pricewise.exception.BadRequestException("La contraseña debe tener al menos 6 caracteres");
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-        
+
         String hashedPassword = passwordEncoder.encode(request.newPassword());
         user.setPassword(hashedPassword);
         userRepository.save(user);
@@ -297,9 +304,13 @@ public class AdminController {
             @PathVariable @org.springframework.lang.NonNull Long userId,
             @RequestBody RoleChangeRequest request
     ) {
+        if (request.role() == null || request.role().isBlank()) {
+            throw new com.alvaro.pricewise.exception.BadRequestException("El rol es obligatorio");
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-        
+
         try {
             user.setRole(User.Role.valueOf(request.role().toUpperCase()));
         } catch (IllegalArgumentException e) {
@@ -322,9 +333,13 @@ public class AdminController {
             @PathVariable @org.springframework.lang.NonNull Long userId,
             @RequestBody StatusChangeRequest request
     ) {
+        if (request.active() == null) {
+            throw new com.alvaro.pricewise.exception.BadRequestException("El campo 'active' es obligatorio");
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-        
+
         user.setActive(request.active());
         user = userRepository.save(user);
         
