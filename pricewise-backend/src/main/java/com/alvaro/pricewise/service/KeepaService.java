@@ -188,10 +188,8 @@ public class KeepaService {
                                 }
                             } else {
                                 log.warn("Error Keepa status={}, reintentando...", result.status);
-                                rateLimiter.release();
                                 fetchPriceWithRetry(asin, product, attempt + 1)
                                         .thenAccept(future::complete);
-                                return;
                             }
                         } finally {
                             rateLimiter.release();
