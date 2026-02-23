@@ -134,6 +134,40 @@ interface PriceWiseApi {
     @GET("api/admin/companies")
     suspend fun getCompanies(): Response<ApiResponse<List<CompanyResponse>>>
 
+    // ─── Admin / Usuarios ──────────────────────────────────────────────
+    @GET("api/admin/users")
+    suspend fun getAdminUsers(): Response<ApiResponse<List<UserSummaryResponse>>>
+
+    @GET("api/admin/users/{userId}")
+    suspend fun getAdminUser(@Path("userId") userId: Long): Response<ApiResponse<AdminUserDetail>>
+
+    @PUT("api/admin/users/{userId}")
+    suspend fun updateAdminUser(
+        @Path("userId") userId: Long,
+        @Body request: AdminUpdateUserRequest
+    ): Response<ApiResponse<AdminUserDetail>>
+
+    @PUT("api/admin/users/{userId}/password")
+    suspend fun changeAdminUserPassword(
+        @Path("userId") userId: Long,
+        @Body request: AdminPasswordChangeRequest
+    ): Response<ApiResponse<String>>
+
+    @PUT("api/admin/users/{userId}/role")
+    suspend fun changeAdminUserRole(
+        @Path("userId") userId: Long,
+        @Body request: AdminRoleChangeRequest
+    ): Response<ApiResponse<UserSummaryResponse>>
+
+    @PUT("api/admin/users/{userId}/status")
+    suspend fun changeAdminUserStatus(
+        @Path("userId") userId: Long,
+        @Body request: AdminStatusChangeRequest
+    ): Response<ApiResponse<UserSummaryResponse>>
+
+    @DELETE("api/admin/users/{userId}")
+    suspend fun deleteAdminUser(@Path("userId") userId: Long): Response<ApiResponse<String>>
+
     // ─── Dashboard ───────────────────────────────────────────────────────
     @GET("api/analytics/dashboard")
     suspend fun getDashboard(): Response<ApiResponse<DashboardResponse>>

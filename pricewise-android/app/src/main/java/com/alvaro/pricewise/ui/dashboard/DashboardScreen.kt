@@ -44,7 +44,7 @@ data class DashboardUiState(
     val role: String = "",
     val totalProducts: Long = 0,
     val totalSavings: String = "0 €",
-    val pendingAlerts: Long = 0,
+    val unreadAlerts: Long = 0,
     val usersCount: Long = 0,
     val isLoading: Boolean = true,
     val error: String? = null
@@ -87,7 +87,7 @@ class DashboardViewModel @Inject constructor(
                         _uiState.value = _uiState.value.copy(
                             totalProducts = metrics.totalProducts.toLong(),
                             totalSavings = formatCurrency(metrics.potentialSavings),
-                            pendingAlerts = metrics.unreadAlerts.toLong(),
+                            unreadAlerts = metrics.unreadAlerts.toLong(),
                             isLoading = false
                         )
                     }
@@ -133,6 +133,7 @@ fun DashboardScreen(
     onNavigateToTracking: () -> Unit = {},
     onNavigateToAlerts: () -> Unit = {},
     onNavigateToUsers: () -> Unit = {},
+    onNavigateToAdminUsers: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
@@ -266,10 +267,10 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     StatCard(
-                        title = "Alertas Pendientes",
-                        value = "${uiState.pendingAlerts}",
+                        title = "Alertas",
+                        value = "${uiState.unreadAlerts}",
                         icon = Icons.Default.Notifications,
-                        color = if (uiState.pendingAlerts > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        color = if (uiState.unreadAlerts > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                         onClick = onNavigateToAlerts,
                         modifier = Modifier.weight(1f)
                     )
@@ -280,7 +281,7 @@ fun DashboardScreen(
                             title = "Usuarios",
                             value = "${uiState.usersCount}",
                             icon = Icons.Default.Person,
-                            onClick = onNavigateToUsers,
+                            onClick = if (uiState.role == "ADMIN") onNavigateToAdminUsers else onNavigateToUsers,
                             modifier = Modifier.weight(1f)
                         )
                     } else {
