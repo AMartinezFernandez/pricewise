@@ -249,17 +249,13 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (uiState.role == "ADMIN" || uiState.role == "COMPANY_ADMIN") {
-                        StatCard(
-                            title = "Usuarios",
-                            value = "",
-                            icon = Icons.Default.Person,
-                            onClick = if (uiState.role == "ADMIN") onNavigateToAdminUsers else onNavigateToUsers,
-                            modifier = Modifier.weight(1f)
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
+                    StatCard(
+                        title = "Alertas",
+                        value = "",
+                        icon = Icons.Default.Notifications,
+                        onClick = onNavigateToAlerts,
+                        modifier = Modifier.weight(1f)
+                    )
 
                     StatCard(
                         title = "Productos",
@@ -274,13 +270,17 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    StatCard(
-                        title = "Alertas",
-                        value = "",
-                        icon = Icons.Default.Notifications,
-                        onClick = onNavigateToAlerts,
-                        modifier = Modifier.weight(1f)
-                    )
+                    if (uiState.role == "ADMIN" || uiState.role == "COMPANY_ADMIN") {
+                        StatCard(
+                            title = "Usuarios",
+                            value = "",
+                            icon = Icons.Default.Person,
+                            onClick = if (uiState.role == "ADMIN") onNavigateToAdminUsers else onNavigateToUsers,
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
 
                     if (uiState.role == "ADMIN") {
                         StatCard(
