@@ -814,7 +814,7 @@ El cliente cubre las funcionalidades del MVP definido:
 - `EditProductScreen`: edición de los campos del producto.
 
 **Alertas y reglas:**
-- `AlertsScreen`: dos pestañas — "Mis alertas" (reglas configurables con CRUD inline) y "Historial" (alertas generadas automáticamente por el motor de análisis). Las recomendaciones de precio se gestionan desde esta pantalla.
+- `AlertsScreen`: dos pestañas — "Mis alertas" (reglas configurables con CRUD inline) y "Historial" (alertas generadas automáticamente por el motor de análisis). La gestión de recomendaciones de precio (aplicar/descartar) queda pendiente para una versión futura (ver sección 9.3).
 
 ## 7.3 Arquitectura del Cliente
 
@@ -931,7 +931,7 @@ Las siguientes funcionalidades quedan identificadas como líneas de desarrollo p
 **Corto plazo:**
 - Notificaciones push al dispositivo móvil cuando se genera una alerta CRITICAL, usando Firebase Cloud Messaging (FCM).
 - Panel de analíticas con gráficos de evolución de precios propios y de la competencia.
-- Endpoints para que el usuario gestione sus propias alertas y recomendaciones desde el móvil (marcar como leídas, aplicar precio sugerido directamente).
+- Gestión de recomendaciones de precio desde el móvil (aplicar precio sugerido, descartar). Los endpoints backend ya existen (`/api/analytics/recommendations/{id}/apply` y `/dismiss`), falta integrar la UI en `AlertsScreen`.
 
 **Medio plazo:**
 - Integración con una segunda fuente de datos de competencia (por ejemplo, PCComponentes para productos de electrónica), usando la infraestructura de `Competitor` y `CompetitorPrice` ya diseñada para soportar múltiples fuentes.
