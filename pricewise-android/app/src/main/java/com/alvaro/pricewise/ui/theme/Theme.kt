@@ -86,15 +86,15 @@ private val DarkColorScheme = darkColorScheme(
 
     // Fondos y superficies
     background = PwDarkNavy,
-    onBackground = Color(0xFFE1E3E6),
+    onBackground = Color(0xFFECEFF1),
     surface = PwSlateGray,
-    onSurface = Color(0xFFE1E3E6),
-    surfaceVariant = Color(0xFF37474F),
-    onSurfaceVariant = Color(0xFFB0BEC5),
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF3A4A55),
+    onSurfaceVariant = Color(0xFFCFD8DC),
 
-    // Contornos
-    outline = Color(0xFF607D8B),
-    outlineVariant = Color(0xFF455A64),
+    // Contornos (claros para que los campos de texto se vean bien)
+    outline = Color(0xFF90A4AE),
+    outlineVariant = Color(0xFF607D8B),
 
     // Barra inferior / navegacion
     inverseSurface = Color(0xFFE1E3E6),
