@@ -169,10 +169,7 @@ public class ProductService {
         }
 
         try {
-            Product tempProduct = Product.builder()
-                    .name("Consulta temporal - " + asin)
-                    .currentPrice(BigDecimal.ZERO)
-                    .build();
+            Product tempProduct = KeepaProductFactory.createTemporaryProduct(asin);
 
             return keepaService.fetchPriceByAsin(asin, tempProduct)
                     .thenApply(optPrice -> optPrice.map(price -> {

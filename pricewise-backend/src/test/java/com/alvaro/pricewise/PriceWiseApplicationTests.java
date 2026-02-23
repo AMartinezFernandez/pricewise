@@ -8,7 +8,7 @@ import org.springframework.test.context.ActiveProfiles;
  * Test básico de carga del contexto de Spring.
  */
 @SpringBootTest
-@ActiveProfiles("dev")
+@ActiveProfiles("test")
 class PriceWiseApplicationTests {
 
     @Test
