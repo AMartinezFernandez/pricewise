@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.PriceWise" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.PriceWise" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/pw_dark_navy</item>
+        <item name="android:statusBarColor">@color/pw_dark_navy</item>
+        <item name="android:navigationBarColor">@color/pw_dark_navy</item>
+    </style>
 </resources>
