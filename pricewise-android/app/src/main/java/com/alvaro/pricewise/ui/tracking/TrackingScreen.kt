@@ -6,8 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -198,7 +198,7 @@ fun TrackingProductCard(
                     val color = if (product.margin < 10) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
                     Row(verticalAlignment = Alignment.CenterVertically) {
                          Icon(
-                             if (product.margin < 10) Icons.Default.TrendingDown else Icons.Default.TrendingUp,
+                             if (product.margin < 10) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp,
                              contentDescription = null,
                              tint = color,
                              modifier = Modifier.size(16.dp)

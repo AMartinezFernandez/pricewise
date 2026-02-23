@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -167,12 +169,12 @@ private fun PriceHistoryItem(entry: com.alvaro.pricewise.data.model.PriceHistory
                 // Change type icon
                 val (icon, color, label) = when (entry.changeType) {
                     "INCREASE" -> Triple(
-                        Icons.Default.TrendingUp,
+                        Icons.AutoMirrored.Filled.TrendingUp,
                         MaterialTheme.colorScheme.error,
                         "Subida"
                     )
                     "DECREASE" -> Triple(
-                        Icons.Default.TrendingDown,
+                        Icons.AutoMirrored.Filled.TrendingDown,
                         MaterialTheme.colorScheme.primary,
                         "Bajada"
                     )
