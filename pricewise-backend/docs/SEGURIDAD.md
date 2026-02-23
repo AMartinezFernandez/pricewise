@@ -395,6 +395,10 @@ cors:
 - Prevencion N+1: `default_batch_fetch_size: 16` + JOIN FETCH en consultas criticas
 - Login optimizado: eliminada query redundante a `userRepository.findByEmail()`, datos extraidos de `UserPrincipal`
 - `UserPrincipal` enriquecido con `companyName`, `role` y `displayUsername` para evitar re-queries
+- JWT sin default en perfil prod: la aplicacion falla al arrancar si JWT_SECRET no esta configurado como variable de entorno
+- Paginacion validada con @Min/@Max en ProductController y AnalyticsController (evita valores negativos o excesivos)
+- ACCESS_NETWORK_STATE declarado en AndroidManifest.xml para NetworkObserver (evita SecurityException)
+- AdminController: count queries con JPQL agregado en lugar de cargar entidades completas (evita LazyInitializationException)
 
 ---
 

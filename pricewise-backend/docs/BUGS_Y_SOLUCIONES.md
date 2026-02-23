@@ -3,7 +3,7 @@
 Este documento registra todos los errores encontrados durante el desarrollo de PriceWise Backend,
 junto con sus causas raiz y soluciones aplicadas.
 
-> Periodo cubierto: 2026-01-25 a 2026-02-13
+> Periodo cubierto: 2026-01-25 a 2026-02-23
 
 ---
 
@@ -50,6 +50,10 @@ junto con sus causas raiz y soluciones aplicadas.
 | 37 | Dashboard no actualiza contadores al entrar       | 2026-02-16 | OK     |
 | 38 | Creación de usuarios no permitía elegir empresa   | 2026-02-16 | OK     |
 | 39 | Error creación usuario - Campos faltantes en DTO  | 2026-02-16 | OK     |
+| 40 | Texto invisible en campos de login (tema claro)   | 2026-02-23 | OK     |
+| 41 | Acentos bloqueados en campo de usuario del login  | 2026-02-23 | OK     |
+| 42 | Crash por SecurityException ACCESS_NETWORK_STATE  | 2026-02-23 | OK     |
+| 43 | lintDebug falla con AGP 8.5.2 + Java 25           | 2026-02-23 | OK     |
 
 
 ---
@@ -173,6 +177,89 @@ junto con sus causas raiz y soluciones aplicadas.
 
 - `CreateUserViewModel.kt`
 
+---
+
+## Bug #40: Texto invisible en campos de login (tema claro del sistema)
+
+**Fecha:** 2026-02-23
+**Estado:** OK
+
+### Sintomas
+- En dispositivos con modo claro del sistema, los campos de texto del login eran completamente invisibles (texto oscuro sobre fondo DarkNavy).
+
+### Causa Raiz
+- `isSystemInDarkTheme()` retornaba `false` en modo claro → Compose cargaba `LightColorScheme` con colores de texto oscuros.
+- Pero `themes.xml` define DarkNavy como fondo de la actividad, creando texto oscuro sobre fondo oscuro = invisible.
+
+### Solucion
+- Forzar `darkTheme = true` en `PriceWiseTheme` (siempre tema oscuro).
+- Mejorar contraste de campos de texto en modo oscuro con colores explicitos.
+
+### Archivos Modificados
+- `Theme.kt`
+- `LoginScreen.kt`
+
+---
+
+## Bug #41: Acentos bloqueados en campo de usuario del login
+
+**Fecha:** 2026-02-23
+**Estado:** OK
+
+### Sintomas
+- No se podian escribir caracteres acentuados (e, a, u, etc.) en el campo de nombre de usuario del login.
+
+### Causa Raiz
+- El campo usaba `KeyboardType.Email` que restringe los caracteres permitidos, bloqueando acentos y caracteres especiales del español.
+
+### Solucion
+- Cambiar a `KeyboardType.Text` ya que el campo acepta tanto email como username.
+
+### Archivos Modificados
+- `LoginScreen.kt`
+
+---
+
+## Bug #42: Crash por SecurityException ACCESS_NETWORK_STATE
+
+**Fecha:** 2026-02-23
+**Estado:** OK
+
+### Sintomas
+- La aplicacion se cerraba con `SecurityException` al abrirla, antes de llegar al login.
+
+### Causa Raiz
+- `NetworkObserver` usa `ConnectivityManager.registerNetworkCallback()` que requiere el permiso `ACCESS_NETWORK_STATE`.
+- El permiso no estaba declarado en `AndroidManifest.xml`.
+
+### Solucion
+- Declarar `<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>` en el manifiesto.
+
+### Archivos Modificados
+- `AndroidManifest.xml`
+
+---
+
+## Bug #43: lintDebug falla con AGP 8.5.2 + Java 25
+
+**Fecha:** 2026-02-23
+**Estado:** OK (workaround)
+
+### Sintomas
+- `./gradlew assembleDebug` fallaba en la tarea `lintDebug` con un crash en `AndroidLintWorkAction`.
+
+### Causa Raiz
+- Incompatibilidad entre Android Gradle Plugin 8.5.2, `compileSdk 35` y Java 25.
+- El worker de lint no puede ejecutarse correctamente con esta combinacion de versiones.
+
+### Solucion
+- Desactivar lint como tarea bloqueante: `abortOnError = false`, `checkReleaseBuilds = false`.
+- Solucion temporal hasta que AGP se actualice a version compatible.
+
+### Archivos Modificados
+- `build.gradle.kts`
+
+---
 
 ## Bug #26: Column "company_code" does not exist in login
 

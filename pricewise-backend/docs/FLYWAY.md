@@ -48,3 +48,7 @@ Flyway Community Edition no soporta rollback automatico. Para revertir:
 | Version | Descripcion | Fecha |
 |---------|-------------|-------|
 | V1 | Schema inicial (baseline) | 2026-02-22 |
+| V2 | Indices compuestos para rendimiento | 2026-02-22 |
+| V3 | Tabla audit_logs (retirada del MVP, migracion se mantiene) | 2026-02-22 |
+| V4 | Auth provider en tabla users (Google OAuth) | 2026-02-23 |
+| V5 | Tabla alert_rules (reglas de alerta configurables) | 2026-02-23 |
