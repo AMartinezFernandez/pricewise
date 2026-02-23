@@ -129,6 +129,9 @@ fun MainScreen(
                     onNavigateToUsers = {
                         innerNav.navigate(Tab.Users.route)
                     },
+                    onNavigateToAdminUsers = {
+                        innerNav.navigate("admin_users")
+                    },
                     onNavigateToSettings = onNavigateToSettings
                 )
             }
@@ -224,6 +227,26 @@ fun MainScreen(
 
             composable("create_user") {
                 com.alvaro.pricewise.ui.users.CreateUserScreen(
+                    onNavigateBack = { innerNav.popBackStack() }
+                )
+            }
+
+            composable("admin_users") {
+                com.alvaro.pricewise.ui.admin.AdminUsersScreen(
+                    onNavigateBack = { innerNav.popBackStack() },
+                    onNavigateToUserDetail = { userId ->
+                        innerNav.navigate("admin_user_detail/$userId")
+                    }
+                )
+            }
+
+            composable(
+                route = "admin_user_detail/{userId}",
+                arguments = listOf(navArgument("userId") { type = NavType.LongType })
+            ) { backStack ->
+                val userId = backStack.arguments?.getLong("userId") ?: return@composable
+                com.alvaro.pricewise.ui.admin.AdminUserDetailScreen(
+                    userId = userId,
                     onNavigateBack = { innerNav.popBackStack() }
                 )
             }
