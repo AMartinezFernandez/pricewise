@@ -8,9 +8,6 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
-    properties:
-      hibernate:
-        # dialect auto-detectado por Hibernate (H2Dialect explícito ya no es necesario)
   flyway:
     enabled: false
   cache:

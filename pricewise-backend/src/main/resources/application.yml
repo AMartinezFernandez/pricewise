@@ -26,7 +26,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         default_batch_fetch_size: 16
     open-in-view: false
 
@@ -169,4 +168,3 @@ logging:
     root: WARN
     com.alvaro.pricewise: INFO
     org.springframework.security: WARN
-
