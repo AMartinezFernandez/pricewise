@@ -30,6 +30,7 @@ import com.alvaro.pricewise.entity.Product;
 import com.alvaro.pricewise.entity.User;
 import com.alvaro.pricewise.exception.ResourceNotFoundException;
 import com.alvaro.pricewise.repository.AlertRepository;
+import com.alvaro.pricewise.repository.AlertRuleRepository;
 import com.alvaro.pricewise.repository.CompetitorPriceRepository;
 import com.alvaro.pricewise.repository.PriceRecommendationRepository;
 import com.alvaro.pricewise.repository.ProductRepository;
@@ -50,6 +51,9 @@ class PriceAnalysisServiceTest {
     @Mock
     private AlertRepository alertRepository;
 
+    @Mock
+    private AlertRuleRepository alertRuleRepository;
+
     private PriceAnalysisService priceAnalysisService;
 
     @BeforeEach
@@ -58,7 +62,8 @@ class PriceAnalysisServiceTest {
                 productRepository,
                 competitorPriceRepository,
                 recommendationRepository,
-                alertRepository
+                alertRepository,
+                alertRuleRepository
         );
     }
 

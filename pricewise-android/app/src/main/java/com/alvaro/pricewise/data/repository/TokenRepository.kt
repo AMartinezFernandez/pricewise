@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,13 +37,13 @@ class TokenRepository @Inject constructor(
     @Volatile
     private var cachedToken: String? = null
 
+    /** Señal para que el interceptor espere a la hidratación inicial del token. */
+    private val hydrationLatch = CountDownLatch(1)
+
     init {
-        // Hidratar cache de forma asíncrona para no bloquear el main thread.
-        // AuthInterceptor usa getCachedToken() que devuelve null si aún no se
-        // ha cargado; la primera petición con token null redirige al login
-        // y al hacer login se guarda el token en cache igualmente.
         CoroutineScope(Dispatchers.IO).launch {
             cachedToken = context.dataStore.data.first()[TOKEN_KEY]
+            hydrationLatch.countDown()
         }
     }
 
@@ -50,9 +52,13 @@ class TokenRepository @Inject constructor(
 
     /**
      * Devuelve el token cacheado de forma síncrona.
+     * Espera hasta 2s a la hidratación inicial si aún no terminó.
      * Seguro para usar en interceptors de OkHttp (corren en thread pool, no en main).
      */
-    fun getCachedToken(): String? = cachedToken
+    fun getCachedToken(): String? {
+        hydrationLatch.await(2, TimeUnit.SECONDS)
+        return cachedToken
+    }
 
     fun getUserId(): Flow<Long?> = context.dataStore.data
         .map { prefs -> prefs[USER_ID_KEY] }
