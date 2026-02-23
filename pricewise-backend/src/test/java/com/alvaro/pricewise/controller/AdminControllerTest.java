@@ -129,12 +129,18 @@ class AdminControllerTest {
     @DisplayName("GET /stats devuelve estadisticas")
     void getStats_returnsStatisticsMap() throws Exception {
         when(userRepository.count()).thenReturn(5L);
-        when(userRepository.findAll()).thenReturn(List.of(testUser));
+        when(userRepository.countByActiveTrue()).thenReturn(4L);
+        when(userRepository.countByRole(User.Role.ADMIN)).thenReturn(1L);
+        when(userRepository.countByRole(User.Role.COMPANY_ADMIN)).thenReturn(2L);
+        when(userRepository.countByRole(User.Role.EMPLOYEE)).thenReturn(2L);
+        when(companyRepository.count()).thenReturn(3L);
 
         mockMvc.perform(get("/api/admin/stats"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.totalUsers").value(1));
+                .andExpect(jsonPath("$.data.totalUsers").value(5))
+                .andExpect(jsonPath("$.data.activeUsers").value(4))
+                .andExpect(jsonPath("$.data.totalCompanies").value(3));
     }
 
     @Test

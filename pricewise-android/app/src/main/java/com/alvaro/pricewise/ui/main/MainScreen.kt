@@ -19,25 +19,43 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.alvaro.pricewise.data.repository.AuthRepository
 import com.alvaro.pricewise.ui.alerts.AlertsScreen
+import com.alvaro.pricewise.ui.common.OfflineBanner
 import com.alvaro.pricewise.ui.dashboard.DashboardScreen
 import com.alvaro.pricewise.ui.products.ProductDetailScreen
 import com.alvaro.pricewise.ui.search.SearchScreen
 import com.alvaro.pricewise.ui.tracking.TrackingScreen
+import com.alvaro.pricewise.util.NetworkObserver
 import dagger.hilt.android.lifecycle.HiltViewModel
 
+import androidx.compose.foundation.layout.Column
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-// ViewModel sencillo solo para gestionar el logout
+// ViewModel para logout y estado de red
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    networkObserver: NetworkObserver
 ) : ViewModel() {
+
+    val isOffline = networkObserver.isConnected
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+        .let { flow ->
+            // Invertir: isConnected -> isOffline
+            kotlinx.coroutines.flow.MutableStateFlow(false).also { offline ->
+                viewModelScope.launch {
+                    flow.collect { connected -> offline.value = !connected }
+                }
+            }
+        }
+
     fun logout(onDone: () -> Unit) {
         viewModelScope.launch {
             authRepository.logout()
@@ -66,6 +84,7 @@ fun MainScreen(
     val currentRoute by innerNav.currentBackStackEntryFlow.collectAsState(
         initial = innerNav.currentBackStackEntry
     )
+    val isOffline by viewModel.isOffline.collectAsState()
 
     val bottomItems = listOf(
         Triple(Tab.Dashboard.route, "Inicio", Icons.Default.Dashboard),
@@ -105,11 +124,14 @@ fun MainScreen(
             }
         }
     ) { padding ->
-        NavHost(
-            navController = innerNav,
-            startDestination = Tab.Dashboard.route,
-            modifier = Modifier.padding(padding)
-        ) {
+        Column(modifier = Modifier.padding(padding)) {
+            OfflineBanner(isOffline = isOffline)
+
+            NavHost(
+                navController = innerNav,
+                startDestination = Tab.Dashboard.route,
+                modifier = Modifier.weight(1f)
+            ) {
             composable(Tab.Dashboard.route) {
                 DashboardScreen(
                     onNavigateToTracking = {
@@ -260,5 +282,6 @@ fun MainScreen(
                 )
             }
         }
+        } // Column
     }
 }
