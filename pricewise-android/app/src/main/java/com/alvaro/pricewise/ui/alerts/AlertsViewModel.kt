@@ -3,6 +3,7 @@ package com.alvaro.pricewise.ui.alerts
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alvaro.pricewise.data.model.AlertResponse
+import com.alvaro.pricewise.data.model.CreateAlertRuleRequest
 import com.alvaro.pricewise.data.repository.AnalyticsRepository
 import com.alvaro.pricewise.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +17,9 @@ data class AlertsUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val actionMessage: String? = null,
-    val filterUnreadOnly: Boolean = false
+    val filterUnreadOnly: Boolean = false,
+    val showCreateDialog: Boolean = false,
+    val isSaving: Boolean = false
 )
 
 @HiltViewModel
@@ -85,6 +88,38 @@ class AlertsViewModel @Inject constructor(
                 }
                 is Result.Error -> _uiState.value = _uiState.value.copy(
                     actionMessage = "Error al marcar alertas como leidas"
+                )
+            }
+        }
+    }
+
+    fun showCreateDialog() {
+        _uiState.value = _uiState.value.copy(showCreateDialog = true)
+    }
+
+    fun dismissCreateDialog() {
+        _uiState.value = _uiState.value.copy(showCreateDialog = false)
+    }
+
+    fun createRule(alertType: String, threshold: Double, name: String?) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSaving = true)
+            val request = CreateAlertRuleRequest(
+                alertType = alertType,
+                threshold = threshold,
+                name = name
+            )
+            when (repository.createAlertRule(request)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        showCreateDialog = false,
+                        actionMessage = "Regla creada"
+                    )
+                }
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    actionMessage = "Error al crear regla"
                 )
             }
         }
