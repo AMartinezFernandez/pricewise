@@ -3,6 +3,7 @@ package com.alvaro.pricewise.ui.alerts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -10,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -20,7 +22,6 @@ import com.alvaro.pricewise.data.model.AlertResponse
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlertsScreen(
-    onNavigateToRules: () -> Unit = {},
     viewModel: AlertsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -48,16 +49,21 @@ fun AlertsScreen(
         }
     }
 
+    if (uiState.showCreateDialog) {
+        CreateAlertRuleDialog(
+            isSaving = uiState.isSaving,
+            onDismiss = { viewModel.dismissCreateDialog() },
+            onCreate = { alertType, threshold, name ->
+                viewModel.createRule(alertType, threshold, name)
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Alertas") },
                 actions = {
-                    // Configurar reglas de alertas
-                    IconButton(onClick = onNavigateToRules) {
-                        Icon(Icons.Default.Settings, contentDescription = "Configurar alertas")
-                    }
-                    // Filtro no leidas
                     FilterChip(
                         selected = uiState.filterUnreadOnly,
                         onClick = { viewModel.toggleFilter() },
@@ -72,6 +78,11 @@ fun AlertsScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { viewModel.showCreateDialog() }) {
+                Icon(Icons.Default.Add, "Crear regla de alerta")
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
@@ -260,6 +271,101 @@ private fun AlertCard(alert: AlertResponse, onMarkRead: (Long) -> Unit) {
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CreateAlertRuleDialog(
+    isSaving: Boolean,
+    onDismiss: () -> Unit,
+    onCreate: (alertType: String, threshold: Double, name: String?) -> Unit
+) {
+    val alertTypes = listOf(
+        "COMPETITOR_PRICE_DROP" to "Bajada de precio competidor",
+        "COMPETITOR_PRICE_RISE" to "Subida de precio competidor",
+        "COMPETITOR_OUT_OF_STOCK" to "Competidor sin stock",
+        "PRICE_BELOW_COST" to "Precio por debajo del coste",
+        "HIGH_MARGIN_OPPORTUNITY" to "Oportunidad de margen alto",
+        "PRICE_MATCH_NEEDED" to "Necesario igualar precio"
+    )
+
+    var selectedType by remember { mutableStateOf(alertTypes[0].first) }
+    var threshold by remember { mutableStateOf("15.0") }
+    var name by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Nueva regla de alerta") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = alertTypes.find { it.first == selectedType }?.second ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Tipo de alerta") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        alertTypes.forEach { (value, label) ->
+                            DropdownMenuItem(
+                                text = { Text(label) },
+                                onClick = { selectedType = value; expanded = false }
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = threshold,
+                    onValueChange = { threshold = it },
+                    label = { Text("Umbral (%)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                    supportingText = { Text("Porcentaje de cambio que activa la alerta") }
+                )
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nombre (opcional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val thresholdValue = threshold.toDoubleOrNull()
+                    if (thresholdValue != null && thresholdValue > 0) {
+                        onCreate(selectedType, thresholdValue, name.ifBlank { null })
+                    }
+                },
+                enabled = !isSaving && (threshold.toDoubleOrNull() ?: 0.0) > 0
+            ) {
+                if (isSaving) {
+                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Crear")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        }
+    )
 }
 
 private fun formatRelativeTime(isoDate: String): String {
