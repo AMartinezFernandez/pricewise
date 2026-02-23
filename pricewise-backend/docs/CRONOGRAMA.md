@@ -493,6 +493,43 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 ---
 
+## Fase 25: Correcciones Criticas MVP (2026-02-23)
+
+### Android
+- OK Splash screen con NavGraph → Screen.Splash (delay 400ms, colecta isLoggedIn)
+- OK Offline banner con NetworkObserver + ConnectivityManager.NetworkCallback + AnimatedVisibility
+- OK ProGuard rules para release (conservar DTOs Moshi, Retrofit, Hilt)
+- OK Tema oscuro forzado (darkTheme = true) — evita texto invisible en modo claro del sistema
+- OK Mejorar contraste de campos de texto en modo oscuro
+- OK Mejorar tema con paleta completa PriceWise y version oscura real
+- OK Permitir acentos en campo de usuario del login (KeyboardType.Text en vez de .Email)
+- OK Permiso ACCESS_NETWORK_STATE declarado en AndroidManifest.xml
+
+### Backend
+- OK Paginacion validada con @Min/@Max en ProductController y AnalyticsController
+- OK JWT sin default en perfil prod (app falla si JWT_SECRET no esta configurado)
+- OK Count queries: countTrackedProducts(), countProductsGroupedByCategory() con JPQL agregado
+- OK Externalizar contraseñas del DatabaseSeeder a application.yml
+- OK Corregir coleccion Postman: credenciales e IDs consistentes
+
+---
+
+## Fase 26: Correcciones MVP Pendientes (2026-02-23)
+
+### Android
+- OK Colores AlertsScreen: Switch cyan (PwCyan/PwCyanDark), papelera rojo coral (#EF5350)
+- OK Lint desactivado como tarea bloqueante (AGP 8.5.2 + Java 25 incompatible — abortOnError=false)
+- OK TrackingScreen filtra solo productos monitorizados (usa getMonitoredProducts en vez de getProducts)
+- OK Codigo muerto eliminado: MainViewModel.logout(), AuthRepository import, onLogout param en MainScreen
+
+### Backend
+- OK Nuevo endpoint GET /api/products/monitored (paginado, filtro monitoringEnabled + active + companyId)
+- OK ProductRepository.findByCompanyIdAndMonitoringEnabledTrueAndActiveTrue()
+- OK ProductService.getMonitoredProducts()
+- OK H2Dialect deprecado eliminado de application-test.yml (Hibernate auto-detecta)
+
+---
+
 ## Futuro (Diferido)
 
 ### Funcionalidades
@@ -523,10 +560,10 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 | Servicios                | 8                   |
 | Controladores            | 7                   |
 | DTOs                     | ~28                 |
-| Endpoints REST           | ~45                 |
+| Endpoints REST           | ~47                 |
 | APIs externas            | 1 (Keepa)           |
 | Tests unitarios          | 189+                |
-| Bugs resueltos           | 39+                 |
+| Bugs resueltos           | 43+                 |
 | Roles de usuario         | 3                   |
 | Migraciones Flyway       | 5                   |
 | Cache                    | En memoria (ConcurrentHashMap) |
