@@ -71,6 +71,9 @@ interface PriceWiseApi {
     @GET("api/products/brands")
     suspend fun getBrands(): Response<ApiResponse<List<String>>>
 
+    @GET("api/products/count")
+    suspend fun getProductCount(): Response<ApiResponse<Long>>
+
     // ─── Historial de precios ───────────────────────────────────────────
     @GET("api/products/{productId}/history/recent")
     suspend fun getRecentPriceHistory(
