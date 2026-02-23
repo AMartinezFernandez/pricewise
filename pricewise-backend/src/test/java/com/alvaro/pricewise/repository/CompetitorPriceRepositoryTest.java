@@ -186,9 +186,9 @@ class CompetitorPriceRepositoryTest {
         void shouldCountTodaysPrices() {
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
-            createCompetitorPrice(product1, new BigDecimal("80.00"), now.minusHours(1), true);
-            createCompetitorPrice(product1, new BigDecimal("85.00"), now.minusMinutes(30), true);
-            createCompetitorPrice(product2, new BigDecimal("180.00"), now.minusDays(2), true);
+            createCompetitorPrice(product1, new BigDecimal("80.00"), todayStart.plusHours(1), true);
+            createCompetitorPrice(product1, new BigDecimal("85.00"), todayStart.plusHours(2), true);
+            createCompetitorPrice(product2, new BigDecimal("180.00"), todayStart.minusDays(2), true);
 
             long count = competitorPriceRepository.countScrapedToday(todayStart);
 
