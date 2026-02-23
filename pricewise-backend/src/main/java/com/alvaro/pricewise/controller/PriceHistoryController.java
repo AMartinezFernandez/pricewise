@@ -27,15 +27,12 @@ import com.alvaro.pricewise.repository.PriceHistoryRepository;
 import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.security.UserPrincipal;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/products/{productId}/history")
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('COMPANY_ADMIN', 'EMPLOYEE', 'ADMIN')")
-@Tag(name = "Historial de Precios", description = "Historial de cambios de precio de productos")
 @SuppressWarnings("null")
 public class PriceHistoryController {
 
@@ -43,7 +40,6 @@ public class PriceHistoryController {
     private final ProductRepository productRepository;
 
     @GetMapping
-    @Operation(summary = "Listar historial de precios", description = "Historial paginado con filtro opcional por fechas")
     public ResponseEntity<ApiResponse<PageResponse<PriceHistoryResponse>>> getHistory(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long productId,
@@ -90,7 +86,6 @@ public class PriceHistoryController {
     }
 
     @GetMapping("/recent")
-    @Operation(summary = "Ultimos cambios de precio", description = "Devuelve los ultimos 10 cambios de precio")
     public ResponseEntity<ApiResponse<List<PriceHistoryResponse>>> getRecentHistory(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long productId) {

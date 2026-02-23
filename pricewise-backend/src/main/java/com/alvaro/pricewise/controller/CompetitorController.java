@@ -22,8 +22,6 @@ import com.alvaro.pricewise.entity.Product;
 import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.service.KeepaService;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,7 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/api/competitors")
 @RequiredArgsConstructor
-@Tag(name = "Competidores", description = "Monitoreo de precios de la competencia")
 public class CompetitorController {
 
     private final KeepaService keepaService;
@@ -45,8 +42,6 @@ public class CompetitorController {
      * Verifica el estado de la integración con Keepa
      */
     @GetMapping("/status")
-    @Operation(summary = "Estado de la API de Keepa", 
-               description = "Verifica si la API de Keepa está configurada y disponible")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getKeepaStatus() {
         Map<String, Object> status = new HashMap<>();
         status.put("keepaAvailable", keepaService.isAvailable());
@@ -68,8 +63,6 @@ public class CompetitorController {
      */
     @GetMapping("/amazon/price/{asin}")
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'COMPANY_ADMIN', 'ADMIN')")
-    @Operation(summary = "Obtener precio de Amazon por ASIN",
-               description = "Consulta el precio actual de un producto en Amazon usando Keepa API")
     public ResponseEntity<ApiResponse<AmazonPriceDTO>> getAmazonPrice(@PathVariable String asin) {
 
         if (!keepaService.isAvailable()) {
@@ -137,8 +130,6 @@ public class CompetitorController {
      */
     @PostMapping("/amazon/sync/{productId}")
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'COMPANY_ADMIN', 'ADMIN')")
-    @Operation(summary = "Sincronizar precio de producto con Amazon",
-               description = "Busca y guarda el precio de Amazon para un producto existente")
     public ResponseEntity<ApiResponse<AmazonPriceDTO>> syncProductWithAmazon(
             @org.springframework.security.core.annotation.AuthenticationPrincipal com.alvaro.pricewise.security.UserPrincipal userPrincipal,
             @PathVariable @org.springframework.lang.NonNull Long productId,

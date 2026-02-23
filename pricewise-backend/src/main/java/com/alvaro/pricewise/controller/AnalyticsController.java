@@ -31,8 +31,6 @@ import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.security.UserPrincipal;
 import com.alvaro.pricewise.service.PriceAnalysisService;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -42,7 +40,6 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/analytics")
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('COMPANY_ADMIN', 'EMPLOYEE', 'ADMIN')")
-@Tag(name = "Analytics", description = "Metricas y recomendaciones de precios")
 @SuppressWarnings("null")
 public class AnalyticsController {
 
@@ -50,7 +47,6 @@ public class AnalyticsController {
     private final ProductRepository productRepository;
 
     @GetMapping("/dashboard")
-    @Operation(summary = "Obtener metricas del dashboard")
     public ResponseEntity<ApiResponse<DashboardMetrics>> getDashboardMetrics(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
@@ -91,7 +87,6 @@ public class AnalyticsController {
     }
 
     @GetMapping("/recommendations")
-    @Operation(summary = "Listar recomendaciones pendientes")
     public ResponseEntity<ApiResponse<PageResponse<RecommendationSummary>>> getRecommendations(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
@@ -121,7 +116,6 @@ public class AnalyticsController {
     }
 
     @PostMapping("/recommendations/{id}/apply")
-    @Operation(summary = "Aplicar recomendacion de precio")
     public ResponseEntity<ApiResponse<String>> applyRecommendation(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
@@ -131,7 +125,6 @@ public class AnalyticsController {
     }
 
     @PostMapping("/recommendations/{id}/dismiss")
-    @Operation(summary = "Descartar recomendacion")
     public ResponseEntity<ApiResponse<String>> dismissRecommendation(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
@@ -141,7 +134,6 @@ public class AnalyticsController {
     }
 
     @GetMapping("/alerts")
-    @Operation(summary = "Listar alertas")
     public ResponseEntity<ApiResponse<PageResponse<AlertSummary>>> getAlerts(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
@@ -171,7 +163,6 @@ public class AnalyticsController {
     }
 
     @PostMapping("/alerts/{id}/read")
-    @Operation(summary = "Marcar alerta como leida")
     public ResponseEntity<ApiResponse<String>> markAlertAsRead(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
@@ -181,7 +172,6 @@ public class AnalyticsController {
     }
 
     @PostMapping("/alerts/read-all")
-    @Operation(summary = "Marcar todas las alertas como leidas")
     public ResponseEntity<ApiResponse<Map<String, Object>>> markAllAlertsAsRead(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
@@ -192,7 +182,6 @@ public class AnalyticsController {
     }
 
     @PostMapping("/analyze")
-    @Operation(summary = "Ejecutar analisis de precios")
     public ResponseEntity<ApiResponse<Map<String, Object>>> runAnalysis(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
 

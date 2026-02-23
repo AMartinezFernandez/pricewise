@@ -3,8 +3,6 @@ package com.alvaro.pricewise.service;
 import java.math.BigDecimal;
 import java.util.List;
 
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -48,7 +46,6 @@ public class ProductService {
     private static final String ASIN_PATTERN = "^[B0-9][A-Z0-9]{9}$";
 
     @Transactional
-    @CacheEvict(value = {"categories", "brands"}, key = "#companyId")
     public ProductResponse createProduct(@org.springframework.lang.NonNull Long companyId, @org.springframework.lang.NonNull Long userId, CreateProductRequest request) {
         log.debug("Creando producto para empresa: {}, usuario: {}", companyId, userId);
 
@@ -208,7 +205,6 @@ public class ProductService {
     }
 
     @Transactional
-    @CacheEvict(value = {"categories", "brands"}, key = "#companyId")
     public ProductResponse updateProduct(@org.springframework.lang.NonNull Long companyId, @org.springframework.lang.NonNull Long productId, UpdateProductRequest request) {
         log.debug("Actualizando producto: {} para empresa: {}", productId, companyId);
 
@@ -266,13 +262,11 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "categories", key = "#companyId")
     public List<String> getCategories(@org.springframework.lang.NonNull Long companyId) {
         return productRepository.findDistinctCategoriesByCompanyId(companyId);
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "brands", key = "#companyId")
     public List<String> getBrands(@org.springframework.lang.NonNull Long companyId) {
         return productRepository.findDistinctBrandsByCompanyId(companyId);
     }

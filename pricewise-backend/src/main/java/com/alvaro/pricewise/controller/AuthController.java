@@ -15,21 +15,17 @@ import com.alvaro.pricewise.dto.common.ApiResponse;
 import com.alvaro.pricewise.security.UserPrincipal;
 import com.alvaro.pricewise.service.AuthService;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "Autenticación", description = "Endpoints de registro, login y perfil de usuario")
 public class AuthController {
 
     private final AuthService authService;
 
     @PostMapping("/register")
-    @Operation(summary = "Registrar nuevo usuario", description = "Crea una nueva cuenta de usuario y devuelve un token JWT")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
         AuthResponse response = authService.register(request);
         return ResponseEntity
@@ -38,14 +34,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Iniciar sesión", description = "Autentica al usuario y devuelve un token JWT")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success(response, "Login exitoso"));
     }
 
     @GetMapping("/profile")
-    @Operation(summary = "Obtener perfil", description = "Devuelve la información del usuario autenticado")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
@@ -55,8 +49,6 @@ public class AuthController {
 
     @PostMapping("/create-employee")
     @PreAuthorize("hasAnyRole('COMPANY_ADMIN', 'ADMIN')")
-    @Operation(summary = "Crear empleado", 
-               description = "Crea un empleado dentro de la empresa del admin autenticado. Solo COMPANY_ADMIN y ADMIN.")
     public ResponseEntity<ApiResponse<AuthResponse>> createEmployee(
             @AuthenticationPrincipal @org.springframework.lang.NonNull UserPrincipal userPrincipal,
             @Valid @RequestBody @org.springframework.lang.NonNull CreateEmployeeRequest request
@@ -67,7 +59,6 @@ public class AuthController {
                 .body(ApiResponse.success(response, "Empleado creado exitosamente"));
     }
     @PostMapping("/change-password")
-    @Operation(summary = "Cambiar contraseña", description = "Permite al usuario autenticado cambiar su contraseña")
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @AuthenticationPrincipal @org.springframework.lang.NonNull UserPrincipal userPrincipal,
             @Valid @RequestBody ChangePasswordRequest request
@@ -79,7 +70,6 @@ public class AuthController {
     // ─── Google OAuth2 ─────────────────────────
 
     @PostMapping("/google")
-    @Operation(summary = "Login con Google", description = "Valida un ID token de Google. Devuelve JWT si el usuario existe o NEEDS_SETUP si es nuevo")
     public ResponseEntity<ApiResponse<GoogleLoginResponse>> googleLogin(
             @Valid @RequestBody GoogleLoginRequest request
     ) {
@@ -91,7 +81,6 @@ public class AuthController {
     }
 
     @PostMapping("/google/complete-new-company")
-    @Operation(summary = "Completar registro Google (empresa nueva)", description = "Crea empresa + usuario COMPANY_ADMIN via Google")
     public ResponseEntity<ApiResponse<AuthResponse>> googleCompleteNewCompany(
             @Valid @RequestBody GoogleCompleteNewCompanyRequest request
     ) {
@@ -102,7 +91,6 @@ public class AuthController {
     }
 
     @PostMapping("/google/complete-join")
-    @Operation(summary = "Completar registro Google (unirse a empresa)", description = "Crea usuario EMPLOYEE via Google en empresa existente")
     public ResponseEntity<ApiResponse<AuthResponse>> googleCompleteJoin(
             @Valid @RequestBody GoogleCompleteJoinRequest request
     ) {

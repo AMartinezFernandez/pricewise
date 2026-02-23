@@ -50,9 +50,6 @@ class PriceAnalysisServiceTest {
     @Mock
     private AlertRepository alertRepository;
 
-    @Mock
-    private NotificationService notificationService;
-
     private PriceAnalysisService priceAnalysisService;
 
     @BeforeEach
@@ -61,8 +58,7 @@ class PriceAnalysisServiceTest {
                 productRepository,
                 competitorPriceRepository,
                 recommendationRepository,
-                alertRepository,
-                notificationService
+                alertRepository
         );
     }
 

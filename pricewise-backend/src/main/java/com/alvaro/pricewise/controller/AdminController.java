@@ -29,8 +29,6 @@ import com.alvaro.pricewise.exception.ResourceNotFoundException;
 import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.repository.UserRepository;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -42,7 +40,6 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-@Tag(name = "Administración", description = "Endpoints exclusivos para administradores")
 @PreAuthorize("hasRole('ADMIN')")
 @SuppressWarnings("null")
 public class AdminController {
@@ -53,7 +50,6 @@ public class AdminController {
     private final com.alvaro.pricewise.repository.CompetitorRepository competitorRepository;
     private final com.alvaro.pricewise.service.KeepaService keepaService;
     private final com.alvaro.pricewise.service.AuthService authService;
-    private final com.alvaro.pricewise.service.AuditService auditService;
     private final PasswordEncoder passwordEncoder;
     private final org.quartz.Scheduler scheduler;
 
@@ -61,7 +57,6 @@ public class AdminController {
      * Lista todos los usuarios del sistema.
      */
     @GetMapping("/users")
-    @Operation(summary = "Listar usuarios", description = "Obtiene todos los usuarios del sistema")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<List<UserSummary>>> getAllUsers() {
         List<UserSummary> users = userRepository.findAll().stream()
@@ -80,7 +75,6 @@ public class AdminController {
      * Obtiene los detalles de un usuario específico.
      */
     @GetMapping("/users/{userId}")
-    @Operation(summary = "Detalle de usuario", description = "Obtiene los detalles completos de un usuario")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<UserDetail>> getUser(@PathVariable @org.springframework.lang.NonNull Long userId) {
         User user = userRepository.findById(userId)
@@ -93,7 +87,6 @@ public class AdminController {
      * Lista todas las empresas.
      */
     @GetMapping("/companies")
-    @Operation(summary = "Listar empresas", description = "Obtiene todas las empresas del sistema")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<List<CompanyResponse>>> getAllCompanies() {
         List<CompanyResponse> companies = companyRepository.findAll().stream()
@@ -107,7 +100,6 @@ public class AdminController {
      * Obtiene los detalles de una empresa específica.
      */
     @GetMapping("/companies/{companyId}")
-    @Operation(summary = "Detalle de empresa", description = "Obtiene los detalles de una empresa")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<CompanyResponse>> getCompany(@PathVariable @org.springframework.lang.NonNull Long companyId) {
         com.alvaro.pricewise.entity.Company company = companyRepository.findById(companyId)
@@ -140,14 +132,10 @@ public class AdminController {
      * Devuelve los datos de la empresa incluyendo el código auto-generado para el registro de empleados.
      */
     @PostMapping("/companies")
-    @Operation(summary = "Crear empresa", 
-               description = "Crea una nueva empresa con su administrador. Devuelve el código de empresa para registro de empleados.")
     public ResponseEntity<ApiResponse<CompanyResponse>> createCompany(
             @AuthenticationPrincipal com.alvaro.pricewise.security.UserPrincipal userPrincipal,
             @Valid @RequestBody CreateCompanyRequest request) {
         CompanyResponse response = authService.createCompany(request);
-        auditService.logAction(userPrincipal, "CREATE_COMPANY", "COMPANY", response.getId(),
-                "Empresa creada: " + request.getName());
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Empresa creada exitosamente"));
@@ -160,7 +148,6 @@ public class AdminController {
      * Obtiene estadísticas avanzadas para el dashboard.
      */
     @GetMapping("/dashboard")
-    @Operation(summary = "Dashboard Metrics", description = "Obtiene métricas detalladas para el dashboard de administración")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<com.alvaro.pricewise.dto.admin.DashboardStatsDTO>> getDashboardStats() {
         long totalUsers = userRepository.count();
@@ -219,7 +206,6 @@ public class AdminController {
      * Obtiene estadísticas generales del sistema (Versión simple).
      */
     @GetMapping("/stats")
-    @Operation(summary = "Estadísticas simples", description = "Obtiene estadísticas básicas del sistema")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
         List<User> allUsers = userRepository.findAll();
@@ -250,7 +236,6 @@ public class AdminController {
      * Business name/type ahora se gestionan desde la Company.
      */
     @PutMapping("/users/{userId}")
-    @Operation(summary = "Editar usuario", description = "Modifica los datos de un usuario")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<ApiResponse<UserDetail>> updateUser(
             @PathVariable @org.springframework.lang.NonNull Long userId,
@@ -288,7 +273,6 @@ public class AdminController {
      * Cambia la contraseña de un usuario.
      */
     @PutMapping("/users/{userId}/password")
-    @Operation(summary = "Cambiar contraseña", description = "Cambia la contraseña de un usuario")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @PathVariable @org.springframework.lang.NonNull Long userId,
@@ -308,7 +292,6 @@ public class AdminController {
      * Cambia el rol de un usuario.
      */
     @PutMapping("/users/{userId}/role")
-    @Operation(summary = "Cambiar rol", description = "Cambia el rol de un usuario")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<ApiResponse<UserSummary>> changeUserRole(
             @PathVariable @org.springframework.lang.NonNull Long userId,
@@ -334,7 +317,6 @@ public class AdminController {
      * Activa o desactiva un usuario.
      */
     @PutMapping("/users/{userId}/status")
-    @Operation(summary = "Cambiar estado", description = "Activa o desactiva un usuario")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<ApiResponse<UserSummary>> changeUserStatus(
             @PathVariable @org.springframework.lang.NonNull Long userId,
@@ -354,7 +336,6 @@ public class AdminController {
      * Elimina un usuario (hard delete).
      */
     @DeleteMapping("/users/{userId}")
-    @Operation(summary = "Eliminar usuario", description = "Elimina un usuario del sistema permanentemente")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<ApiResponse<Void>> deleteUser(
             @AuthenticationPrincipal com.alvaro.pricewise.security.UserPrincipal userPrincipal,
@@ -362,28 +343,9 @@ public class AdminController {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        auditService.logAction(userPrincipal, "DELETE_USER", "USER", userId,
-                "Usuario eliminado: " + user.getUsername());
         userRepository.delete(user);
 
         return ResponseEntity.ok(ApiResponse.success(null, "Usuario eliminado permanentemente"));
-    }
-
-    /**
-     * Consulta el log de auditoria.
-     */
-    @GetMapping("/audit-logs")
-    @Operation(summary = "Consultar audit log", description = "Lista las operaciones registradas en el audit log")
-    public ResponseEntity<ApiResponse<com.alvaro.pricewise.dto.common.PageResponse<com.alvaro.pricewise.entity.AuditLog>>> getAuditLogs(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String action) {
-
-        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
-        Page<com.alvaro.pricewise.entity.AuditLog> logs = auditService.getAuditLogs(pageable);
-
-        return ResponseEntity.ok(ApiResponse.success(
-                com.alvaro.pricewise.dto.common.PageResponse.from(logs)));
     }
 
     // ========== DTOs internos ==========

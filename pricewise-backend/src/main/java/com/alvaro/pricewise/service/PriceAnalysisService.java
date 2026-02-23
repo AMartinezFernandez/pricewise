@@ -39,7 +39,6 @@ public class PriceAnalysisService {
     private final CompetitorPriceRepository competitorPriceRepository;
     private final PriceRecommendationRepository recommendationRepository;
     private final AlertRepository alertRepository;
-    private final NotificationService notificationService;
 
 
     private static final BigDecimal HIGH_PRICE_THRESHOLD = new BigDecimal("0.10");
@@ -210,13 +209,6 @@ public class PriceAnalysisService {
                 .build();
 
         alertRepository.save(alert);
-        
-        // Enviar notificacion websocket
-        try {
-            notificationService.sendAlert(alert);
-        } catch (Exception e) {
-            log.error("Error enviando notificacion websocket: {}", e.getMessage());
-        }
 
         log.debug("Alerta creada: {} para producto {}", type, product.getId());
 

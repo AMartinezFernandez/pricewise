@@ -28,23 +28,18 @@ import com.alvaro.pricewise.dto.product.ProductDTOs.UpdateProductRequest;
 import com.alvaro.pricewise.security.UserPrincipal;
 import com.alvaro.pricewise.service.ProductService;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
-@Tag(name = "Productos", description = "CRUD de productos de la empresa")
 @SuppressWarnings("null")
 public class ProductController {
 
     private final ProductService productService;
 
     @PostMapping
-    @Operation(summary = "Crear producto", description = "Crea un nuevo producto para la empresa del usuario autenticado")
     public ResponseEntity<ApiResponse<ProductResponse>> createProduct(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody CreateProductRequest request
@@ -57,7 +52,6 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener producto", description = "Obtiene un producto por su ID")
     public ResponseEntity<ApiResponse<ProductResponse>> getProduct(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable @org.springframework.lang.NonNull Long id
@@ -67,16 +61,11 @@ public class ProductController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar productos", description = "Lista todos los productos de la empresa con paginación")
     public ResponseEntity<ApiResponse<PageResponse<ProductListResponse>>> getProducts(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "Número de página (0-indexed)")
             @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Tamaño de página")
             @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Campo por el que ordenar")
             @RequestParam(defaultValue = "name") String sortBy,
-            @Parameter(description = "Dirección del ordenamiento")
             @RequestParam(defaultValue = "asc") String sortDir
     ) {
         Sort sort = sortDir.equalsIgnoreCase("desc")
@@ -89,14 +78,10 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Buscar productos", description = "Busca productos con filtros opcionales")
     public ResponseEntity<ApiResponse<PageResponse<ProductListResponse>>> searchProducts(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "Nombre del producto (búsqueda parcial)")
             @RequestParam(required = false) String name,
-            @Parameter(description = "Categoría exacta")
             @RequestParam(required = false) String category,
-            @Parameter(description = "Marca exacta")
             @RequestParam(required = false) String brand,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
@@ -109,7 +94,6 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Actualizar producto", description = "Actualiza un producto existente")
     public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable @org.springframework.lang.NonNull Long id,
@@ -120,7 +104,6 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar producto", description = "Desactiva un producto (soft delete)")
     public ResponseEntity<ApiResponse<Void>> deleteProduct(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable @org.springframework.lang.NonNull Long id
@@ -130,7 +113,6 @@ public class ProductController {
     }
 
     @GetMapping("/categories")
-    @Operation(summary = "Listar categorías", description = "Obtiene las categorías únicas de la empresa")
     public ResponseEntity<ApiResponse<List<String>>> getCategories(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
@@ -139,7 +121,6 @@ public class ProductController {
     }
 
     @GetMapping("/brands")
-    @Operation(summary = "Listar marcas", description = "Obtiene las marcas únicas de la empresa")
     public ResponseEntity<ApiResponse<List<String>>> getBrands(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
@@ -148,7 +129,6 @@ public class ProductController {
     }
 
     @GetMapping("/count")
-    @Operation(summary = "Contar productos", description = "Obtiene el total de productos de la empresa")
     public ResponseEntity<ApiResponse<Long>> countProducts(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
