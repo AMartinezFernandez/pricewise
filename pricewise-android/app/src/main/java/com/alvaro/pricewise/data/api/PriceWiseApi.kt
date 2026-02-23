@@ -134,6 +134,19 @@ interface PriceWiseApi {
     @GET("api/admin/companies")
     suspend fun getCompanies(): Response<ApiResponse<List<CompanyResponse>>>
 
+    @GET("api/admin/companies/{companyId}")
+    suspend fun getAdminCompany(@Path("companyId") companyId: Long): Response<ApiResponse<CompanyResponse>>
+
+    @POST("api/admin/companies")
+    suspend fun createCompany(@Body request: CreateCompanyRequest): Response<ApiResponse<CompanyResponse>>
+
+    // ─── Admin / Dashboard & Stats ─────────────────────────────────────
+    @GET("api/admin/dashboard")
+    suspend fun getAdminDashboard(): Response<ApiResponse<AdminDashboardResponse>>
+
+    @GET("api/admin/stats")
+    suspend fun getAdminStats(): Response<ApiResponse<Map<String, Any>>>
+
     // ─── Admin / Usuarios ──────────────────────────────────────────────
     @GET("api/admin/users")
     suspend fun getAdminUsers(): Response<ApiResponse<List<UserSummaryResponse>>>

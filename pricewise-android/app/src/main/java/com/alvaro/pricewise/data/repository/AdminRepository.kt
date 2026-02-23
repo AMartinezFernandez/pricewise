@@ -33,4 +33,16 @@ class AdminRepository @Inject constructor(
 
     suspend fun deleteUser(userId: Long) =
         safeApiCall { api.deleteAdminUser(userId) }
+
+    suspend fun getCompany(companyId: Long) =
+        safeApiCall { api.getAdminCompany(companyId) }
+
+    suspend fun createCompany(request: CreateCompanyRequest) =
+        safeApiCall { api.createCompany(request) }
+
+    suspend fun getAdminDashboard() =
+        safeApiCall { api.getAdminDashboard() }
+
+    suspend fun getAdminStats() =
+        safeApiCall { api.getAdminStats() }
 }
