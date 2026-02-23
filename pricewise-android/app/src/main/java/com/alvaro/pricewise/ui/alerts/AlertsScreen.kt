@@ -5,6 +5,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -638,8 +640,8 @@ private fun alertTypeLabel(type: String): String = when (type) {
 }
 
 private fun alertTypeIcon(type: String): androidx.compose.ui.graphics.vector.ImageVector = when (type) {
-    "COMPETITOR_PRICE_DROP" -> Icons.Default.TrendingDown
-    "COMPETITOR_PRICE_RISE" -> Icons.Default.TrendingUp
+    "COMPETITOR_PRICE_DROP" -> Icons.AutoMirrored.Filled.TrendingDown
+    "COMPETITOR_PRICE_RISE" -> Icons.AutoMirrored.Filled.TrendingUp
     "COMPETITOR_OUT_OF_STOCK" -> Icons.Default.RemoveShoppingCart
     "PRICE_BELOW_COST" -> Icons.Default.Warning
     "HIGH_MARGIN_OPPORTUNITY" -> Icons.Default.Star

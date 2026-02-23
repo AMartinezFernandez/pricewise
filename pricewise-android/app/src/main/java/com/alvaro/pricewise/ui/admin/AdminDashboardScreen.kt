@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -165,7 +166,7 @@ fun AdminDashboardScreen(
                             title = "Competidores",
                             value = "${dash.competitorsTracked}",
                             subtitle = "precios rastreados",
-                            icon = Icons.Default.CompareArrows,
+                            icon = Icons.AutoMirrored.Filled.CompareArrows,
                             modifier = Modifier.weight(1f)
                         )
                     }

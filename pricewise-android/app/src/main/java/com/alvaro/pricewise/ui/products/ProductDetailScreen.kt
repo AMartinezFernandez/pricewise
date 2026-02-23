@@ -8,6 +8,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -402,8 +404,8 @@ fun ProductDetailScreen(
                                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                                             ) {
                                                 val (icon, color) = when (entry.changeType) {
-                                                    "INCREASE" -> Icons.Default.TrendingUp to MaterialTheme.colorScheme.error
-                                                    "DECREASE" -> Icons.Default.TrendingDown to MaterialTheme.colorScheme.primary
+                                                    "INCREASE" -> Icons.AutoMirrored.Filled.TrendingUp to MaterialTheme.colorScheme.error
+                                                    "DECREASE" -> Icons.AutoMirrored.Filled.TrendingDown to MaterialTheme.colorScheme.primary
                                                     "INITIAL" -> Icons.Default.FiberNew to MaterialTheme.colorScheme.onSurfaceVariant
                                                     else -> Icons.Default.Remove to MaterialTheme.colorScheme.onSurfaceVariant
                                                 }
