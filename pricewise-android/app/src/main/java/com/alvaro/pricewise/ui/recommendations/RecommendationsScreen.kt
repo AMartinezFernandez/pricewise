@@ -39,6 +39,19 @@ fun RecommendationsScreen(
                 TopAppBar(
                     title = { Text("Recomendaciones") },
                     actions = {
+                        IconButton(
+                            onClick = { viewModel.runAnalysis() },
+                            enabled = !uiState.isAnalyzing
+                        ) {
+                            if (uiState.isAnalyzing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(Icons.Default.Analytics, contentDescription = "Analizar precios")
+                            }
+                        }
                         IconButton(onClick = { viewModel.loadAll() }) {
                             Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
                         }

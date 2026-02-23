@@ -120,6 +120,9 @@ interface PriceWiseApi {
     @POST("api/analytics/alerts/read-all")
     suspend fun markAllAlertsAsRead(): Response<ApiResponse<Map<String, Any>>>
 
+    @POST("api/analytics/analyze")
+    suspend fun runAnalysis(): Response<ApiResponse<Map<String, Any>>>
+
     // ─── Admin / Empresas ────────────────────────────────────────────────
     @GET("api/admin/companies")
     suspend fun getCompanies(): Response<ApiResponse<List<CompanyResponse>>>
