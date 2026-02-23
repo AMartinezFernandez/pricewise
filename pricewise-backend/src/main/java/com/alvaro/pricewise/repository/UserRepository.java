@@ -25,5 +25,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     java.util.List<User> findByCompanyId(@Param("companyId") Long companyId);
 
     long countByCompanyId(Long companyId);
+
+    long countByActiveTrue();
+
+    long countByRole(com.alvaro.pricewise.entity.User.Role role);
+
+    @Query("SELECT u.company.name AS companyName, COUNT(u) AS userCount " +
+           "FROM User u WHERE u.company IS NOT NULL GROUP BY u.company.name")
+    java.util.List<Object[]> countUsersGroupedByCompany();
 }
 

@@ -139,26 +139,22 @@ public class AdminController {
 
     /**
      * Obtiene estadísticas avanzadas para el dashboard.
-     */
-    /**
-     * Obtiene estadísticas avanzadas para el dashboard.
+     * Usa count queries en vez de findAll() para no cargar todas las entidades en memoria.
      */
     @GetMapping("/dashboard")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<com.alvaro.pricewise.dto.admin.DashboardStatsDTO>> getDashboardStats() {
         long totalUsers = userRepository.count();
-        long activeUsers = userRepository.findAll().stream().filter(User::getActive).count();
-        
+        long activeUsers = userRepository.countByActiveTrue();
+
         long totalCompanies = companyRepository.count();
         long activeCompanies = companyRepository.countByActive(true);
-        
+
         long totalProducts = productRepository.count();
-        long trackedProducts = productRepository.findAll().stream()
-                .filter(p -> p.getAsin() != null && !p.getAsin().isBlank())
-                .count();
-        
+        long trackedProducts = productRepository.countTrackedProducts();
+
         long competitorsTracked = competitorRepository.count();
-        
+
         String schedulerStatus = "UNKNOWN";
         try {
             if (scheduler.isShutdown()) schedulerStatus = "SHUTDOWN";
@@ -168,17 +164,16 @@ public class AdminController {
             schedulerStatus = "ERROR";
         }
 
-        java.util.Map<String, Long> productsByCategory = productRepository.findAll().stream()
-                .collect(java.util.stream.Collectors.groupingBy(
-                        p -> p.getCategory() != null ? p.getCategory() : "Sin Categoría",
-                        java.util.stream.Collectors.counting()
-                ));
+        // Count queries agrupadas (sin cargar entidades completas en memoria)
+        java.util.Map<String, Long> productsByCategory = new java.util.LinkedHashMap<>();
+        for (Object[] row : productRepository.countProductsGroupedByCategory()) {
+            productsByCategory.put((String) row[0], (Long) row[1]);
+        }
 
-        java.util.Map<String, Long> userCountByCompany = userRepository.findAll().stream()
-                .collect(java.util.stream.Collectors.groupingBy(
-                        u -> u.getCompany() != null ? u.getCompany().getName() : "Sin Empresa",
-                        java.util.stream.Collectors.counting()
-                ));
+        java.util.Map<String, Long> userCountByCompany = new java.util.LinkedHashMap<>();
+        for (Object[] row : userRepository.countUsersGroupedByCompany()) {
+            userCountByCompany.put((String) row[0], (Long) row[1]);
+        }
 
         com.alvaro.pricewise.dto.admin.DashboardStatsDTO stats = com.alvaro.pricewise.dto.admin.DashboardStatsDTO.builder()
                 .totalUsers(totalUsers)
@@ -194,27 +189,24 @@ public class AdminController {
                 .productsByCategory(productsByCategory)
                 .userCountByCompany(userCountByCompany)
                 .build();
-        
+
         return ResponseEntity.ok(ApiResponse.success(stats));
     }
 
     /**
      * Obtiene estadísticas generales del sistema (Versión simple).
+     * Usa count queries dedicadas en vez de cargar todos los usuarios.
      */
     @GetMapping("/stats")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
-        List<User> allUsers = userRepository.findAll();
-        
-        long totalUsers = allUsers.size();
-        long activeUsers = allUsers.stream().filter(User::getActive).count();
-        
-        long adminUsers = allUsers.stream().filter(u -> u.getRole() == User.Role.ADMIN).count();
-        long companyAdmins = allUsers.stream().filter(u -> u.getRole() == User.Role.COMPANY_ADMIN).count();
-        long employees = allUsers.stream().filter(u -> u.getRole() == User.Role.EMPLOYEE).count();
-        
+        long totalUsers = userRepository.count();
+        long activeUsers = userRepository.countByActiveTrue();
+        long adminUsers = userRepository.countByRole(User.Role.ADMIN);
+        long companyAdmins = userRepository.countByRole(User.Role.COMPANY_ADMIN);
+        long employees = userRepository.countByRole(User.Role.EMPLOYEE);
         long totalCompanies = companyRepository.count();
-        
+
         Map<String, Object> stats = Map.of(
                 "totalUsers", totalUsers,
                 "activeUsers", activeUsers,
@@ -223,7 +215,7 @@ public class AdminController {
                 "employees", employees,
                 "totalCompanies", totalCompanies
         );
-        
+
         return ResponseEntity.ok(ApiResponse.success(stats));
     }
 

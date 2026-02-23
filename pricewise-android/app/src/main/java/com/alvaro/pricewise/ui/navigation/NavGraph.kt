@@ -13,11 +13,14 @@ import com.alvaro.pricewise.ui.auth.LoginScreen
 import com.alvaro.pricewise.ui.auth.RegisterScreen
 import com.alvaro.pricewise.ui.main.MainScreen
 import com.alvaro.pricewise.ui.settings.SettingsScreen
+import com.alvaro.pricewise.ui.splash.SplashScreen
+import kotlinx.coroutines.delay
 import java.net.URLDecoder
 import java.net.URLEncoder
 
 sealed class Screen(val route: String) {
 
+    object Splash      : Screen("splash")
     object Login       : Screen("login")
     object Register    : Screen("register")
     object CompanySetup : Screen("company_setup/{idToken}/{email}/{name}") {
@@ -38,18 +41,29 @@ fun RootNavGraph(
 ) {
     val navController = rememberNavController()
 
-    // Observar token de forma reactiva (sin bloquear main thread)
-    val isLoggedIn by tokenRepository.isLoggedIn()
-        .collectAsState(initial = false)
-    val startDestination = remember(isLoggedIn) {
-        if (isLoggedIn) Screen.Main.route else Screen.Login.route
-    }
-
     NavHost(
         navController = navController,
-        startDestination = startDestination,
+        startDestination = Screen.Splash.route,
         modifier = modifier
     ) {
+        // Splash: muestra logo mientras se hidrata el token
+        composable(Screen.Splash.route) {
+            val isLoggedIn by tokenRepository.isLoggedIn()
+                .collectAsState(initial = null) // null = aún cargando
+
+            LaunchedEffect(isLoggedIn) {
+                if (isLoggedIn != null) {
+                    delay(400) // transición suave
+                    val destination = if (isLoggedIn == true) Screen.Main.route else Screen.Login.route
+                    navController.navigate(destination) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                }
+            }
+
+            SplashScreen()
+        }
+
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {

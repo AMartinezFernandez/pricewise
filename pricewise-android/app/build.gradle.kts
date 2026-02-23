@@ -19,8 +19,14 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Google OAuth Web Client ID (from Google Cloud Console)
+        // Configurar en local.properties: GOOGLE_WEB_CLIENT_ID=tu-client-id.apps.googleusercontent.com
+        val googleClientId = project.findProperty("GOOGLE_WEB_CLIENT_ID")?.toString()
+        if (googleClientId.isNullOrBlank() || googleClientId == "placeholder") {
+            logger.warn("AVISO: GOOGLE_WEB_CLIENT_ID no configurado. Google Sign-In no funcionará.")
+            logger.warn("       Añade GOOGLE_WEB_CLIENT_ID=xxx a local.properties")
+        }
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID",
-            "\"${project.findProperty("GOOGLE_WEB_CLIENT_ID") ?: "placeholder"}\"")
+            "\"${googleClientId ?: ""}\"")
     }
 
     buildTypes {
@@ -29,7 +35,8 @@ android {
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:9090/\"")
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

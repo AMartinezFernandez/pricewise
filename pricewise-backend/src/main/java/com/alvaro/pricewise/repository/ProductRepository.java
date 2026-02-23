@@ -59,4 +59,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Obtener marcas unicas de la empresa
     @Query("SELECT DISTINCT p.brand FROM Product p WHERE p.company.id = :companyId AND p.brand IS NOT NULL")
     List<String> findDistinctBrandsByCompanyId(@Param("companyId") Long companyId);
+
+    // Contar productos con ASIN (tracked en Amazon)
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.asin IS NOT NULL AND p.asin <> ''")
+    long countTrackedProducts();
+
+    // Productos agrupados por categoría (count query, sin cargar entidades)
+    @Query("SELECT COALESCE(p.category, 'Sin Categoría') AS cat, COUNT(p) AS cnt " +
+           "FROM Product p GROUP BY p.category")
+    List<Object[]> countProductsGroupedByCategory();
 }

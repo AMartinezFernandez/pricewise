@@ -31,7 +31,10 @@ import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.security.UserPrincipal;
 import com.alvaro.pricewise.service.PriceAnalysisService;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 
 /**
  * Controlador de metricas, recomendaciones y alertas.
@@ -40,6 +43,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/analytics")
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('COMPANY_ADMIN', 'EMPLOYEE', 'ADMIN')")
+@Validated
 @SuppressWarnings("null")
 public class AnalyticsController {
 
@@ -89,8 +93,8 @@ public class AnalyticsController {
     @GetMapping("/recommendations")
     public ResponseEntity<ApiResponse<PageResponse<RecommendationSummary>>> getRecommendations(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("priority").descending());
         Page<PriceRecommendation> recommendations = priceAnalysisService
@@ -136,8 +140,8 @@ public class AnalyticsController {
     @GetMapping("/alerts")
     public ResponseEntity<ApiResponse<PageResponse<AlertSummary>>> getAlerts(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "false") boolean onlyUnread) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
