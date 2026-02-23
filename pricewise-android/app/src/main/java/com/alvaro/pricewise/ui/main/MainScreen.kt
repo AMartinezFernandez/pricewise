@@ -17,7 +17,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import com.alvaro.pricewise.data.repository.AuthRepository
 import com.alvaro.pricewise.ui.alerts.AlertsScreen
 import com.alvaro.pricewise.ui.common.OfflineBanner
 import com.alvaro.pricewise.ui.dashboard.DashboardScreen
@@ -38,10 +37,9 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-// ViewModel para logout y estado de red
+// ViewModel para estado de red
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
     networkObserver: NetworkObserver
 ) : ViewModel() {
 
@@ -55,13 +53,6 @@ class MainViewModel @Inject constructor(
                 }
             }
         }
-
-    fun logout(onDone: () -> Unit) {
-        viewModelScope.launch {
-            authRepository.logout()
-            onDone()
-        }
-    }
 }
 
 // Rutas internas de la pantalla principal (con bottom nav)
@@ -75,7 +66,6 @@ private sealed class Tab(val route: String) {
 
 @Composable
 fun MainScreen(
-    onLogout: () -> Unit,
     onNavigateToSettings: () -> Unit,
     viewModel: MainViewModel = hiltViewModel()
 ) {

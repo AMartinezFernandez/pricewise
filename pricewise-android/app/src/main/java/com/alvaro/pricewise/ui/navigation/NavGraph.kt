@@ -117,11 +117,6 @@ fun RootNavGraph(
 
         composable(Screen.Main.route) {
             MainScreen(
-                onLogout = {
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Main.route) { inclusive = true }
-                    }
-                },
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
                 }
