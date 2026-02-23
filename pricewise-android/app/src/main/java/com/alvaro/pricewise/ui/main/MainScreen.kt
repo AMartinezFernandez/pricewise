@@ -25,7 +25,6 @@ import com.alvaro.pricewise.ui.search.SearchScreen
 import com.alvaro.pricewise.ui.tracking.TrackingScreen
 import com.alvaro.pricewise.util.NetworkObserver
 import dagger.hilt.android.lifecycle.HiltViewModel
-
 import androidx.compose.foundation.layout.Column
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -158,9 +157,10 @@ fun MainScreen(
                 SearchScreen(
                     onProductClick = { id -> innerNav.navigate("detail/$id") },
                     onAddProduct = { product ->
-                        val encodedName = java.net.URLEncoder.encode(product.name, java.nio.charset.StandardCharsets.UTF_8.toString())
-                        val encodedBrand = java.net.URLEncoder.encode(product.brand ?: "", java.nio.charset.StandardCharsets.UTF_8.toString())
-                        val encodedAsin = java.net.URLEncoder.encode(product.asin ?: product.sku ?: "", java.nio.charset.StandardCharsets.UTF_8.toString())
+                        val charset = StandardCharsets.UTF_8.toString()
+                        val encodedName = URLEncoder.encode(product.name, charset)
+                        val encodedBrand = URLEncoder.encode(product.brand ?: "", charset)
+                        val encodedAsin = URLEncoder.encode(product.asin ?: product.sku ?: "", charset)
                         val price = product.currentPrice?.toString() ?: ""
 
                         innerNav.navigate("create_product?name=$encodedName&brand=$encodedBrand&asin=$encodedAsin&price=$price")
