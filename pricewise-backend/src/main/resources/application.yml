@@ -37,9 +37,10 @@ spring:
     baseline-version: 0
     locations: classpath:db/migration
 
-  # Perfiles
+  # Perfiles — por defecto PROD (seguro).
+  # Para desarrollo local: -Dspring.profiles.active=dev o SPRING_PROFILES_ACTIVE=dev
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:prod}
 
 # Configuración del servidor
 server:

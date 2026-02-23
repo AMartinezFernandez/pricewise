@@ -8,10 +8,12 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,10 +36,12 @@ class TokenRepository @Inject constructor(
     private var cachedToken: String? = null
 
     init {
-        // Hidratar cache al arrancar para que AuthInterceptor tenga el token
-        // desde la primera petición tras reiniciar la app
-        cachedToken = runBlocking {
-            context.dataStore.data.first()[TOKEN_KEY]
+        // Hidratar cache de forma asíncrona para no bloquear el main thread.
+        // AuthInterceptor usa getCachedToken() que devuelve null si aún no se
+        // ha cargado; la primera petición con token null redirige al login
+        // y al hacer login se guarda el token en cache igualmente.
+        CoroutineScope(Dispatchers.IO).launch {
+            cachedToken = context.dataStore.data.first()[TOKEN_KEY]
         }
     }
 
