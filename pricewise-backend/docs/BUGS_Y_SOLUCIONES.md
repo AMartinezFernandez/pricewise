@@ -1359,3 +1359,18 @@ y lo asocia a la empresa del admin autenticado.
 
 ### Archivos Modificados
 - `DatabaseSeeder.java`
+
+---
+
+## Nota: Widgets del Dashboard sin contadores numericos
+
+**Fecha:** 2026-02-23
+**Estado:** Decisión de diseño (no es un bug)
+
+### Contexto
+Los widgets del `DashboardScreen` (Android) muestran solo icono + titulo, sin contadores
+numericos. Esto es **intencional**: el dashboard funciona como menu de navegacion rapida
+a las secciones principales (Usuarios, Productos, Alertas, Administracion).
+Los contadores se eliminaron para simplificar la UI y evitar llamadas adicionales al backend
+en cada carga del dashboard. La informacion detallada esta disponible en cada pantalla
+individual al navegar a ella.

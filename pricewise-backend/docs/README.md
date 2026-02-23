@@ -155,11 +155,9 @@ PUT    /api/admin/users/{id}/role        Cambiar rol
 PUT    /api/admin/users/{id}/status      Activar/desactivar
 DELETE /api/admin/users/{id}             Eliminar usuario
 
-Scheduler (solo ADMIN):
-GET  /api/admin/scheduler/status       Estado del scheduler
-POST /api/admin/scheduler/trigger-now  Ejecutar job ahora
-POST /api/admin/scheduler/pause        Pausar scheduler
-POST /api/admin/scheduler/resume       Reanudar scheduler
+Nota: El SchedulerController fue eliminado del MVP.
+Los jobs de Quartz se ejecutan automaticamente sin interfaz REST.
+Ver MEJORAS_FUTURAS.md para reintegracion.
 
 
 FORMATO DE RESPUESTAS

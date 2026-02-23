@@ -192,54 +192,6 @@ class PriceHistoryRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findFirstByProductIdOrderByRecordedAtDesc")
-    class FindLatestTests {
-
-        @Test
-        @DisplayName("Devuelve el registro más reciente")
-        void shouldReturnLatestRecord() {
-            createPriceHistory(product1, new BigDecimal("100.00"), null,
-                    PriceHistory.ChangeType.INITIAL, LocalDateTime.now().minusDays(5));
-            createPriceHistory(product1, new BigDecimal("150.00"), new BigDecimal("100.00"),
-                    PriceHistory.ChangeType.INCREASE, LocalDateTime.now().minusDays(1));
-
-            PriceHistory latest = priceHistoryRepository.findFirstByProductIdOrderByRecordedAtDesc(product1.getId());
-
-            assertThat(latest).isNotNull();
-            assertThat(latest.getPrice()).isEqualByComparingTo(new BigDecimal("150.00"));
-        }
-
-        @Test
-        @DisplayName("Devuelve null si no hay historial")
-        void shouldReturnNullWhenNoHistory() {
-            PriceHistory latest = priceHistoryRepository.findFirstByProductIdOrderByRecordedAtDesc(product1.getId());
-
-            assertThat(latest).isNull();
-        }
-    }
-
-    @Nested
-    @DisplayName("countPriceChangesSince")
-    class CountChangesSinceTests {
-
-        @Test
-        @DisplayName("Cuenta cambios desde una fecha")
-        void shouldCountChangesSinceDate() {
-            LocalDateTime now = LocalDateTime.now();
-            createPriceHistory(product1, new BigDecimal("100.00"), null,
-                    PriceHistory.ChangeType.INITIAL, now.minusDays(30));
-            createPriceHistory(product1, new BigDecimal("110.00"), new BigDecimal("100.00"),
-                    PriceHistory.ChangeType.INCREASE, now.minusDays(3));
-            createPriceHistory(product1, new BigDecimal("105.00"), new BigDecimal("110.00"),
-                    PriceHistory.ChangeType.DECREASE, now.minusDays(1));
-
-            long count = priceHistoryRepository.countPriceChangesSince(product1.getId(), now.minusDays(7));
-
-            assertThat(count).isEqualTo(2);
-        }
-    }
-
-    @Nested
     @DisplayName("deleteByRecordedAtBefore (TTL)")
     class DeleteTTLTests {
 

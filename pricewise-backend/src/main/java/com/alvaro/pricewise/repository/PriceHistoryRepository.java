@@ -13,16 +13,16 @@ import java.util.List;
 
 @Repository
 public interface PriceHistoryRepository extends JpaRepository<PriceHistory, Long> {
-    
-    // Histórico de un producto ordenado por fecha
-    List<PriceHistory> findByProductIdOrderByRecordedAtDesc(Long productId);
-    
+
     Page<PriceHistory> findByProductId(Long productId, Pageable pageable);
-    
-    // Últimos N cambios de precio
+
+    // Historial completo por producto (usado en tests de integracion)
+    List<PriceHistory> findByProductIdOrderByRecordedAtDesc(Long productId);
+
+    // Ultimos 10 cambios de precio
     List<PriceHistory> findTop10ByProductIdOrderByRecordedAtDesc(Long productId);
-    
-    // Histórico en rango de fechas
+
+    // Historico en rango de fechas (usado por PriceHistoryController)
     @Query("SELECT ph FROM PriceHistory ph WHERE ph.product.id = :productId " +
            "AND ph.recordedAt BETWEEN :startDate AND :endDate " +
            "ORDER BY ph.recordedAt ASC")
@@ -31,15 +31,7 @@ public interface PriceHistoryRepository extends JpaRepository<PriceHistory, Long
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
-    
-    // Último registro de precio
-    PriceHistory findFirstByProductIdOrderByRecordedAtDesc(Long productId);
-    
-    // Contar cambios de precio en período
-    @Query("SELECT COUNT(ph) FROM PriceHistory ph WHERE ph.product.id = :productId " +
-           "AND ph.recordedAt >= :since")
-    long countPriceChangesSince(@Param("productId") Long productId, @Param("since") LocalDateTime since);
 
-    // Eliminar registros anteriores a una fecha (para limpieza TTL)
+    // Eliminar registros anteriores a una fecha (para limpieza TTL futura)
     void deleteByRecordedAtBefore(LocalDateTime before);
 }

@@ -219,23 +219,4 @@ class AlertRepositoryTest {
         }
     }
 
-    @Nested
-    @DisplayName("findByUserIdAndSeverity")
-    class FindBySeverityTests {
-
-        @Test
-        @DisplayName("Filtra alertas por severidad")
-        void shouldFilterBySeverity() {
-            createAlert(user1, product1, Alert.AlertType.COMPETITOR_PRICE_DROP, Alert.Severity.INFO, false);
-            createAlert(user1, product1, Alert.AlertType.PRICE_BELOW_COST, Alert.Severity.CRITICAL, false);
-            createAlert(user1, product1, Alert.AlertType.COMPETITOR_PRICE_RISE, Alert.Severity.CRITICAL, false);
-
-            Page<Alert> result = alertRepository.findByUserIdAndSeverity(
-                    user1.getId(), Alert.Severity.CRITICAL, PageRequest.of(0, 10));
-
-            assertThat(result.getContent()).hasSize(2);
-            assertThat(result.getContent()).allSatisfy(alert ->
-                    assertThat(alert.getSeverity()).isEqualTo(Alert.Severity.CRITICAL));
-        }
-    }
 }

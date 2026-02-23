@@ -15,28 +15,12 @@ import com.alvaro.pricewise.entity.PriceRecommendation.Status;
 @Repository
 public interface PriceRecommendationRepository extends JpaRepository<PriceRecommendation, Long> {
 
-    // Queries ahora basadas en company (a través de product.company.id)
-    Page<PriceRecommendation> findByProductCompanyId(Long companyId, Pageable pageable);
-
     @Query("SELECT r FROM PriceRecommendation r JOIN FETCH r.product WHERE r.product.company.id = :companyId AND r.status = :status")
     Page<PriceRecommendation> findByProductCompanyIdAndStatus(Long companyId, Status status, Pageable pageable);
-
 
     List<PriceRecommendation> findByProductIdAndStatus(Long productId, Status status);
 
     long countByProductCompanyIdAndStatus(Long companyId, Status status);
-
-    @Query("SELECT r FROM PriceRecommendation r WHERE r.product.company.id = :companyId " +
-           "AND r.status = :status ORDER BY r.priority DESC, r.createdAt DESC")
-    List<PriceRecommendation> findTopByCompanyIdAndStatus(
-            @Param("companyId") Long companyId,
-            @Param("status") Status status,
-            Pageable pageable);
-
-    @Query("SELECT r.recommendationType, COUNT(r) FROM PriceRecommendation r " +
-           "WHERE r.product.company.id = :companyId AND r.status = 'PENDING' " +
-           "GROUP BY r.recommendationType")
-    List<Object[]> countByTypeForCompany(@Param("companyId") Long companyId);
 
     @Query("SELECT SUM(r.potentialSavingOrProfit) FROM PriceRecommendation r " +
            "WHERE r.product.company.id = :companyId AND r.status = 'PENDING' " +

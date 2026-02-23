@@ -10,8 +10,6 @@ import com.alvaro.pricewise.entity.Company;
 @Repository
 public interface CompanyRepository extends JpaRepository<Company, Long> {
 
-    Optional<Company> findByTaxId(String taxId);
-
     boolean existsByTaxId(String taxId);
 
     Optional<Company> findByCompanyCode(String companyCode);

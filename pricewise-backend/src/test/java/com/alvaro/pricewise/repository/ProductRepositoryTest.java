@@ -102,47 +102,8 @@ class ProductRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findBySku / findBySkuAndCompanyId")
-    class FindBySkuTests {
-
-        @Test
-        @DisplayName("Encuentra producto por SKU")
-        void findBySku_existing_returnsProduct() {
-            createProduct("Mi Producto", "SKU-UNICO", "Electro", "Samsung", new BigDecimal("99.99"), company1, true);
-
-            Optional<Product> found = productRepository.findBySku("SKU-UNICO");
-
-            assertThat(found).isPresent();
-            assertThat(found.get().getName()).isEqualTo("Mi Producto");
-        }
-
-        @Test
-        @DisplayName("No encuentra producto con SKU inexistente")
-        void findBySku_nonExisting_returnsEmpty() {
-            Optional<Product> found = productRepository.findBySku("NO-EXISTE");
-
-            assertThat(found).isEmpty();
-        }
-
-        @Test
-        @DisplayName("Encuentra producto por SKU y empresa")
-        void findBySkuAndCompanyId_existing_returnsProduct() {
-            createProduct("Producto", "SKU-001", "Electro", "Sony", new BigDecimal("50"), company1, true);
-
-            Optional<Product> found = productRepository.findBySkuAndCompanyId("SKU-001", company1.getId());
-
-            assertThat(found).isPresent();
-        }
-
-        @Test
-        @DisplayName("No encuentra SKU en empresa incorrecta")
-        void findBySkuAndCompanyId_wrongCompany_returnsEmpty() {
-            createProduct("Producto", "SKU-001", "Electro", "Sony", new BigDecimal("50"), company1, true);
-
-            Optional<Product> found = productRepository.findBySkuAndCompanyId("SKU-001", company2.getId());
-
-            assertThat(found).isEmpty();
-        }
+    @DisplayName("findBySkuAndCompanyIdAndActiveTrue")
+    class FindBySkuAndCompanyIdAndActiveTrueTests {
 
         @Test
         @DisplayName("findBySkuAndCompanyIdAndActiveTrue no encuentra producto inactivo (soft-deleted)")
@@ -163,32 +124,6 @@ class ProductRepositoryTest {
 
             assertThat(found).isPresent();
             assertThat(found.get().getName()).isEqualTo("Activo");
-        }
-    }
-
-    @Nested
-    @DisplayName("findByEan")
-    class FindByEanTests {
-
-        @Test
-        @DisplayName("Encuentra producto por EAN")
-        void findByEan_existing_returnsProduct() {
-            Product p = Product.builder()
-                    .name("Con EAN")
-                    .sku("SKU-EAN")
-                    .ean("8401234567890")
-                    .currentPrice(new BigDecimal("25.00"))
-                    .company(company1)
-                    .createdBy(user)
-                    .active(true)
-                    .monitoringEnabled(true)
-                    .build();
-            entityManager.persistAndFlush(p);
-
-            Optional<Product> found = productRepository.findByEan("8401234567890");
-
-            assertThat(found).isPresent();
-            assertThat(found.get().getName()).isEqualTo("Con EAN");
         }
     }
 
@@ -332,48 +267,4 @@ class ProductRepositoryTest {
         }
     }
 
-    @Nested
-    @DisplayName("findByMonitoringEnabledTrueAndActiveTrue")
-    class MonitoringTests {
-
-        @Test
-        @DisplayName("Devuelve solo productos con monitoreo activo")
-        void findMonitored_returnsOnlyActiveAndMonitored() {
-            createProduct("Monitoreado", "SKU-1", null, null, new BigDecimal("100"), company1, true);
-
-            Product noMonitor = Product.builder()
-                    .name("Sin monitoreo")
-                    .sku("SKU-2")
-                    .currentPrice(new BigDecimal("200"))
-                    .company(company1)
-                    .createdBy(user)
-                    .active(true)
-                    .monitoringEnabled(false)
-                    .build();
-            entityManager.persistAndFlush(noMonitor);
-
-            List<Product> result = productRepository.findByMonitoringEnabledTrueAndActiveTrue();
-
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getName()).isEqualTo("Monitoreado");
-        }
-    }
-
-    @Nested
-    @DisplayName("findByCompanyIdAndNameContainingIgnoreCase")
-    class NameSearchTests {
-
-        @Test
-        @DisplayName("Busca por nombre parcial case insensitive")
-        void findByName_partialMatch() {
-            createProduct("iPhone 15 Pro Max", "SKU-1", "Telefonia", "Apple", new BigDecimal("1399"), company1, true);
-            createProduct("Samsung Galaxy S24", "SKU-2", "Telefonia", "Samsung", new BigDecimal("999"), company1, true);
-
-            Page<Product> result = productRepository.findByCompanyIdAndNameContainingIgnoreCase(
-                    company1.getId(), "IPHONE", PageRequest.of(0, 10));
-
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0).getName()).isEqualTo("iPhone 15 Pro Max");
-        }
-    }
 }

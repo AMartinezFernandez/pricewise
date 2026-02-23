@@ -88,7 +88,7 @@ class AnalyticsControllerTest {
                     .thenReturn(new BigDecimal("150.00"));
             when(priceAnalysisService.getPendingRecommendations(eq(1L), any()))
                     .thenReturn(Page.empty());
-            when(priceAnalysisService.getUnreadAlertsByCompany(eq(1L), any()))
+            when(priceAnalysisService.getAlertsByCompany(eq(1L), eq(true), any()))
                     .thenReturn(Page.empty());
 
             mockMvc.perform(get("/api/analytics/dashboard"))

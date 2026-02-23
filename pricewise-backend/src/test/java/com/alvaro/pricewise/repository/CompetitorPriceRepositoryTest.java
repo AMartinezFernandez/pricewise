@@ -14,7 +14,6 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -158,62 +157,6 @@ class CompetitorPriceRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findLatestPricesByProduct")
-    class FindLatestPricesByProductTests {
-
-        @Test
-        @DisplayName("Devuelve solo el precio más reciente por competidor")
-        void shouldReturnLatestPricePerCompetitor() {
-            LocalDateTime now = LocalDateTime.now();
-            createCompetitorPrice(product1, new BigDecimal("80.00"), now.minusDays(3), true);
-            createCompetitorPrice(product1, new BigDecimal("85.00"), now.minusDays(1), true);
-
-            Competitor competitor2 = entityManager.persistAndFlush(Competitor.builder()
-                    .name("MediaMarkt")
-                    .code("MEDIAMARKT")
-                    .baseUrl("https://www.mediamarkt.es")
-                    .sourceType(Competitor.SourceType.SCRAPING)
-                    .active(true)
-                    .build());
-
-            entityManager.persistAndFlush(CompetitorPrice.builder()
-                    .product(product1)
-                    .competitor(competitor2)
-                    .price(new BigDecimal("90.00"))
-                    .currency("EUR")
-                    .available(true)
-                    .scrapedAt(now.minusDays(2))
-                    .source("scraper")
-                    .build());
-
-            List<CompetitorPrice> result = competitorPriceRepository.findLatestPricesByProduct(product1);
-
-            assertThat(result).hasSize(2);
-        }
-    }
-
-    @Nested
-    @DisplayName("findBetterPricesThanOurs")
-    class FindBetterPricesTests {
-
-        @Test
-        @DisplayName("Encuentra precios de competidores más baratos que los nuestros")
-        void shouldFindCheaperCompetitorPrices() {
-            LocalDateTime now = LocalDateTime.now();
-            // product1 costs 100.00, competitor has it at 85.00 (cheaper)
-            createCompetitorPrice(product1, new BigDecimal("85.00"), now.minusHours(1), true);
-            // product2 costs 200.00, competitor has it at 250.00 (more expensive)
-            createCompetitorPrice(product2, new BigDecimal("250.00"), now.minusHours(1), true);
-
-            List<CompetitorPrice> result = competitorPriceRepository
-                    .findBetterPricesThanOurs(company.getId(), now.minusDays(1));
-
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getProduct().getId()).isEqualTo(product1.getId());
-        }
-    }
-
-    @Nested
     @DisplayName("deleteByScrapedAtBefore (TTL)")
     class DeleteTTLTests {
 
@@ -227,9 +170,10 @@ class CompetitorPriceRepositoryTest {
             competitorPriceRepository.deleteByScrapedAtBefore(now.minusDays(365));
             entityManager.flush();
 
-            List<CompetitorPrice> remaining = competitorPriceRepository.findByProductOrderByScrapedAtDesc(product1);
-            assertThat(remaining).hasSize(1);
-            assertThat(remaining.get(0).getPrice()).isEqualByComparingTo(new BigDecimal("85.00"));
+            Page<CompetitorPrice> remaining = competitorPriceRepository
+                    .findByProductIdOrderByScrapedAtDesc(product1.getId(), PageRequest.of(0, 100));
+            assertThat(remaining.getContent()).hasSize(1);
+            assertThat(remaining.getContent().get(0).getPrice()).isEqualByComparingTo(new BigDecimal("85.00"));
         }
     }
 
@@ -252,24 +196,4 @@ class CompetitorPriceRepositoryTest {
         }
     }
 
-    @Nested
-    @DisplayName("findAveragePriceByProductSince")
-    class FindAveragePriceTests {
-
-        @Test
-        @DisplayName("Calcula precio medio de competidores disponibles")
-        void shouldCalculateAveragePrice() {
-            LocalDateTime now = LocalDateTime.now();
-            createCompetitorPrice(product1, new BigDecimal("80.00"), now.minusDays(1), true);
-            createCompetitorPrice(product1, new BigDecimal("90.00"), now.minusHours(1), true);
-            // This one is not available, should be excluded
-            createCompetitorPrice(product1, new BigDecimal("50.00"), now.minusHours(2), false);
-
-            Optional<Double> avg = competitorPriceRepository
-                    .findAveragePriceByProductSince(product1, now.minusDays(7));
-
-            assertThat(avg).isPresent();
-            assertThat(avg.get()).isEqualTo(85.0); // (80 + 90) / 2
-        }
-    }
 }
