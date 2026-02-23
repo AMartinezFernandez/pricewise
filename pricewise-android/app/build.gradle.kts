@@ -60,12 +60,6 @@ android {
         buildConfig = true
     }
 
-    lint {
-        // AGP 8.5.2 + compileSdk 35 + Java 25 causa fallos en AndroidLintWorkAction.
-        // Desactivar lint como tarea bloqueante hasta que se actualice AGP.
-        abortOnError = false
-        checkReleaseBuilds = false
-    }
 }
 
 dependencies {
@@ -106,9 +100,9 @@ dependencies {
     implementation(libs.coil.compose)
 
     // Google Sign-In (Credential Manager)
-    implementation("androidx.credentials:credentials:1.3.0")
-    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

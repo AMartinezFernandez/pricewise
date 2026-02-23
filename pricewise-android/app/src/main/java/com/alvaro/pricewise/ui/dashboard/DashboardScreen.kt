@@ -35,6 +35,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.util.Locale
 
 // ─────────────────────────────────────────────
 // ViewModel
@@ -124,7 +125,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     private fun formatCurrency(value: Double): String {
-        return String.format("%.2f €", value)
+        return String.format(Locale.getDefault(), "%.2f €", value)
     }
 
 }
