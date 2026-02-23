@@ -104,7 +104,8 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun PriceWiseTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    // Siempre oscuro: la app usa fondo DarkNavy en todas las pantallas
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
