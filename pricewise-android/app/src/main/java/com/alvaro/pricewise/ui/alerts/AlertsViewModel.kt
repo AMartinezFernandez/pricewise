@@ -3,6 +3,7 @@ package com.alvaro.pricewise.ui.alerts
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alvaro.pricewise.data.model.AlertResponse
+import com.alvaro.pricewise.data.model.AlertRuleResponse
 import com.alvaro.pricewise.data.model.CreateAlertRuleRequest
 import com.alvaro.pricewise.data.model.ProductResponse
 import com.alvaro.pricewise.data.repository.AnalyticsRepository
@@ -14,12 +15,24 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class AlertsUiState(
+    // Tab seleccionado: 0 = Mis alertas (rules), 1 = Historial (generated alerts)
+    val selectedTab: Int = 0,
+
+    // Reglas de alerta (configuradas por el usuario)
+    val rules: List<AlertRuleResponse> = emptyList(),
+    val isLoadingRules: Boolean = false,
+
+    // Alertas generadas (historial)
     val alerts: List<AlertResponse> = emptyList(),
     val unreadCount: Int = 0,
-    val isLoading: Boolean = false,
+    val isLoadingAlerts: Boolean = false,
+    val filterUnreadOnly: Boolean = false,
+
+    // General
     val error: String? = null,
     val actionMessage: String? = null,
-    val filterUnreadOnly: Boolean = false,
+
+    // Dialogo crear alerta
     val showCreateDialog: Boolean = false,
     val isSaving: Boolean = false,
     val products: List<ProductResponse> = emptyList(),
@@ -35,21 +48,80 @@ class AlertsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AlertsUiState())
     val uiState: StateFlow<AlertsUiState> = _uiState.asStateFlow()
 
+    fun selectTab(tab: Int) {
+        _uiState.value = _uiState.value.copy(selectedTab = tab)
+    }
+
+    // ─── Reglas de alerta (Mis alertas) ──────────────────────
+
+    fun loadRules() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingRules = true, error = null)
+            when (val result = repository.getAlertRules()) {
+                is Result.Success -> {
+                    val rules = result.data.data ?: emptyList()
+                    _uiState.value = _uiState.value.copy(
+                        rules = rules,
+                        isLoadingRules = false
+                    )
+                }
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    isLoadingRules = false,
+                    error = result.message
+                )
+            }
+        }
+    }
+
+    fun deleteRule(id: Long) {
+        viewModelScope.launch {
+            when (repository.deleteAlertRule(id)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        rules = _uiState.value.rules.filter { it.id != id },
+                        actionMessage = "Alerta eliminada"
+                    )
+                }
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    actionMessage = "Error al eliminar alerta"
+                )
+            }
+        }
+    }
+
+    fun toggleRule(id: Long) {
+        viewModelScope.launch {
+            when (repository.toggleAlertRule(id)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        rules = _uiState.value.rules.map {
+                            if (it.id == id) it.copy(enabled = !it.enabled) else it
+                        }
+                    )
+                }
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    actionMessage = "Error al cambiar estado"
+                )
+            }
+        }
+    }
+
+    // ─── Alertas generadas (Historial) ──────────────────────
+
     fun loadAlerts() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-
+            _uiState.value = _uiState.value.copy(isLoadingAlerts = true, error = null)
             when (val result = repository.getAlerts(onlyUnread = _uiState.value.filterUnreadOnly)) {
                 is Result.Success -> {
                     val alerts = result.data.data?.content ?: emptyList()
                     _uiState.value = _uiState.value.copy(
                         alerts = alerts,
                         unreadCount = alerts.count { !it.isRead },
-                        isLoading = false
+                        isLoadingAlerts = false
                     )
                 }
                 is Result.Error -> _uiState.value = _uiState.value.copy(
-                    isLoading = false,
+                    isLoadingAlerts = false,
                     error = result.message
                 )
             }
@@ -98,6 +170,8 @@ class AlertsViewModel @Inject constructor(
         }
     }
 
+    // ─── Dialogo crear alerta ────────────────────────────────
+
     fun showCreateDialog() {
         _uiState.value = _uiState.value.copy(showCreateDialog = true)
         loadProducts()
@@ -141,6 +215,7 @@ class AlertsViewModel @Inject constructor(
                         showCreateDialog = false,
                         actionMessage = "Alerta creada"
                     )
+                    loadRules()
                 }
                 is Result.Error -> _uiState.value = _uiState.value.copy(
                     isSaving = false,
@@ -148,6 +223,11 @@ class AlertsViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun loadAll() {
+        loadRules()
+        loadAlerts()
     }
 
     fun clearActionMessage() {
