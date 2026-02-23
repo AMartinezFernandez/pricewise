@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -254,13 +256,17 @@ fun DashboardScreen(
                         modifier = Modifier.weight(1f)
                     )
 
-                    StatCard(
-                        title = "Ahorro Potencial",
-                        value = uiState.totalSavings,
-                        icon = Icons.Default.TrendingDown,
-                        onClick = onNavigateToTracking,
-                        modifier = Modifier.weight(1f)
-                    )
+                    if (uiState.role == "ADMIN") {
+                        StatCard(
+                            title = "Administracion",
+                            value = "",
+                            icon = Icons.Default.AdminPanelSettings,
+                            onClick = onNavigateToAdminDashboard,
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
                 }
 
                 Row(
@@ -276,7 +282,6 @@ fun DashboardScreen(
                         modifier = Modifier.weight(1f)
                     )
 
-                    // Show Users widget only for ADMIN/COMPANY_ADMIN
                     if (uiState.role == "ADMIN" || uiState.role == "COMPANY_ADMIN") {
                         StatCard(
                             title = "Usuarios",
@@ -286,24 +291,7 @@ fun DashboardScreen(
                             modifier = Modifier.weight(1f)
                         )
                     } else {
-                        // Placeholder to keep layout balanced
                         Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-
-                // Admin panel button (only for ADMIN role)
-                if (uiState.role == "ADMIN") {
-                    OutlinedButton(
-                        onClick = onNavigateToAdminDashboard,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            Icons.Default.AdminPanelSettings,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Panel de Administración Global")
                     }
                 }
             }
@@ -327,7 +315,9 @@ fun StatCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -338,15 +328,23 @@ fun StatCard(
                 modifier = Modifier.size(32.dp)
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
+            if (value.isNotBlank()) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
