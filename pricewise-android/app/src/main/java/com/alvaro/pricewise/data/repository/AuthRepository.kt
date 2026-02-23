@@ -77,11 +77,17 @@ class AuthRepository @Inject constructor(
                 val data = result.data.data
                 if (data != null) {
                     if (data.status == "AUTHENTICATED" && data.token != null) {
+                        val userId = data.userId
+                        val username = data.username
+                        val role = data.role
+                        if (userId == null || username == null || role == null) {
+                            return Result.Error("Respuesta de Google incompleta: faltan datos de usuario")
+                        }
                         tokenRepository.saveSession(
                             token = data.token.removePrefix("Bearer "),
-                            userId = data.userId!!,
-                            username = data.username!!,
-                            role = data.role!!,
+                            userId = userId,
+                            username = username,
+                            role = role,
                             companyId = data.companyId,
                             companyName = data.companyName
                         )
