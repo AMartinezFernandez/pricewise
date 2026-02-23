@@ -30,6 +30,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Productos con monitoreo activo (paginado, para PriceMonitorJob)
     Page<Product> findByMonitoringEnabledTrueAndActiveTrue(Pageable pageable);
 
+    // Productos monitorizados por empresa (paginado, para TrackingScreen)
+    Page<Product> findByCompanyIdAndMonitoringEnabledTrueAndActiveTrue(Long companyId, Pageable pageable);
+
     // Busqueda avanzada con filtros
     @Query("SELECT p FROM Product p WHERE p.company.id = :companyId " +
            "AND (:name IS NULL OR " +

@@ -15,6 +15,9 @@ class ProductRepository @Inject constructor(
     suspend fun getProducts(page: Int = 0, size: Int = 20) =
         safeApiCall { api.getProducts(page, size) }
 
+    suspend fun getMonitoredProducts(page: Int = 0, size: Int = 20) =
+        safeApiCall { api.getMonitoredProducts(page, size) }
+
     suspend fun searchProducts(name: String? = null, category: String? = null, brand: String? = null, page: Int = 0) =
         safeApiCall { api.searchProducts(name, category, brand, page) }
 

@@ -65,29 +65,10 @@ class TrackingViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = if (refresh) null else _uiState.value.error)
 
-            // TODO: Ideally backend should support filtering by monitoringEnabled=true in getProducts
-            // For now we fetch plain products.
-            // If backend doesn't support generic search with filtering, we might see non-monitored products.
-            // Assumption: ProductRepository.getProducts returns all.
-            // Optimization: If needed, add `monitoringEnabled` filter to backend search endpoint.
-            // Current `ProductController.searchProducts` supports filters but maybe not `monitoringEnabled`.
-            // Let's use `searchProducts` which might have less params or `getProducts`.
-            // Controller `searchProducts` has `name`, `category`, `brand`. Not `monitoringEnabled`.
-            // Controller `getProducts` lists all.
-            
-            // Allow client-side filtering involves fetching ALL which is bad.
-            // WORKAROUND: We will list ALL products but visually distinguish MONITORED ones, 
-            // OR we assume the user wants to see all products to ENABLE monitoring.
-            // User request: "productos por productos en seguimiento".
-            // Implementation: We will use `getProducts` and show monitoring status.
-            
-            when (val result = productRepository.getProducts(page = currentPage, size = pageSize)) {
+            when (val result = productRepository.getMonitoredProducts(page = currentPage, size = pageSize)) {
                 is Result.Success -> {
                     val page = result.data.data
                     val newProducts = page?.content ?: emptyList()
-                    // Filter or Separate? 
-                    // For now, show all but sort/highlight.
-                    
                     val currentProducts = if (refresh) emptyList() else _uiState.value.products
                     val isLast = page?.last ?: true
                     _uiState.value = _uiState.value.copy(
@@ -155,7 +136,7 @@ fun TrackingScreen(
             ) {
                 item {
                     Text(
-                        text = "Mostrando todos los productos (${uiState.totalElements})",
+                        text = "Productos en seguimiento (${uiState.totalElements})",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -41,6 +41,14 @@ interface PriceWiseApi {
         @Query("sortDir") sortDir: String = "asc"
     ): Response<ApiResponse<PageResponse<ProductResponse>>>
 
+    @GET("api/products/monitored")
+    suspend fun getMonitoredProducts(
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20,
+        @Query("sortBy") sortBy: String = "name",
+        @Query("sortDir") sortDir: String = "asc"
+    ): Response<ApiResponse<PageResponse<ProductResponse>>>
+
     @GET("api/products/search")
     suspend fun searchProducts(
         @Query("name") name: String? = null,
