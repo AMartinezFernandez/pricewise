@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import java.util.Locale
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -221,7 +222,7 @@ private fun AlertRuleCard(
                     )
                 }
                 Text(
-                    "$typeLabel  •  Umbral: ${"%.1f".format(rule.threshold)}%",
+                    "$typeLabel  •  Umbral: ${String.format(Locale.US, "%.1f", rule.threshold)}%",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -374,7 +375,7 @@ private fun AlertCard(alert: AlertResponse, onMarkRead: (Long) -> Unit) {
                 }
                 if (alert.changePercent != null) {
                     Text(
-                        "Variacion: ${"%.1f".format(alert.changePercent)}%",
+                        "Variacion: ${String.format(Locale.US, "%.1f", alert.changePercent)}%",
                         style = MaterialTheme.typography.labelSmall,
                         color = severityColor
                     )
@@ -585,7 +586,7 @@ private fun CreateAlertDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val thresholdValue = threshold.toDoubleOrNull()
+                    val thresholdValue = threshold.replace(',', '.').toDoubleOrNull()
                     if (thresholdValue != null && thresholdValue > 0) {
                         onCreate(
                             selectedType,
@@ -597,7 +598,7 @@ private fun CreateAlertDialog(
                 },
                 enabled = !isSaving
                         && selectedProduct != null
-                        && (threshold.toDoubleOrNull() ?: 0.0) > 0
+                        && (threshold.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0
             ) {
                 if (isSaving) {
                     CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)

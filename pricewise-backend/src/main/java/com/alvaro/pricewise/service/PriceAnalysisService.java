@@ -82,11 +82,10 @@ public class PriceAnalysisService {
                     case COMPETITOR_PRICE_DROP:
                         lowThreshold = ruleThreshold;
                         break;
-                    case PRICE_BELOW_COST:
-                    case HIGH_MARGIN_OPPORTUNITY:
-                    case PRICE_MATCH_NEEDED:
-                    case COMPETITOR_OUT_OF_STOCK:
-                        suddenThreshold = ruleThreshold;
+                    default:
+                        // Otros tipos (PRICE_BELOW_COST, HIGH_MARGIN_OPPORTUNITY, etc.)
+                        // no afectan a los umbrales del motor actual.
+                        // Se ignoran para no alterar suddenThreshold por error.
                         break;
                 }
             }
@@ -169,7 +168,7 @@ public class PriceAnalysisService {
                     ? Alert.Severity.CRITICAL
                     : Alert.Severity.WARNING;
 
-            // Alerts still reference createdBy user for the product
+            // Las alertas referencian al usuario creador del producto
             createAlert(product, alertType, severity,
                     "Cambio brusco de precio en competencia",
                     "El competidor " + (change.compareTo(BigDecimal.ZERO) < 0 ? "bajo" : "subio") +

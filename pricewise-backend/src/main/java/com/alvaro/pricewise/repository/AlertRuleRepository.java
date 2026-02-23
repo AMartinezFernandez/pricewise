@@ -20,7 +20,8 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, Long> {
     List<AlertRule> findByCompanyIdAndEnabledTrue(Long companyId);
 
     @Query("SELECT r FROM AlertRule r WHERE r.company.id = :companyId AND r.enabled = true " +
-           "AND (r.product IS NULL OR r.product.id = :productId)")
+           "AND (r.product IS NULL OR r.product.id = :productId) " +
+           "ORDER BY r.product.id ASC NULLS FIRST")
     List<AlertRule> findApplicableRules(@Param("companyId") Long companyId,
                                         @Param("productId") Long productId);
 }
