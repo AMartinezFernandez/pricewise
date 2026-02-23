@@ -249,11 +249,36 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    if (uiState.role == "ADMIN" || uiState.role == "COMPANY_ADMIN") {
+                        StatCard(
+                            title = "Usuarios",
+                            value = "",
+                            icon = Icons.Default.Person,
+                            onClick = if (uiState.role == "ADMIN") onNavigateToAdminUsers else onNavigateToUsers,
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+
                     StatCard(
                         title = "Productos",
-                        value = "${uiState.totalProducts}",
+                        value = "",
                         icon = Icons.Default.Inventory,
                         onClick = onNavigateToTracking,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    StatCard(
+                        title = "Alertas",
+                        value = "",
+                        icon = Icons.Default.Notifications,
+                        onClick = onNavigateToAlerts,
                         modifier = Modifier.weight(1f)
                     )
 
@@ -263,32 +288,6 @@ fun DashboardScreen(
                             value = "",
                             icon = Icons.Default.AdminPanelSettings,
                             onClick = onNavigateToAdminDashboard,
-                            modifier = Modifier.weight(1f)
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    StatCard(
-                        title = "Alertas",
-                        value = "${uiState.unreadAlerts}",
-                        icon = Icons.Default.Notifications,
-                        color = if (uiState.unreadAlerts > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                        onClick = onNavigateToAlerts,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    if (uiState.role == "ADMIN" || uiState.role == "COMPANY_ADMIN") {
-                        StatCard(
-                            title = "Usuarios",
-                            value = "${uiState.usersCount}",
-                            icon = Icons.Default.Person,
-                            onClick = if (uiState.role == "ADMIN") onNavigateToAdminUsers else onNavigateToUsers,
                             modifier = Modifier.weight(1f)
                         )
                     } else {
