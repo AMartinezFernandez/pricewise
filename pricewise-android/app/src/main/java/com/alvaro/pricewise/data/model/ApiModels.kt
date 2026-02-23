@@ -259,6 +259,38 @@ data class AlertResponse(
 )
 
 // ─────────────────────────────────────────────
+// Reglas de Alertas (configuración)
+// ─────────────────────────────────────────────
+
+@JsonClass(generateAdapter = true)
+data class AlertRuleResponse(
+    @Json(name = "id") val id: Long,
+    @Json(name = "alertType") val alertType: String,
+    @Json(name = "threshold") val threshold: Double,
+    @Json(name = "enabled") val enabled: Boolean = true,
+    @Json(name = "name") val name: String? = null,
+    @Json(name = "productId") val productId: Long? = null,
+    @Json(name = "productName") val productName: String? = null,
+    @Json(name = "createdAt") val createdAt: String? = null,
+    @Json(name = "updatedAt") val updatedAt: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class CreateAlertRuleRequest(
+    @Json(name = "alertType") val alertType: String,
+    @Json(name = "threshold") val threshold: Double,
+    @Json(name = "name") val name: String? = null,
+    @Json(name = "productId") val productId: Long? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class UpdateAlertRuleRequest(
+    @Json(name = "threshold") val threshold: Double? = null,
+    @Json(name = "enabled") val enabled: Boolean? = null,
+    @Json(name = "name") val name: String? = null
+)
+
+// ─────────────────────────────────────────────
 // Historial de precios
 // ─────────────────────────────────────────────
 
