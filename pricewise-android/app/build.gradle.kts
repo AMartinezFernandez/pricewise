@@ -59,6 +59,13 @@ android {
         compose = true
         buildConfig = true
     }
+
+    lint {
+        // AGP 8.5.2 + compileSdk 35 + Java 25 causa fallos en AndroidLintWorkAction.
+        // Desactivar lint como tarea bloqueante hasta que se actualice AGP.
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
 }
 
 dependencies {
