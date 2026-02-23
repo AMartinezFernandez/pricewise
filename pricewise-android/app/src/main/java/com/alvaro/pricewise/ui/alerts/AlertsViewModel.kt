@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alvaro.pricewise.data.model.AlertResponse
 import com.alvaro.pricewise.data.model.CreateAlertRuleRequest
+import com.alvaro.pricewise.data.model.ProductResponse
 import com.alvaro.pricewise.data.repository.AnalyticsRepository
+import com.alvaro.pricewise.data.repository.ProductRepository
 import com.alvaro.pricewise.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -19,12 +21,15 @@ data class AlertsUiState(
     val actionMessage: String? = null,
     val filterUnreadOnly: Boolean = false,
     val showCreateDialog: Boolean = false,
-    val isSaving: Boolean = false
+    val isSaving: Boolean = false,
+    val products: List<ProductResponse> = emptyList(),
+    val isLoadingProducts: Boolean = false
 )
 
 @HiltViewModel
 class AlertsViewModel @Inject constructor(
-    private val repository: AnalyticsRepository
+    private val repository: AnalyticsRepository,
+    private val productRepository: ProductRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AlertsUiState())
@@ -95,31 +100,51 @@ class AlertsViewModel @Inject constructor(
 
     fun showCreateDialog() {
         _uiState.value = _uiState.value.copy(showCreateDialog = true)
+        loadProducts()
     }
 
     fun dismissCreateDialog() {
         _uiState.value = _uiState.value.copy(showCreateDialog = false)
     }
 
-    fun createRule(alertType: String, threshold: Double, name: String?) {
+    private fun loadProducts() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingProducts = true)
+            when (val result = productRepository.getProducts(page = 0, size = 500)) {
+                is Result.Success -> {
+                    val products = result.data.data?.content ?: emptyList()
+                    _uiState.value = _uiState.value.copy(
+                        products = products,
+                        isLoadingProducts = false
+                    )
+                }
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    isLoadingProducts = false
+                )
+            }
+        }
+    }
+
+    fun createRule(alertType: String, threshold: Double, name: String?, productId: Long?) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true)
             val request = CreateAlertRuleRequest(
                 alertType = alertType,
                 threshold = threshold,
-                name = name
+                name = name,
+                productId = productId
             )
             when (repository.createAlertRule(request)) {
                 is Result.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
                         showCreateDialog = false,
-                        actionMessage = "Regla creada"
+                        actionMessage = "Alerta creada"
                     )
                 }
                 is Result.Error -> _uiState.value = _uiState.value.copy(
                     isSaving = false,
-                    actionMessage = "Error al crear regla"
+                    actionMessage = "Error al crear alerta"
                 )
             }
         }

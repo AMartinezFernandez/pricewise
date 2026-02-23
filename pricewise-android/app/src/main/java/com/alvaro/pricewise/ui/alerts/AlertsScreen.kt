@@ -18,6 +18,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import com.alvaro.pricewise.data.model.AlertResponse
+import com.alvaro.pricewise.data.model.ProductResponse
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,11 +51,13 @@ fun AlertsScreen(
     }
 
     if (uiState.showCreateDialog) {
-        CreateAlertRuleDialog(
+        CreateAlertDialog(
+            products = uiState.products,
+            isLoadingProducts = uiState.isLoadingProducts,
             isSaving = uiState.isSaving,
             onDismiss = { viewModel.dismissCreateDialog() },
-            onCreate = { alertType, threshold, name ->
-                viewModel.createRule(alertType, threshold, name)
+            onCreate = { alertType, threshold, name, productId ->
+                viewModel.createRule(alertType, threshold, name, productId)
             }
         )
     }
@@ -81,7 +84,7 @@ fun AlertsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { viewModel.showCreateDialog() }) {
-                Icon(Icons.Default.Add, "Crear regla de alerta")
+                Icon(Icons.Default.Add, "Crear alerta")
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -275,10 +278,12 @@ private fun AlertCard(alert: AlertResponse, onMarkRead: (Long) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CreateAlertRuleDialog(
+private fun CreateAlertDialog(
+    products: List<ProductResponse>,
+    isLoadingProducts: Boolean,
     isSaving: Boolean,
     onDismiss: () -> Unit,
-    onCreate: (alertType: String, threshold: Double, name: String?) -> Unit
+    onCreate: (alertType: String, threshold: Double, name: String?, productId: Long?) -> Unit
 ) {
     val alertTypes = listOf(
         "COMPETITOR_PRICE_DROP" to "Bajada de precio competidor",
@@ -292,35 +297,86 @@ private fun CreateAlertRuleDialog(
     var selectedType by remember { mutableStateOf(alertTypes[0].first) }
     var threshold by remember { mutableStateOf("15.0") }
     var name by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
+    var selectedProduct by remember { mutableStateOf<ProductResponse?>(null) }
+    var typeExpanded by remember { mutableStateOf(false) }
+    var productExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nueva regla de alerta") },
+        title = { Text("Nueva alerta") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Selector de producto
                 ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
+                    expanded = productExpanded,
+                    onExpandedChange = { productExpanded = !productExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedProduct?.name ?: "Selecciona un producto",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Producto") },
+                        trailingIcon = {
+                            if (isLoadingProducts) {
+                                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                            } else {
+                                ExposedDropdownMenuDefaults.TrailingIcon(productExpanded)
+                            }
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = productExpanded,
+                        onDismissRequest = { productExpanded = false }
+                    ) {
+                        products.forEach { product ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(product.name, style = MaterialTheme.typography.bodyMedium)
+                                        if (product.brand != null) {
+                                            Text(
+                                                product.brand,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    selectedProduct = product
+                                    productExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Selector de tipo de alerta
+                ExposedDropdownMenuBox(
+                    expanded = typeExpanded,
+                    onExpandedChange = { typeExpanded = !typeExpanded }
                 ) {
                     OutlinedTextField(
                         value = alertTypes.find { it.first == selectedType }?.second ?: "",
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Tipo de alerta") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(typeExpanded) },
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        expanded = typeExpanded,
+                        onDismissRequest = { typeExpanded = false }
                     ) {
                         alertTypes.forEach { (value, label) ->
                             DropdownMenuItem(
                                 text = { Text(label) },
-                                onClick = { selectedType = value; expanded = false }
+                                onClick = { selectedType = value; typeExpanded = false }
                             )
                         }
                     }
@@ -350,10 +406,17 @@ private fun CreateAlertRuleDialog(
                 onClick = {
                     val thresholdValue = threshold.toDoubleOrNull()
                     if (thresholdValue != null && thresholdValue > 0) {
-                        onCreate(selectedType, thresholdValue, name.ifBlank { null })
+                        onCreate(
+                            selectedType,
+                            thresholdValue,
+                            name.ifBlank { null },
+                            selectedProduct?.id
+                        )
                     }
                 },
-                enabled = !isSaving && (threshold.toDoubleOrNull() ?: 0.0) > 0
+                enabled = !isSaving
+                        && selectedProduct != null
+                        && (threshold.toDoubleOrNull() ?: 0.0) > 0
             ) {
                 if (isSaving) {
                     CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
