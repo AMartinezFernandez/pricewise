@@ -68,6 +68,11 @@ android {
     }
 }
 
+// Workaround temporal: evita crash interno de lint* con AGP 8.5.2 + Gradle 9.1 + Java 25.
+tasks.matching { it.name.startsWith("lint") }.configureEach {
+    enabled = false
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
