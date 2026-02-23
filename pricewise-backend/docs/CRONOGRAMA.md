@@ -496,37 +496,37 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 ## Fase 25: Correcciones Criticas MVP (2026-02-23)
 
 ### Android
-- OK Splash screen con NavGraph → Screen.Splash (delay 400ms, colecta isLoggedIn)
-- OK Offline banner con NetworkObserver + ConnectivityManager.NetworkCallback + AnimatedVisibility
-- OK ProGuard rules para release (conservar DTOs Moshi, Retrofit, Hilt)
+- OK Splash Screen con logica de autenticacion (navega a Login o Main segun token)
+- OK Offline Banner con NetworkObserver (ConnectivityManager + callbackFlow)
+- OK Permiso ACCESS_NETWORK_STATE en AndroidManifest.xml
+- OK ProGuard/R8 habilitado para release (minify + shrink resources)
+- OK Reglas ProGuard para Retrofit, Moshi, Hilt, Compose, DataStore, Google Sign-In
 - OK Tema oscuro forzado (darkTheme = true) — evita texto invisible en modo claro del sistema
-- OK Mejorar contraste de campos de texto en modo oscuro
-- OK Mejorar tema con paleta completa PriceWise y version oscura real
-- OK Permitir acentos en campo de usuario del login (KeyboardType.Text en vez de .Email)
-- OK Permiso ACCESS_NETWORK_STATE declarado en AndroidManifest.xml
+- OK Mejora contraste DarkColorScheme: onSurface blanco, onSurfaceVariant #CFD8DC, outline #90A4AE
+- OK Permitir acentos en campo de usuario del login (KeyboardType.Text en vez de Email)
 
 ### Backend
-- OK Paginacion validada con @Min/@Max en ProductController y AnalyticsController
-- OK JWT sin default en perfil prod (app falla si JWT_SECRET no esta configurado)
-- OK Count queries: countTrackedProducts(), countProductsGroupedByCategory() con JPQL agregado
-- OK Externalizar contraseñas del DatabaseSeeder a application.yml
-- OK Corregir coleccion Postman: credenciales e IDs consistentes
+- OK Paginacion validada con @Min(0)/@Min(1)/@Max(100) en ProductController y AnalyticsController
+- OK JWT sin default en perfil prod (app falla si JWT_SECRET no configurado)
+- OK AdminController optimizado: count queries en vez de findAll().stream() para stats
+- OK Tests de AdminController actualizados para nuevos count methods
 
 ---
 
 ## Fase 26: Correcciones MVP Pendientes (2026-02-23)
 
 ### Android
-- OK Colores AlertsScreen: Switch cyan (PwCyan/PwCyanDark), papelera rojo coral (#EF5350)
-- OK Lint desactivado como tarea bloqueante (AGP 8.5.2 + Java 25 incompatible — abortOnError=false)
-- OK TrackingScreen filtra solo productos monitorizados (usa getMonitoredProducts en vez de getProducts)
-- OK Codigo muerto eliminado: MainViewModel.logout(), AuthRepository import, onLogout param en MainScreen
+- OK Colores Switch (cyan PwCyan) y papelera (rojo coral #EF5350) en AlertsScreen
+- OK Lint desactivado como tarea bloqueante (workaround AGP 8.5.2 + Java 25)
+- OK TrackingScreen filtra solo productos monitorizados (usa nuevo endpoint /api/products/monitored)
+- OK Eliminado codigo muerto: MainViewModel.logout() y parametro onLogout de MainScreen
+- OK NavGraph actualizado para no pasar onLogout a MainScreen
 
 ### Backend
-- OK Nuevo endpoint GET /api/products/monitored (paginado, filtro monitoringEnabled + active + companyId)
-- OK ProductRepository.findByCompanyIdAndMonitoringEnabledTrueAndActiveTrue()
-- OK ProductService.getMonitoredProducts()
-- OK H2Dialect deprecado eliminado de application-test.yml (Hibernate auto-detecta)
+- OK Nuevo endpoint GET /api/products/monitored (company-scoped, paginado)
+- OK ProductRepository: findByCompanyIdAndMonitoringEnabledTrueAndActiveTrue()
+- OK ProductService.getMonitoredProducts() con paginacion
+- OK Eliminado H2Dialect explicito de application-test.yml (auto-detectado por Hibernate)
 
 ---
 
@@ -563,7 +563,7 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 | Endpoints REST           | ~47                 |
 | APIs externas            | 1 (Keepa)           |
 | Tests unitarios          | 189+                |
-| Bugs resueltos           | 43+                 |
+| Bugs resueltos           | 37+                 |
 | Roles de usuario         | 3                   |
 | Migraciones Flyway       | 5                   |
 | Cache                    | En memoria (ConcurrentHashMap) |

@@ -910,13 +910,13 @@
   },
   "variable": [
     {
-      "id": "0dd1e63c-8e7e-4014-b756-5a0433845e42",
+      "id": "7cdf10cd-b5ac-40b3-a165-123d59f3820d",
       "key": "baseUrl",
       "value": "http://localhost:9090",
       "type": "string"
     },
     {
-      "id": "187a30c9-12b6-459a-8c93-95fc3582292f",
+      "id": "85fb0e42-b0a4-4024-aa32-c5ee9c604989",
       "key": "token",
       "value": "",
       "type": "string"

@@ -1461,3 +1461,90 @@ a las secciones principales (Usuarios, Productos, Alertas, Administracion).
 Los contadores se eliminaron para simplificar la UI y evitar llamadas adicionales al backend
 en cada carga del dashboard. La informacion detallada esta disponible en cada pantalla
 individual al navegar a ella.
+
+---
+
+## Bug #34: Texto invisible en campos de login (tema claro del sistema)
+
+**Fecha:** 2026-02-23
+**Estado:** OK
+
+### Sintomas
+- Los campos de email/usuario y contrasena en LoginScreen eran invisibles: no se veia el texto escrito ni las labels de los campos.
+- Solo ocurria cuando el dispositivo estaba en modo claro del sistema.
+
+### Causa Raiz
+- `themes.xml` fuerza fondo DarkNavy en todas las pantallas.
+- Pero `PriceWiseTheme` usaba `isSystemInDarkTheme()` para elegir el esquema de colores.
+- Si el telefono estaba en modo claro, Compose cargaba `LightColorScheme` (texto oscuro sobre fondo oscuro = invisible).
+- Ademas, los colores del `DarkColorScheme` (`onSurface`, `onSurfaceVariant`, `outline`) tenian poco contraste.
+
+### Solucion
+1. Forzar `darkTheme: Boolean = true` en `PriceWiseTheme` (nunca usar `isSystemInDarkTheme()`).
+2. Mejorar contraste en DarkColorScheme: `onSurface = Color.White`, `onSurfaceVariant = Color(0xFFCFD8DC)`, `outline = Color(0xFF90A4AE)`.
+
+### Archivos Modificados
+- `Theme.kt`
+
+---
+
+## Bug #35: Acentos bloqueados en campo de usuario del login
+
+**Fecha:** 2026-02-23
+**Estado:** OK
+
+### Sintomas
+- El campo de email/usuario en LoginScreen no permitia escribir caracteres con acento (e, a, i, etc.).
+
+### Causa Raiz
+- El campo usaba `KeyboardType.Email` que restringe los caracteres disponibles en el teclado virtual.
+- Como el campo acepta tanto email como nombre de usuario, `KeyboardType.Email` es demasiado restrictivo.
+
+### Solucion
+- Cambiar a `KeyboardType.Text` en el campo de email/usuario de LoginScreen.
+- RegisterScreen mantiene `KeyboardType.Email` porque su campo es exclusivamente para email.
+
+### Archivos Modificados
+- `LoginScreen.kt`
+
+---
+
+## Bug #36: Crash por SecurityException al abrir la app (ACCESS_NETWORK_STATE)
+
+**Fecha:** 2026-02-23
+**Estado:** OK
+
+### Sintomas
+- La app crasheaba inmediatamente al abrirla con `java.lang.SecurityException: ConnectivityService: Neither user nor current process has android.permission.ACCESS_NETWORK_STATE`.
+
+### Causa Raiz
+- La clase `NetworkObserver` (creada para el offline banner) usa `ConnectivityManager.registerNetworkCallback()` que requiere el permiso `ACCESS_NETWORK_STATE`.
+- El permiso no estaba declarado en `AndroidManifest.xml`.
+
+### Solucion
+- Anadir `<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />` al AndroidManifest.xml.
+
+### Archivos Modificados
+- `AndroidManifest.xml`
+
+---
+
+## Bug #37: lintDebug falla con AGP 8.5.2 + Java 25
+
+**Fecha:** 2026-02-23
+**Estado:** OK (workaround)
+
+### Sintomas
+- `./gradlew lintDebug` fallaba con errores internos de `AndroidLintWorkAction` y `Already disposed: MessageBus`.
+
+### Causa Raiz
+- Incompatibilidad entre AGP 8.5.2, compileSdk 35, Gradle 9.1 y Java 25.
+- El motor de lint interno no soporta esta combinacion de versiones.
+
+### Solucion (workaround)
+- Desactivar lint como tarea bloqueante: `abortOnError = false`, `checkReleaseBuilds = false`.
+- Desactivar todas las tareas lint: `tasks.matching { it.name.startsWith("lint") }.configureEach { enabled = false }`.
+- Pendiente de resolver definitivamente al actualizar AGP a una version compatible.
+
+### Archivos Modificados
+- `build.gradle.kts`

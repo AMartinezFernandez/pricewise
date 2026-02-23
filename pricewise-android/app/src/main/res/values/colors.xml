@@ -1,18 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Paleta PriceWise -->
-
-    <!-- Oscuros (fondos, barras, superficies) -->
+    <!-- Color usado en recursos XML del tema nativo -->
     <color name="pw_dark_navy">#FF1E2A33</color>
-    <color name="pw_slate_gray">#FF2C3B46</color>
-
-    <!-- Naranjas (acento principal, botones, highlights) -->
-    <color name="pw_orange">#FFF39A2E</color>
-    <color name="pw_orange_dark">#FFD87E1F</color>
-    <color name="pw_orange_light">#FFFFB14A</color>
-
-    <!-- Azules (informacion, enlaces, secundario) -->
-    <color name="pw_cyan">#FF6FD3F7</color>
-    <color name="pw_cyan_medium">#FF4BB8E6</color>
-    <color name="pw_cyan_dark">#FF2C8DB5</color>
 </resources>

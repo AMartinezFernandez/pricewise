@@ -20,6 +20,7 @@ import com.alvaro.pricewise.dto.common.ApiResponse;
 import com.alvaro.pricewise.entity.CompetitorPrice;
 import com.alvaro.pricewise.entity.Product;
 import com.alvaro.pricewise.repository.ProductRepository;
+import com.alvaro.pricewise.service.KeepaProductFactory;
 import com.alvaro.pricewise.service.KeepaService;
 
 import lombok.RequiredArgsConstructor;
@@ -71,11 +72,7 @@ public class CompetitorController {
         }
 
         try {
-            // Crear un producto temporal para la consulta
-            Product tempProduct = Product.builder()
-                    .name("Consulta temporal - " + asin)
-                    .currentPrice(BigDecimal.ZERO)
-                    .build();
+            Product tempProduct = KeepaProductFactory.createTemporaryProduct(asin);
 
             // Consultar Keepa (con timeout de 30 segundos)
             Optional<CompetitorPrice> result = keepaService.fetchPriceByAsin(asin, tempProduct)

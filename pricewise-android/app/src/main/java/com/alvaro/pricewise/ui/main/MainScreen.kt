@@ -30,8 +30,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -44,15 +44,8 @@ class MainViewModel @Inject constructor(
 ) : ViewModel() {
 
     val isOffline = networkObserver.isConnected
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-        .let { flow ->
-            // Invertir: isConnected -> isOffline
-            kotlinx.coroutines.flow.MutableStateFlow(false).also { offline ->
-                viewModelScope.launch {
-                    flow.collect { connected -> offline.value = !connected }
-                }
-            }
-        }
+        .map { connected -> !connected }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 }
 
 // Rutas internas de la pantalla principal (con bottom nav)
@@ -272,6 +265,6 @@ fun MainScreen(
                 )
             }
         }
-        } // Column
+        }
     }
 }

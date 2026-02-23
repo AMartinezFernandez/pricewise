@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.alvaro.pricewise.BuildConfig
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
@@ -208,6 +209,8 @@ fun LoginScreen(
                         viewModel.handleGoogleSignIn(googleIdTokenCredential.idToken)
                     } catch (_: GetCredentialCancellationException) {
                         // User cancelled — do nothing
+                    } catch (_: NoCredentialException) {
+                        // No hay credenciales de Google guardadas en el dispositivo
                     } catch (e: Exception) {
                         Log.e("LoginScreen", "Google Sign-In error", e)
                     }
