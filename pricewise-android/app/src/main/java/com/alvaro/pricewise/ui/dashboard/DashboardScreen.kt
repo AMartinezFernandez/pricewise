@@ -42,6 +42,7 @@ import javax.inject.Inject
 
 data class DashboardUiState(
     val username: String = "Usuario",
+    val companyName: String = "",
     val role: String = "",
     val totalProducts: Long = 0,
     val totalSavings: String = "0 €",
@@ -76,9 +77,14 @@ class DashboardViewModel @Inject constructor(
 
             // Collect user info from DataStore
             val username = tokenRepository.getUsername().firstOrNull() ?: "Usuario"
+            val companyName = tokenRepository.getCompanyName().firstOrNull().orEmpty()
             val role = tokenRepository.getRole().firstOrNull() ?: ""
 
-            _uiState.value = _uiState.value.copy(username = username, role = role)
+            _uiState.value = _uiState.value.copy(
+                username = username,
+                companyName = companyName,
+                role = role
+            )
 
             when (val result = analyticsRepository.getDashboard()) {
                 is Result.Success -> {
@@ -106,11 +112,11 @@ class DashboardViewModel @Inject constructor(
                 when (val result = userRepository.getUserCount()) {
                     is Result.Success -> {
                         val count = result.data.data ?: 0L
-                        android.util.Log.d("DashboardVM", "Conteo de usuarios recibido del servidor: $count")
+                        android.util.Log.d("DashboardVM", "Recuento de usuarios recibido del servidor: $count")
                         _uiState.value = _uiState.value.copy(usersCount = count)
                     }
                     is Result.Error -> {
-                        android.util.Log.w("DashboardVM", "Error obteniendo conteo usuarios: ${result.message}")
+                        android.util.Log.w("DashboardVM", "Error obteniendo recuento usuarios: ${result.message}")
                     }
                 }
             }
@@ -158,7 +164,7 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Panel de Control") },
+                title = { Text(uiState.companyName)},
                 actions = {
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "Ajustes")
@@ -185,7 +191,7 @@ fun DashboardScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Welcome Card
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -196,19 +202,14 @@ fun DashboardScreen(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
-                            text = "Bienvenido, ${uiState.username}",
+                            text = "Bienvenido ${uiState.username} !",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Resumen de tu empresa",
-                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
 
-                // Error message
+                // Error
                 uiState.error?.let { error ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -235,9 +236,9 @@ fun DashboardScreen(
                     }
                 }
 
-                // Stats Grid
+                //  Grid
                 Text(
-                    text = "Estadísticas",
+                    text = "Panel de Control",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )

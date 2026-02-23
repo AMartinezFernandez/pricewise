@@ -73,7 +73,7 @@ fun SearchScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                placeholder = { Text("Introduce un ASIN de Amazon (ej. B0...)") },
+                placeholder = { Text("ASIN de Amazon (ej. B0...)") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
                     if (query.isNotEmpty()) {

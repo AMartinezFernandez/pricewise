@@ -272,6 +272,6 @@ fun MainScreen(
                 )
             }
         }
-        } // Column
+        }
     }
 }
