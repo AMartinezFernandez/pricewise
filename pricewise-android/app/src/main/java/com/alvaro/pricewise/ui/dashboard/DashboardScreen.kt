@@ -134,6 +134,7 @@ fun DashboardScreen(
     onNavigateToAlerts: () -> Unit = {},
     onNavigateToUsers: () -> Unit = {},
     onNavigateToAdminUsers: () -> Unit = {},
+    onNavigateToAdminDashboard: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
@@ -287,6 +288,22 @@ fun DashboardScreen(
                     } else {
                         // Placeholder to keep layout balanced
                         Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+
+                // Admin panel button (only for ADMIN role)
+                if (uiState.role == "ADMIN") {
+                    OutlinedButton(
+                        onClick = onNavigateToAdminDashboard,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.AdminPanelSettings,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Panel de Administración Global")
                     }
                 }
             }

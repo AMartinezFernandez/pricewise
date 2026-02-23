@@ -73,7 +73,9 @@ data class CompanyResponse(
     @Json(name = "name") val name: String,
     @Json(name = "companyCode") val companyCode: String? = null,
     @Json(name = "businessType") val businessType: String? = null,
-    @Json(name = "plan") val plan: String? = null
+    @Json(name = "taxId") val taxId: String? = null,
+    @Json(name = "plan") val plan: String? = null,
+    @Json(name = "adminUsername") val adminUsername: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -327,7 +329,41 @@ data class AdminStatusChangeRequest(
 )
 
 // ─────────────────────────────────────────────
-// Dashboard de analíticas
+// Admin — Empresas
+// ─────────────────────────────────────────────
+
+@JsonClass(generateAdapter = true)
+data class CreateCompanyRequest(
+    @Json(name = "name") val name: String,
+    @Json(name = "businessType") val businessType: String? = null,
+    @Json(name = "taxId") val taxId: String? = null,
+    @Json(name = "adminUsername") val adminUsername: String,
+    @Json(name = "adminEmail") val adminEmail: String,
+    @Json(name = "adminPassword") val adminPassword: String
+)
+
+// ─────────────────────────────────────────────
+// Admin — Dashboard global
+// ─────────────────────────────────────────────
+
+@JsonClass(generateAdapter = true)
+data class AdminDashboardResponse(
+    @Json(name = "totalUsers") val totalUsers: Long = 0,
+    @Json(name = "activeUsers") val activeUsers: Long = 0,
+    @Json(name = "totalProducts") val totalProducts: Long = 0,
+    @Json(name = "trackedProducts") val trackedProducts: Long = 0,
+    @Json(name = "productsWithPriceDrop") val productsWithPriceDrop: Long = 0,
+    @Json(name = "competitorsTracked") val competitorsTracked: Long = 0,
+    @Json(name = "keepaStatus") val keepaStatus: Boolean = false,
+    @Json(name = "schedulerStatus") val schedulerStatus: String? = null,
+    @Json(name = "totalCompanies") val totalCompanies: Long = 0,
+    @Json(name = "activeCompanies") val activeCompanies: Long = 0,
+    @Json(name = "productsByCategory") val productsByCategory: Map<String, Long> = emptyMap(),
+    @Json(name = "userCountByCompany") val userCountByCompany: Map<String, Long> = emptyMap()
+)
+
+// ─────────────────────────────────────────────
+// Dashboard de analíticas (por empresa)
 // ─────────────────────────────────────────────
 
 @JsonClass(generateAdapter = true)

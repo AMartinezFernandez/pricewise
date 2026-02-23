@@ -132,6 +132,9 @@ fun MainScreen(
                     onNavigateToAdminUsers = {
                         innerNav.navigate("admin_users")
                     },
+                    onNavigateToAdminDashboard = {
+                        innerNav.navigate("admin_dashboard")
+                    },
                     onNavigateToSettings = onNavigateToSettings
                 )
             }
@@ -247,6 +250,12 @@ fun MainScreen(
                 val userId = backStack.arguments?.getLong("userId") ?: return@composable
                 com.alvaro.pricewise.ui.admin.AdminUserDetailScreen(
                     userId = userId,
+                    onNavigateBack = { innerNav.popBackStack() }
+                )
+            }
+
+            composable("admin_dashboard") {
+                com.alvaro.pricewise.ui.admin.AdminDashboardScreen(
                     onNavigateBack = { innerNav.popBackStack() }
                 )
             }
