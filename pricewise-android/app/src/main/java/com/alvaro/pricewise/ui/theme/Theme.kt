@@ -10,44 +10,96 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+// ============================================================
+// LIGHT — fondo claro, acentos oscuros y naranja/cyan vibrantes
+// ============================================================
 private val LightColorScheme = lightColorScheme(
-    primary = PwOrange,
+    // Naranja como accion principal (botones, FAB, links)
+    primary = PwOrangeDark,
     onPrimary = Color.White,
-    primaryContainer = PwOrangeLight,
-    onPrimaryContainer = PwDarkNavy,
-    secondary = PwCyanMedium,
+    primaryContainer = PwOrangeLight.copy(alpha = 0.3f),
+    onPrimaryContainer = PwOrangeDark,
+
+    // Cyan como secundario (badges, chips, indicadores)
+    secondary = PwCyanDark,
     onSecondary = Color.White,
-    secondaryContainer = PwCyan,
-    onSecondaryContainer = PwDarkNavy,
-    tertiary = PwCyanDark,
+    secondaryContainer = PwCyan.copy(alpha = 0.25f),
+    onSecondaryContainer = PwCyanDark,
+
+    // Slate como terciario (elementos sutiles, iconos nav)
+    tertiary = PwSlateGray,
     onTertiary = Color.White,
-    error = Color(0xFFB00020),
-    background = Color(0xFFF8F9FA),
+    tertiaryContainer = PwSlateGray.copy(alpha = 0.12f),
+    onTertiaryContainer = PwDarkNavy,
+
+    // Errores
+    error = Color(0xFFB3261E),
+    onError = Color.White,
+    errorContainer = Color(0xFFF9DEDC),
+    onErrorContainer = Color(0xFF410E0B),
+
+    // Fondos y superficies
+    background = Color(0xFFF5F7FA),
     onBackground = PwDarkNavy,
     surface = Color.White,
     onSurface = PwDarkNavy,
-    surfaceVariant = Color(0xFFEEF2F7),
-    onSurfaceVariant = PwSlateGray
+    surfaceVariant = Color(0xFFE8ECF1),
+    onSurfaceVariant = PwSlateGray,
+
+    // Contornos
+    outline = PwSlateGray.copy(alpha = 0.5f),
+    outlineVariant = PwSlateGray.copy(alpha = 0.2f),
+
+    // Barra inferior / navegacion
+    inverseSurface = PwDarkNavy,
+    inverseOnSurface = Color.White,
+    inversePrimary = PwOrangeLight
 )
 
+// ============================================================
+// DARK — fondo navy, acentos luminosos naranja/cyan
+// ============================================================
 private val DarkColorScheme = darkColorScheme(
-    primary = PwOrange,
+    // Naranja claro como accion principal (contraste sobre fondo oscuro)
+    primary = PwOrangeLight,
     onPrimary = PwDarkNavy,
-    primaryContainer = PwOrangeDark,
+    primaryContainer = PwOrangeDark.copy(alpha = 0.4f),
     onPrimaryContainer = PwOrangeLight,
+
+    // Cyan luminoso como secundario
     secondary = PwCyan,
     onSecondary = PwDarkNavy,
-    secondaryContainer = PwCyanDark,
+    secondaryContainer = PwCyanDark.copy(alpha = 0.35f),
     onSecondaryContainer = PwCyan,
+
+    // Cyan medio como terciario
     tertiary = PwCyanMedium,
     onTertiary = PwDarkNavy,
-    error = Color(0xFFCF6679),
+    tertiaryContainer = PwCyanDark.copy(alpha = 0.25f),
+    onTertiaryContainer = PwCyanMedium,
+
+    // Errores
+    error = Color(0xFFF2B8B5),
+    onError = Color(0xFF601410),
+    errorContainer = Color(0xFF8C1D18),
+    onErrorContainer = Color(0xFFF9DEDC),
+
+    // Fondos y superficies
     background = PwDarkNavy,
-    onBackground = Color.White,
+    onBackground = Color(0xFFE1E3E6),
     surface = PwSlateGray,
-    onSurface = Color.White,
-    surfaceVariant = Color(0xFF354350),
-    onSurfaceVariant = Color(0xFFB0BEC5)
+    onSurface = Color(0xFFE1E3E6),
+    surfaceVariant = Color(0xFF37474F),
+    onSurfaceVariant = Color(0xFFB0BEC5),
+
+    // Contornos
+    outline = Color(0xFF607D8B),
+    outlineVariant = Color(0xFF455A64),
+
+    // Barra inferior / navegacion
+    inverseSurface = Color(0xFFE1E3E6),
+    inverseOnSurface = PwDarkNavy,
+    inversePrimary = PwOrangeDark
 )
 
 @Composable
@@ -61,8 +113,9 @@ fun PriceWiseTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            // Status bar y navigation bar siempre oscuras (identidad de marca)
             window.statusBarColor = PwDarkNavy.toArgb()
-            window.navigationBarColor = PwDarkNavy.toArgb()
+            window.navigationBarColor = if (darkTheme) PwDarkNavy.toArgb() else PwSlateGray.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
