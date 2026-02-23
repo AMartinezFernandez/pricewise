@@ -10,7 +10,7 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        # dialect auto-detectado por Hibernate (H2Dialect explícito ya no es necesario)
+        dialect: org.hibernate.dialect.H2Dialect
   flyway:
     enabled: false
   cache:
