@@ -17,7 +17,9 @@ import com.alvaro.pricewise.entity.CompetitorPrice;
 import com.alvaro.pricewise.entity.PriceRecommendation;
 import com.alvaro.pricewise.entity.Product;
 import com.alvaro.pricewise.exception.ResourceNotFoundException;
+import com.alvaro.pricewise.entity.AlertRule;
 import com.alvaro.pricewise.repository.AlertRepository;
+import com.alvaro.pricewise.repository.AlertRuleRepository;
 import com.alvaro.pricewise.repository.CompetitorPriceRepository;
 import com.alvaro.pricewise.repository.PriceRecommendationRepository;
 import com.alvaro.pricewise.repository.ProductRepository;
@@ -39,11 +41,12 @@ public class PriceAnalysisService {
     private final CompetitorPriceRepository competitorPriceRepository;
     private final PriceRecommendationRepository recommendationRepository;
     private final AlertRepository alertRepository;
+    private final AlertRuleRepository alertRuleRepository;
 
-
-    private static final BigDecimal HIGH_PRICE_THRESHOLD = new BigDecimal("0.10");
-    private static final BigDecimal LOW_PRICE_THRESHOLD = new BigDecimal("0.10");
-    private static final BigDecimal SUDDEN_CHANGE_THRESHOLD = new BigDecimal("0.15");
+    // Umbrales por defecto (se sobreescriben con alert_rules si existen)
+    private static final BigDecimal DEFAULT_HIGH_PRICE_THRESHOLD = new BigDecimal("0.10");
+    private static final BigDecimal DEFAULT_LOW_PRICE_THRESHOLD = new BigDecimal("0.10");
+    private static final BigDecimal DEFAULT_SUDDEN_CHANGE_THRESHOLD = new BigDecimal("0.15");
 
     @Transactional
     public void analyzeProduct(Product product) {
@@ -62,10 +65,37 @@ public class PriceAnalysisService {
             return;
         }
 
+        // Obtener umbrales de alert_rules del usuario (o usar defaults)
+        BigDecimal highThreshold = DEFAULT_HIGH_PRICE_THRESHOLD;
+        BigDecimal lowThreshold = DEFAULT_LOW_PRICE_THRESHOLD;
+        BigDecimal suddenThreshold = DEFAULT_SUDDEN_CHANGE_THRESHOLD;
+
+        Long companyId = product.getCompany() != null ? product.getCompany().getId() : null;
+        if (companyId != null) {
+            List<AlertRule> rules = alertRuleRepository.findApplicableRules(companyId, product.getId());
+            for (AlertRule rule : rules) {
+                BigDecimal ruleThreshold = rule.getThreshold().divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
+                switch (rule.getAlertType()) {
+                    case COMPETITOR_PRICE_RISE:
+                        highThreshold = ruleThreshold;
+                        break;
+                    case COMPETITOR_PRICE_DROP:
+                        lowThreshold = ruleThreshold;
+                        break;
+                    case PRICE_BELOW_COST:
+                    case HIGH_MARGIN_OPPORTUNITY:
+                    case PRICE_MATCH_NEEDED:
+                    case COMPETITOR_OUT_OF_STOCK:
+                        suddenThreshold = ruleThreshold;
+                        break;
+                }
+            }
+        }
+
         BigDecimal difference = ourPrice.subtract(theirPrice);
         BigDecimal percentDiff = difference.divide(theirPrice, 4, RoundingMode.HALF_UP);
 
-        if (percentDiff.compareTo(HIGH_PRICE_THRESHOLD) > 0) {
+        if (percentDiff.compareTo(highThreshold) > 0) {
             createRecommendation(product, competitorPrice,
                     PriceRecommendation.RecommendationType.PRICE_TOO_HIGH,
                     calculateSuggestedPrice(theirPrice, new BigDecimal("0.02")),
@@ -73,18 +103,14 @@ public class PriceAnalysisService {
                     "Precio " + formatPercent(percentDiff) + " por encima de la competencia");
         }
 
-        if (percentDiff.compareTo(LOW_PRICE_THRESHOLD.negate()) < 0) {
+        if (percentDiff.compareTo(lowThreshold.negate()) < 0) {
             BigDecimal suggested = calculateSuggestedPrice(theirPrice, new BigDecimal("-0.05"));
-            
-            // Respetar margen minimo
+
             BigDecimal minPrice = calculateMinimumPrice(product);
             if (suggested.compareTo(minPrice) < 0) {
                 suggested = minPrice;
             }
 
-            // Si aun con el precio minimo mejoramos la oferta o igualamos, recomendamos
-            // Si el precio minimo es mayor que el del competidor, quiza no podamos competir
-            
             createRecommendation(product, competitorPrice,
                     PriceRecommendation.RecommendationType.PRICE_TOO_LOW,
                     suggested,
@@ -92,7 +118,7 @@ public class PriceAnalysisService {
                     "Oportunidad: precio " + formatPercent(percentDiff.abs()) + " por debajo de competencia");
         }
 
-        checkSuddenChange(product, competitorPrice);
+        checkSuddenChange(product, competitorPrice, suddenThreshold);
     }
 
     /**
@@ -116,7 +142,7 @@ public class PriceAnalysisService {
         return analyzed;
     }
 
-    private void checkSuddenChange(Product product, CompetitorPrice currentPrice) {
+    private void checkSuddenChange(Product product, CompetitorPrice currentPrice, BigDecimal threshold) {
         Page<CompetitorPrice> previousPrices = competitorPriceRepository
                 .findByProductIdOrderByScrapedAtDesc(product.getId(), PageRequest.of(1, 1));
 
@@ -134,7 +160,7 @@ public class PriceAnalysisService {
 
         BigDecimal change = current.subtract(previous).divide(previous, 4, RoundingMode.HALF_UP);
 
-        if (change.abs().compareTo(SUDDEN_CHANGE_THRESHOLD) > 0) {
+        if (change.abs().compareTo(threshold) > 0) {
             Alert.AlertType alertType = change.compareTo(BigDecimal.ZERO) < 0
                     ? Alert.AlertType.COMPETITOR_PRICE_DROP
                     : Alert.AlertType.COMPETITOR_PRICE_RISE;
