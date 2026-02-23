@@ -199,6 +199,18 @@ fun MainScreen(
                 val productId = backStack.arguments?.getLong("productId") ?: return@composable
                 ProductDetailScreen(
                     productId = productId,
+                    onNavigateBack = { innerNav.popBackStack() },
+                    onNavigateToHistory = { id -> innerNav.navigate("price_history/$id") }
+                )
+            }
+
+            composable(
+                route = "price_history/{productId}",
+                arguments = listOf(navArgument("productId") { type = NavType.LongType })
+            ) { backStack ->
+                val productId = backStack.arguments?.getLong("productId") ?: return@composable
+                com.alvaro.pricewise.ui.products.PriceHistoryScreen(
+                    productId = productId,
                     onNavigateBack = { innerNav.popBackStack() }
                 )
             }
