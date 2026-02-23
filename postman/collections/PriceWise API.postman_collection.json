@@ -120,7 +120,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"emailOrUsername\": \"admin\",\n    \"password\": \"Admin123\"\n}",
+              "raw": "{\n    \"emailOrUsername\": \"admin@pricewise.io\",\n    \"password\": \"Admin123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -557,7 +557,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/admin/users/1",
+              "raw": "{{baseUrl}}/api/admin/users/2",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -565,10 +565,10 @@
                 "api",
                 "admin",
                 "users",
-                "1"
+                "2"
               ]
             },
-            "description": "Requiere rol ADMIN"
+            "description": "Requiere rol ADMIN. Usa ID 2 (primer usuario del seeder distinto al admin logueado)."
           },
           "response": []
         },
@@ -585,7 +585,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"username\": \"nuevo_nombre\",\n    \"email\": \"nuevo@email.com\"\n}"
+              "raw": "{\n    \"username\": \"usuario_editado\",\n    \"email\": \"editado@example.com\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/admin/users/2",
@@ -599,7 +599,7 @@
                 "2"
               ]
             },
-            "description": "Requiere rol ADMIN"
+            "description": "Requiere rol ADMIN. Mismo ID que Ver Usuario."
           },
           "response": []
         },
@@ -910,13 +910,13 @@
   },
   "variable": [
     {
-      "id": "c4d9569f-14f0-49ea-ae68-6aa198f5f3cb",
+      "id": "0dd1e63c-8e7e-4014-b756-5a0433845e42",
       "key": "baseUrl",
       "value": "http://localhost:9090",
       "type": "string"
     },
     {
-      "id": "9b8256af-0e20-4218-93b5-dce90fb67463",
+      "id": "187a30c9-12b6-459a-8c93-95fc3582292f",
       "key": "token",
       "value": "",
       "type": "string"
