@@ -20,6 +20,7 @@ import com.alvaro.pricewise.data.model.AlertResponse
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlertsScreen(
+    onNavigateToRules: () -> Unit = {},
     viewModel: AlertsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -52,6 +53,10 @@ fun AlertsScreen(
             TopAppBar(
                 title = { Text("Alertas") },
                 actions = {
+                    // Configurar reglas de alertas
+                    IconButton(onClick = onNavigateToRules) {
+                        Icon(Icons.Default.Settings, contentDescription = "Configurar alertas")
+                    }
                     // Filtro no leidas
                     FilterChip(
                         selected = uiState.filterUnreadOnly,

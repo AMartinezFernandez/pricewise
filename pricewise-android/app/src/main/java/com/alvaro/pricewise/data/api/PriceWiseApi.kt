@@ -130,6 +130,25 @@ interface PriceWiseApi {
     @POST("api/analytics/analyze")
     suspend fun runAnalysis(): Response<ApiResponse<Map<String, Any>>>
 
+    // ─── Reglas de Alertas ────────────────────────────────────────────────
+    @GET("api/alert-rules")
+    suspend fun getAlertRules(): Response<ApiResponse<List<AlertRuleResponse>>>
+
+    @POST("api/alert-rules")
+    suspend fun createAlertRule(@Body request: CreateAlertRuleRequest): Response<ApiResponse<AlertRuleResponse>>
+
+    @PUT("api/alert-rules/{id}")
+    suspend fun updateAlertRule(
+        @Path("id") id: Long,
+        @Body request: UpdateAlertRuleRequest
+    ): Response<ApiResponse<AlertRuleResponse>>
+
+    @DELETE("api/alert-rules/{id}")
+    suspend fun deleteAlertRule(@Path("id") id: Long): Response<ApiResponse<String>>
+
+    @POST("api/alert-rules/{id}/toggle")
+    suspend fun toggleAlertRule(@Path("id") id: Long): Response<ApiResponse<AlertRuleResponse>>
+
     // ─── Admin / Empresas ────────────────────────────────────────────────
     @GET("api/admin/companies")
     suspend fun getCompanies(): Response<ApiResponse<List<CompanyResponse>>>

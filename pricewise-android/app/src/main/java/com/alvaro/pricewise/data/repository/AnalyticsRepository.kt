@@ -1,6 +1,8 @@
 package com.alvaro.pricewise.data.repository
 
 import com.alvaro.pricewise.data.api.PriceWiseApi
+import com.alvaro.pricewise.data.model.CreateAlertRuleRequest
+import com.alvaro.pricewise.data.model.UpdateAlertRuleRequest
 import com.alvaro.pricewise.util.safeApiCall
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,4 +34,20 @@ class AnalyticsRepository @Inject constructor(
 
     suspend fun runAnalysis() =
         safeApiCall { api.runAnalysis() }
+
+    // ─── Reglas de Alertas ─────────────────────────────────────────
+    suspend fun getAlertRules() =
+        safeApiCall { api.getAlertRules() }
+
+    suspend fun createAlertRule(request: CreateAlertRuleRequest) =
+        safeApiCall { api.createAlertRule(request) }
+
+    suspend fun updateAlertRule(id: Long, request: UpdateAlertRuleRequest) =
+        safeApiCall { api.updateAlertRule(id, request) }
+
+    suspend fun deleteAlertRule(id: Long) =
+        safeApiCall { api.deleteAlertRule(id) }
+
+    suspend fun toggleAlertRule(id: Long) =
+        safeApiCall { api.toggleAlertRule(id) }
 }

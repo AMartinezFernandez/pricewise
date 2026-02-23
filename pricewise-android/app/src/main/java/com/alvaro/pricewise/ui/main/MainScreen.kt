@@ -146,7 +146,15 @@ fun MainScreen(
             }
 
             composable(Tab.Alerts.route) {
-                AlertsScreen()
+                AlertsScreen(
+                    onNavigateToRules = { innerNav.navigate("alert_rules") }
+                )
+            }
+
+            composable("alert_rules") {
+                com.alvaro.pricewise.ui.alerts.AlertRulesScreen(
+                    onNavigateBack = { innerNav.popBackStack() }
+                )
             }
 
             composable(Tab.Search.route) {
