@@ -126,6 +126,15 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponse<ProductListResponse> getMonitoredProducts(@org.springframework.lang.NonNull Long companyId, Pageable pageable) {
+        Page<Product> page = productRepository.findByCompanyIdAndMonitoringEnabledTrueAndActiveTrue(companyId, pageable);
+        List<ProductListResponse> content = page.getContent().stream()
+                .map(ProductListResponse::fromEntity)
+                .toList();
+        return PageResponse.from(page, content);
+    }
+
+    @Transactional(readOnly = true)
     public PageResponse<ProductListResponse> searchProducts(
             @org.springframework.lang.NonNull Long companyId,
             String name,

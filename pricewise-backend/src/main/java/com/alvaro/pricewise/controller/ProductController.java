@@ -81,6 +81,23 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @GetMapping("/monitored")
+    public ResponseEntity<ApiResponse<PageResponse<ProductListResponse>>> getMonitoredProducts(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir
+    ) {
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PageResponse<ProductListResponse> response = productService.getMonitoredProducts(userPrincipal.getCompanyId(), pageable);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<PageResponse<ProductListResponse>>> searchProducts(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
