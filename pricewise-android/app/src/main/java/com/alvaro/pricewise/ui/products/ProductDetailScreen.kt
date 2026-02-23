@@ -23,6 +23,7 @@ import com.alvaro.pricewise.ui.common.formatPrice
 fun ProductDetailScreen(
     productId: Long,
     onNavigateBack: () -> Unit,
+    onNavigateToHistory: (Long) -> Unit = {},
     viewModel: ProductViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.detailState.collectAsState()
@@ -424,6 +425,20 @@ fun ProductDetailScreen(
                                         if (entry != uiState.priceHistory.last()) {
                                             HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
                                         }
+                                    }
+
+                                    // Botón para ver historial completo
+                                    OutlinedButton(
+                                        onClick = { onNavigateToHistory(productId) },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Icon(
+                                            Icons.Default.History,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Ver historial completo")
                                     }
                                 }
                             }

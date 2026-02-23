@@ -80,6 +80,13 @@ interface PriceWiseApi {
         @Path("productId") productId: Long
     ): Response<ApiResponse<List<PriceHistoryResponse>>>
 
+    @GET("api/products/{productId}/history")
+    suspend fun getPriceHistory(
+        @Path("productId") productId: Long,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): Response<ApiResponse<PageResponse<PriceHistoryResponse>>>
+
     // ─── Keepa / Competidores ────────────────────────────────────────────
     @GET("api/competitors/status")
     suspend fun getKeepaStatus(): Response<ApiResponse<KeepaStatus>>

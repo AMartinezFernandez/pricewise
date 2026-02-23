@@ -48,6 +48,9 @@ class ProductRepository @Inject constructor(
     suspend fun getRecentPriceHistory(productId: Long) =
         safeApiCall { api.getRecentPriceHistory(productId) }
 
+    suspend fun getPriceHistory(productId: Long, page: Int = 0, size: Int = 20) =
+        safeApiCall { api.getPriceHistory(productId, page, size) }
+
     suspend fun getProductCount() =
         safeApiCall { api.getProductCount() }
 }
