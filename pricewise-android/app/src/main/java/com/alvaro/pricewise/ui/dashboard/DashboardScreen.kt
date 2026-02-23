@@ -27,9 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.alvaro.pricewise.data.model.ProductResponse
 import com.alvaro.pricewise.data.repository.AnalyticsRepository
-import com.alvaro.pricewise.data.repository.ProductRepository
 import com.alvaro.pricewise.data.repository.TokenRepository
 import com.alvaro.pricewise.data.repository.UserRepository
 import com.alvaro.pricewise.util.Result
@@ -57,7 +55,6 @@ data class DashboardUiState(
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val tokenRepository: TokenRepository,
-    private val productRepository: ProductRepository,
     private val analyticsRepository: AnalyticsRepository,
     private val userRepository: UserRepository
 ) : ViewModel() {

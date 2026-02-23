@@ -289,11 +289,6 @@ public class PriceAnalysisService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Alert> getUnreadAlertsByCompany(@org.springframework.lang.NonNull Long companyId, Pageable pageable) {
-        return alertRepository.findByCompanyIdAndIsReadFalse(companyId, pageable);
-    }
-
-    @Transactional(readOnly = true)
     public long countPendingRecommendations(@org.springframework.lang.NonNull Long companyId) {
         return recommendationRepository.countByProductCompanyIdAndStatus(
                 companyId, PriceRecommendation.Status.PENDING);

@@ -74,30 +74,6 @@ class UserRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findByUsername")
-    class FindByUsernameTests {
-
-        @Test
-        @DisplayName("Encuentra usuario por username")
-        void findByUsername_existing_returnsUser() {
-            createUser("maria", "maria@email.com");
-
-            Optional<User> found = userRepository.findByUsername("maria");
-
-            assertThat(found).isPresent();
-            assertThat(found.get().getEmail()).isEqualTo("maria@email.com");
-        }
-
-        @Test
-        @DisplayName("No encuentra username inexistente")
-        void findByUsername_nonExisting_returnsEmpty() {
-            Optional<User> found = userRepository.findByUsername("fantasma");
-
-            assertThat(found).isEmpty();
-        }
-    }
-
-    @Nested
     @DisplayName("existsByEmail / existsByUsername")
     class ExistsTests {
 

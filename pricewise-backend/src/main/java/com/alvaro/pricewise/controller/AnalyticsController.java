@@ -68,7 +68,7 @@ public class AnalyticsController {
                 .map(RecommendationSummary::fromEntity)
                 .collect(Collectors.toList());
 
-        Page<Alert> alerts = priceAnalysisService.getUnreadAlertsByCompany(companyId, PageRequest.of(0, 100));
+        Page<Alert> alerts = priceAnalysisService.getAlertsByCompany(companyId, true, PageRequest.of(0, 100));
         Map<String, Long> alertsByType = new HashMap<>();
         alerts.getContent().forEach(a ->
                 alertsByType.merge(a.getAlertType().name(), 1L, (v1, v2) -> v1 + v2));

@@ -14,43 +14,23 @@ import com.alvaro.pricewise.entity.Product;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    
+
     // Buscar producto con createdBy precargado (evita N+1 en detalle)
     @Query("SELECT p FROM Product p LEFT JOIN FETCH p.createdBy WHERE p.company.id = :companyId AND p.id = :productId AND p.active = true")
     Optional<Product> findByCompanyIdAndIdWithCreatedBy(@Param("companyId") Long companyId, @Param("productId") Long productId);
-
-    // Buscar productos por empresa
-    Page<Product> findByCompanyId(Long companyId, Pageable pageable);
 
     // Solo productos activos
     Page<Product> findByCompanyIdAndActiveTrue(Long companyId, Pageable pageable);
 
     List<Product> findByCompanyIdAndActiveTrue(Long companyId);
-    
-    // Buscar por SKU
-    Optional<Product> findBySku(String sku);
-    
-    Optional<Product> findBySkuAndCompanyId(String sku, Long companyId);
 
     // Buscar por SKU + empresa solo entre activos (para validar duplicados ignorando soft-deleted)
     Optional<Product> findBySkuAndCompanyIdAndActiveTrue(String sku, Long companyId);
 
-    // Buscar por EAN
-    Optional<Product> findByEan(String ean);
-    
-    // Búsqueda por nombre (case insensitive)
-    Page<Product> findByCompanyIdAndNameContainingIgnoreCase(Long companyId, String name, Pageable pageable);
-    
-    // Buscar por categoría
-    Page<Product> findByCompanyIdAndCategory(Long companyId, String category, Pageable pageable);
-    
-    // Productos con monitoreo activo
-    List<Product> findByMonitoringEnabledTrueAndActiveTrue();
-    
-    // Productos con monitoreo activo (paginado)
+    // Productos con monitoreo activo (paginado, para PriceMonitorJob)
     Page<Product> findByMonitoringEnabledTrueAndActiveTrue(Pageable pageable);
-    
-    // Búsqueda avanzada con filtros
+
+    // Busqueda avanzada con filtros
     @Query("SELECT p FROM Product p WHERE p.company.id = :companyId " +
            "AND (:name IS NULL OR " +
            "     LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%')) OR " +
@@ -67,17 +47,16 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("brand") String brand,
             Pageable pageable
     );
-    
-    // Contar productos por empresa (solo activos)
+
+    // Contar productos por empresa
     long countByCompanyId(Long companyId);
     long countByCompanyIdAndActiveTrue(Long companyId);
-    
-    // Obtener categorías únicas de la empresa
+
+    // Obtener categorias unicas de la empresa
     @Query("SELECT DISTINCT p.category FROM Product p WHERE p.company.id = :companyId AND p.category IS NOT NULL")
     List<String> findDistinctCategoriesByCompanyId(@Param("companyId") Long companyId);
-    
-    // Obtener marcas únicas de la empresa
+
+    // Obtener marcas unicas de la empresa
     @Query("SELECT DISTINCT p.brand FROM Product p WHERE p.company.id = :companyId AND p.brand IS NOT NULL")
     List<String> findDistinctBrandsByCompanyId(@Param("companyId") Long companyId);
 }
-

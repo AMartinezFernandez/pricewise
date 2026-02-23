@@ -197,17 +197,4 @@ public class ProductDTOs {
                     .build();
         }
     }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class ProductSearchCriteria {
-        private String name;
-        private String category;
-        private String brand;
-        private BigDecimal minPrice;
-        private BigDecimal maxPrice;
-        private Boolean monitoringEnabled;
-    }
 }

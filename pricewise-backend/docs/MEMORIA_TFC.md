@@ -807,13 +807,14 @@ El cliente cubre las funcionalidades del MVP definido:
 - `RegisterScreen`: formulario de registro con validación de campos.
 
 **Gestión de productos:**
-- `ProductListScreen`: listado paginado del catálogo con búsqueda por nombre. Cada item muestra nombre, precio, categoría y un indicador visual si tiene recomendación pendiente.
-- `ProductDetailScreen`: detalle completo del producto con botón "Consultar en Amazon" que lanza la sincronización con Keepa y muestra el resultado.
-- `CreateProductScreen`: formulario de alta de producto con campos requeridos (nombre, precio de venta) y opcionales (SKU/ASIN, precio de coste, categoría, marca).
+- `TrackingScreen`: listado paginado del catálogo propio con búsqueda por nombre. Cada item muestra nombre, precio, categoría y un indicador visual si tiene monitoreo activo.
+- `SearchScreen`: búsqueda de productos por ASIN en Amazon (via Keepa). Permite crear un producto directamente desde los resultados de búsqueda.
+- `ProductDetailScreen`: detalle completo del producto con sección de comparación de precio Amazon, botón "Buscar precio ahora en Amazon" que lanza la sincronización con Keepa y muestra el resultado.
+- `CreateProductScreen`: formulario de alta de producto con campos requeridos (nombre, precio de venta) y opcionales (ASIN, precio de coste, categoría, marca).
 - `EditProductScreen`: edición de los campos del producto.
 
-**Recomendaciones:**
-- `RecommendationsScreen`: lista de recomendaciones pendientes ordenadas por prioridad. Cada recomendación muestra el tipo, el precio sugerido, la diferencia porcentual y el motivo. Permite marcarlas como aplicadas o descartadas.
+**Alertas y reglas:**
+- `AlertsScreen`: dos pestañas — "Mis alertas" (reglas configurables con CRUD inline) y "Historial" (alertas generadas automáticamente por el motor de análisis). Las recomendaciones de precio se gestionan desde esta pantalla.
 
 ## 7.3 Arquitectura del Cliente
 

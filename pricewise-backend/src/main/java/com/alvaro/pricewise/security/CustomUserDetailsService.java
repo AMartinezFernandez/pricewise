@@ -28,13 +28,4 @@ public class CustomUserDetailsService implements UserDetailsService {
         return UserPrincipal.create(user);
     }
 
-    @Transactional(readOnly = true)
-    public UserDetails loadUserById(@org.springframework.lang.NonNull Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new UsernameNotFoundException(
-                        "Usuario no encontrado con id: " + id
-                ));
-
-        return UserPrincipal.create(user);
-    }
 }

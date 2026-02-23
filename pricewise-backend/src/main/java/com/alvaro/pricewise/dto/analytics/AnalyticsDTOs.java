@@ -99,28 +99,4 @@ public class AnalyticsDTOs {
         }
     }
 
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class PriceHistoryPoint {
-        private LocalDateTime date;
-        private BigDecimal ourPrice;
-        private BigDecimal competitorPrice;
-        private String source;
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ProductPriceComparison {
-        private Long productId;
-        private String productName;
-        private BigDecimal ourPrice;
-        private BigDecimal competitorPrice;
-        private BigDecimal difference;
-        private BigDecimal differencePercent;
-        private String status; // HIGHER, LOWER, EQUAL
-    }
 }

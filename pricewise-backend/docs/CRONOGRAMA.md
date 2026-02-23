@@ -403,21 +403,30 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 ## Fase 20: Escalabilidad — Observabilidad (2026-02-22)
 
-### Observabilidad
+> **Nota:** Las metricas Prometheus/Micrometer se implementaron y probaron, pero se
+> retiraron del MVP para simplificar el despliegue. La configuracion base de Actuator
+> (health, info) permanece activa. Ver `MEJORAS_FUTURAS.md` para reintegracion.
+
 - OK Metricas custom de Micrometer para peticiones Keepa (exito, fallo, latencia)
 - OK `MetricsConfig` con contadores y timers registrados en Prometheus
 - OK Exportacion de metricas via `/actuator/prometheus`
 - OK Endpoints actuator expuestos: health, info, prometheus, metrics
+- RETIRADO del MVP — se mantiene solo Actuator basico (health, info)
 
 ---
 
 ## Fase 21: Seguridad Avanzada (2026-02-22)
+
+> **Nota:** `AuditService`, `AuditLog` y su migracion V3 se implementaron y probaron,
+> pero se retiraron del MVP por complejidad adicional. El rate limiting y OWASP check
+> permanecen activos. Ver `MEJORAS_FUTURAS.md` para reintegracion.
 
 - OK Audit log: entidad `AuditLog`, `AuditService`, `AuditLogRepository`
 - OK Migracion `V3__create_audit_logs.sql` para tabla audit_logs
 - OK Logging automatico en operaciones de `AdminController` (createCompany, deleteUser)
 - OK Endpoint `GET /api/admin/audit-logs` con paginacion
 - OK 2 tests unitarios para AuditService
+- RETIRADO del MVP — AuditService y entidad eliminados, migracion V3 se mantiene
 - OK OWASP dependency-check plugin integrado en Maven (failBuildOnCVSS >= 8)
 - OK Rate limiting en `/api/auth/login` y `/api/auth/register` (RateLimitingFilter existente)
 
@@ -425,12 +434,62 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 ## Fase 22: Cache Distribuida con Redis (2026-02-22)
 
+> **Nota:** Redis se implemento y probo correctamente, pero se retiro del MVP para
+> eliminar la dependencia de infraestructura externa. La cache en memoria con
+> `ConcurrentHashMap` (Fase 5) cubre las necesidades del MVP.
+> Ver `MEJORAS_FUTURAS.md` para reintegracion.
+
 - OK Dependencia `spring-boot-starter-data-redis` (Lettuce client)
 - OK `RedisCacheConfig.java` con TTL 1 hora, serializacion JSON, prefix `pricewise::`
 - OK Configuracion Redis en `application.yml` (`spring.cache.type: redis`)
 - OK Servicio Redis 7 Alpine en `docker-compose.yml` con healthcheck y volumen persistente
 - OK Tests aislados de Redis: `@ConditionalOnProperty` + exclusion de auto-config en perfiles test/dev
-- OK 155 tests pasan sin necesidad de Redis
+- RETIRADO del MVP — vuelto a cache en memoria (ConcurrentHashMap)
+
+---
+
+## Fase 23: Reglas de Alerta Configurables (2026-02-22)
+
+### Backend
+- OK Entidad `AlertRule` con company, product (opcional), alertType, threshold, enabled
+- OK Migracion `V5__create_alert_rules.sql` con tabla e indices
+- OK `AlertRuleRepository` con queries por empresa y reglas aplicables
+- OK `AlertRuleService` con CRUD completo y multi-tenancy
+- OK `AlertRuleController` en `/api/alert-rules` (GET, POST, PUT, DELETE, toggle)
+- OK `AlertRuleDTOs` con request/response
+
+### Motor de Analisis
+- OK `PriceAnalysisService` consulta reglas configuradas por empresa/producto
+- OK Fallback a umbrales por defecto si no hay reglas
+- OK Precedencia determinista: reglas globales (product=NULL) antes que especificas
+
+### Android
+- OK Modelos `AlertRuleResponse`, `CreateAlertRuleRequest`, `UpdateAlertRuleRequest`
+- OK 5 endpoints en `PriceWiseApi.kt`
+- OK Metodos en `AnalyticsRepository.kt`
+- OK `AlertsScreen` con dos tabs: "Mis alertas" (reglas CRUD) + "Historial" (alertas generadas)
+- OK Dialogo de creacion con selector de producto, tipo y umbral
+
+---
+
+## Fase 24: Limpieza de Codigo Muerto (2026-02-23)
+
+### Android
+- OK Eliminados 5 archivos muertos: AlertRulesScreen, AlertRulesViewModel, RecommendationsScreen, RecommendationsViewModel, ProductListScreen
+- OK Limpieza de rutas obsoletas en NavGraph (Screen.Products, Screen.AddProduct, Screen.Recommendations, Screen.ProductDetail)
+- OK Eliminacion de helpers sin uso en Utils.kt (priorityLabel, recommendationTypeLabel, alertTypeLabel)
+- OK Limpieza de imports y dependencias sin uso en DashboardScreen y TrackingScreen
+
+### Backend
+- OK Eliminados metodos muertos en 9 repositorios (~40 metodos userId-based y sin uso)
+- OK Eliminado `loadUserById()` de CustomUserDetailsService
+- OK Eliminados DTOs sin uso: PriceHistoryPoint, ProductPriceComparison, ProductSearchCriteria
+- OK Eliminado metodo duplicado `getUnreadAlertsByCompany()` en PriceAnalysisService
+- OK Limpieza de imports sin uso en AdminController
+
+### Documentacion
+- OK README.md actualizado (SchedulerController eliminado, roles actualizados)
+- OK CRONOGRAMA.md con notas sobre fases retiradas del MVP
 
 ---
 
@@ -457,20 +516,18 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 ## Estadisticas del Proyecto
 
-| Metrica                  | Valor      |
-|--------------------------|------------|
-| Lineas de codigo Java    | ~7.200     |
-| Archivos .java           | ~56        |
-| Entidades JPA            | 9          |
-| Repositorios             | 9          |
-| Servicios                | 7          |
-| Controladores            | 7          |
-| DTOs                     | ~28        |
-| Endpoints REST           | ~40        |
-| APIs externas            | 1 (Keepa)  |
-| Tests unitarios          | 155        |
-| Bugs resueltos           | 39         |
-| Roles de usuario         | 3          |
-| Migraciones Flyway       | 3          |
-| Cache                    | Redis      |
-| Version BD (DDL)         | validate   |
+| Metrica                  | Valor               |
+|--------------------------|---------------------|
+| Entidades JPA            | 9                   |
+| Repositorios             | 9                   |
+| Servicios                | 8                   |
+| Controladores            | 7                   |
+| DTOs                     | ~28                 |
+| Endpoints REST           | ~45                 |
+| APIs externas            | 1 (Keepa)           |
+| Tests unitarios          | 189+                |
+| Bugs resueltos           | 39+                 |
+| Roles de usuario         | 3                   |
+| Migraciones Flyway       | 5                   |
+| Cache                    | En memoria (ConcurrentHashMap) |
+| Version BD (DDL)         | validate            |
