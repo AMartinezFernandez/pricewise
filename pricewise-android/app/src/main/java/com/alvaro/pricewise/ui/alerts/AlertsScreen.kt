@@ -19,9 +19,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.graphics.Color
 import com.alvaro.pricewise.data.model.AlertResponse
 import com.alvaro.pricewise.data.model.AlertRuleResponse
 import com.alvaro.pricewise.data.model.ProductResponse
+import com.alvaro.pricewise.ui.theme.PwCyan
+import com.alvaro.pricewise.ui.theme.PwCyanDark
+import com.alvaro.pricewise.ui.theme.PwDarkNavy
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -232,7 +236,15 @@ private fun AlertRuleCard(
             Switch(
                 checked = rule.enabled,
                 onCheckedChange = { onToggle() },
-                modifier = Modifier.padding(horizontal = 4.dp)
+                modifier = Modifier.padding(horizontal = 4.dp),
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = PwCyan,
+                    checkedBorderColor = PwCyanDark,
+                    uncheckedThumbColor = Color(0xFF9E9E9E),
+                    uncheckedTrackColor = Color(0xFF4A5568),
+                    uncheckedBorderColor = Color(0xFF4A5568)
+                )
             )
             IconButton(
                 onClick = { showDeleteConfirm = true },
@@ -241,7 +253,7 @@ private fun AlertRuleCard(
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Eliminar",
-                    tint = MaterialTheme.colorScheme.error,
+                    tint = Color(0xFFEF5350),
                     modifier = Modifier.size(18.dp)
                 )
             }
