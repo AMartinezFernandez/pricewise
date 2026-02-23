@@ -16,6 +16,7 @@ data class RecommendationsUiState(
     val recommendations: List<RecommendationResponse> = emptyList(),
     val dashboard: DashboardResponse? = null,
     val isLoading: Boolean = false,
+    val isAnalyzing: Boolean = false,
     val error: String? = null,
     val actionMessage: String? = null
 )
@@ -93,6 +94,27 @@ class RecommendationsViewModel @Inject constructor(
                     refreshDashboard()
                 }
                 is Result.Error -> _uiState.value = _uiState.value.copy(
+                    actionMessage = "Error: ${result.message}"
+                )
+            }
+        }
+    }
+
+    fun runAnalysis() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isAnalyzing = true)
+            when (val result = repository.runAnalysis()) {
+                is Result.Success -> {
+                    val data = result.data.data
+                    val count = (data?.get("productsAnalyzed") as? Number)?.toInt() ?: 0
+                    _uiState.value = _uiState.value.copy(
+                        isAnalyzing = false,
+                        actionMessage = "$count productos analizados"
+                    )
+                    loadAll()
+                }
+                is Result.Error -> _uiState.value = _uiState.value.copy(
+                    isAnalyzing = false,
                     actionMessage = "Error: ${result.message}"
                 )
             }
