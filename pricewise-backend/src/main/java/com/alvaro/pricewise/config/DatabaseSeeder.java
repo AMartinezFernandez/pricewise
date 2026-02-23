@@ -3,6 +3,7 @@ package com.alvaro.pricewise.config;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,18 +17,30 @@ import com.alvaro.pricewise.entity.User.Role;
 import com.alvaro.pricewise.repository.CompanyRepository;
 import com.alvaro.pricewise.repository.UserRepository;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @Profile("dev")
-@RequiredArgsConstructor
 @Slf4j
 public class DatabaseSeeder {
 
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${seeder.admin-password}")
+    private String adminPassword;
+
+    @Value("${seeder.user-password}")
+    private String userPassword;
+
+    public DatabaseSeeder(UserRepository userRepository,
+                          CompanyRepository companyRepository,
+                          PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.companyRepository = companyRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Bean
     public CommandLineRunner seedDatabase() {
@@ -44,7 +57,7 @@ public class DatabaseSeeder {
                 adminCompany.setSharedStockEnabled(true);
                 adminCompany.setCreatedAt(LocalDateTime.now());
                 adminCompany.setUpdatedAt(LocalDateTime.now());
-                
+
                 adminCompany = companyRepository.save(adminCompany);
                 log.info("Empresa Admin creada con código: {}", adminCompany.getCompanyCode());
 
@@ -52,7 +65,7 @@ public class DatabaseSeeder {
                 User admin = new User();
                 admin.setUsername("admin");
                 admin.setEmail("admin@pricewise.io");
-                admin.setPassword(passwordEncoder.encode("Admin123")); // Password conocida
+                admin.setPassword(passwordEncoder.encode(adminPassword));
                 admin.setRole(Role.ADMIN);
                 admin.setCompany(adminCompany);
                 admin.setActive(true);
@@ -76,7 +89,7 @@ public class DatabaseSeeder {
         createCompanyIfNotExists("Tech Solutions", "TECH0001", "TECHNOLOGY");
         createCompanyIfNotExists("Global Retail", "RETAIL01", "RETAIL");
         createCompanyIfNotExists("Consulting Pro", "CONSULT1", "CONSULTING");
-        
+
         log.info("Verificación de datos de prueba completada.");
     }
 
@@ -98,7 +111,7 @@ public class DatabaseSeeder {
         company.setSharedStockEnabled(true);
         company.setCreatedAt(LocalDateTime.now());
         company.setUpdatedAt(LocalDateTime.now());
-        
+
         company = companyRepository.save(company);
         log.info("Empresa creada: {} ({})", name, code);
 
@@ -117,13 +130,13 @@ public class DatabaseSeeder {
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
-        user.setPassword(passwordEncoder.encode("Password1"));
+        user.setPassword(passwordEncoder.encode(userPassword));
         user.setRole(role);
         user.setCompany(company);
         user.setActive(true);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
-        
+
         userRepository.save(user);
         log.info("  -> Usuario creado: {} ({}) - {}", username, email, role);
     }

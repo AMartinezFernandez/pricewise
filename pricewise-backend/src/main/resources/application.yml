@@ -124,6 +124,11 @@ spring:
     hibernate:
       ddl-auto: validate
 
+# Contraseñas del seeder (solo perfil dev)
+seeder:
+  admin-password: ${SEEDER_ADMIN_PASSWORD:Admin123}
+  user-password: ${SEEDER_USER_PASSWORD:Password1}
+
 # CORS permisivo en desarrollo
 cors:
   allow-all: true
