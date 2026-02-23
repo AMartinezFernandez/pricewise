@@ -58,7 +58,7 @@ jobs:
 
       - name: Ensure Android SDK platform/build-tools
         run: |
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Build debug APK and run lint
         env:
