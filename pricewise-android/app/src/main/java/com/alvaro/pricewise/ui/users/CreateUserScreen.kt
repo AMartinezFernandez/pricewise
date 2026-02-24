@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.alvaro.pricewise.data.model.CompanyResponse
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,7 +114,7 @@ fun CreateUserScreen(
                     readOnly = true,
                     label = { Text("Rol") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isroleExpanded) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                    modifier = Modifier.fillMaxWidth().menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                 )
                 ExposedDropdownMenu(
                     expanded = isroleExpanded,
@@ -144,7 +144,7 @@ fun CreateUserScreen(
                         readOnly = true,
                         label = { Text("Empresa") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isCompanyExpanded) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                        modifier = Modifier.fillMaxWidth().menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                     )
                     ExposedDropdownMenu(
                         expanded = isCompanyExpanded,
