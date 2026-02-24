@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.alvaro.pricewise"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.alvaro.pricewise"
