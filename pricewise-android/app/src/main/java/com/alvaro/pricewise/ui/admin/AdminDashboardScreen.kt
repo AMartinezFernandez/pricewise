@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -335,15 +336,13 @@ private fun StatusRow(label: String, status: String, isOk: Boolean) {
         ) {
             Surface(
                 shape = MaterialTheme.shapes.small,
-                color = if (isOk) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.errorContainer
+                color = if (isOk) Color(0xFF1B5E20) else Color(0xFF7F1D1D)
             ) {
                 Text(
                     status,
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                    color = if (isOk) MaterialTheme.colorScheme.onPrimaryContainer
-                            else MaterialTheme.colorScheme.onErrorContainer
+                    color = if (isOk) Color(0xFF4CAF50) else Color(0xFFEF5350)
                 )
             }
         }
