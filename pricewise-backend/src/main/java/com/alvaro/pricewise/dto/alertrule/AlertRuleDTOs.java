@@ -24,6 +24,7 @@ public class AlertRuleDTOs {
         private String alertType;
         private String name;
         private BigDecimal threshold;
+        private BigDecimal targetPrice;
         private Boolean enabled;
         private Long productId;
         private String productName;
@@ -36,6 +37,7 @@ public class AlertRuleDTOs {
                     .alertType(r.getAlertType().name())
                     .name(r.getName())
                     .threshold(r.getThreshold())
+                    .targetPrice(r.getTargetPrice())
                     .enabled(r.getEnabled())
                     .productId(r.getProduct() != null ? r.getProduct().getId() : null)
                     .productName(r.getProduct() != null ? r.getProduct().getName() : null)
@@ -58,6 +60,9 @@ public class AlertRuleDTOs {
 
         private String name;
         private Long productId;
+
+        @DecimalMin(value = "0.01", message = "El precio objetivo debe ser mayor que 0")
+        private BigDecimal targetPrice;
     }
 
     @Data
@@ -69,5 +74,8 @@ public class AlertRuleDTOs {
 
         private Boolean enabled;
         private String name;
+
+        @DecimalMin(value = "0.01", message = "El precio objetivo debe ser mayor que 0")
+        private BigDecimal targetPrice;
     }
 }

@@ -199,14 +199,15 @@ class AlertsViewModel @Inject constructor(
         }
     }
 
-    fun createRule(alertType: String, threshold: Double, name: String?, productId: Long?) {
+    fun createRule(alertType: String, threshold: Double, name: String?, productId: Long?, targetPrice: Double? = null) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true)
             val request = CreateAlertRuleRequest(
                 alertType = alertType,
                 threshold = threshold,
                 name = name,
-                productId = productId
+                productId = productId,
+                targetPrice = targetPrice
             )
             when (repository.createAlertRule(request)) {
                 is Result.Success -> {

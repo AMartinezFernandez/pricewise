@@ -3,7 +3,9 @@ package com.alvaro.pricewise.ui.alerts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -16,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import java.util.Locale
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -63,8 +66,8 @@ fun AlertsScreen(
             isLoadingProducts = uiState.isLoadingProducts,
             isSaving = uiState.isSaving,
             onDismiss = { viewModel.dismissCreateDialog() },
-            onCreate = { alertType, threshold, name, productId ->
-                viewModel.createRule(alertType, threshold, name, productId)
+            onCreate = { alertType, threshold, name, productId, targetPrice ->
+                viewModel.createRule(alertType, threshold, name, productId, targetPrice)
             }
         )
     }
@@ -227,11 +230,18 @@ private fun AlertRuleCard(
                         maxLines = 1
                     )
                 }
+                val thresholdText = buildString {
+                    append(typeLabel)
+                    append("  •  Umbral: ${String.format(Locale.US, "%.1f", rule.threshold)}%")
+                    if (rule.targetPrice != null && rule.targetPrice > 0) {
+                        append("  •  Precio: ${String.format(Locale.US, "%.2f", rule.targetPrice)} €")
+                    }
+                }
                 Text(
-                    "$typeLabel  •  Umbral: ${String.format(Locale.US, "%.1f", rule.threshold)}%",
+                    thresholdText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }
@@ -483,7 +493,7 @@ private fun CreateAlertDialog(
     isLoadingProducts: Boolean,
     isSaving: Boolean,
     onDismiss: () -> Unit,
-    onCreate: (alertType: String, threshold: Double, name: String?, productId: Long?) -> Unit
+    onCreate: (alertType: String, threshold: Double, name: String?, productId: Long?, targetPrice: Double?) -> Unit
 ) {
     val alertTypes = listOf(
         "COMPETITOR_PRICE_DROP" to "Bajada de precio competidor",
@@ -496,16 +506,32 @@ private fun CreateAlertDialog(
 
     var selectedType by remember { mutableStateOf(alertTypes[0].first) }
     var threshold by remember { mutableStateOf("15.0") }
+    var targetPrice by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var selectedProduct by remember { mutableStateOf<ProductResponse?>(null) }
     var typeExpanded by remember { mutableStateOf(false) }
     var productExpanded by remember { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Nueva alerta") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            shape = MaterialTheme.shapes.extraLarge
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "Nueva alerta",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+
+                Spacer(Modifier.height(4.dp))
+
                 // Selector de producto
                 ExposedDropdownMenuBox(
                     expanded = productExpanded,
@@ -589,42 +615,61 @@ private fun CreateAlertDialog(
                 )
 
                 OutlinedTextField(
+                    value = targetPrice,
+                    onValueChange = { targetPrice = it },
+                    label = { Text("Precio objetivo (€)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                    supportingText = { Text("Opcional: avisar cuando el precio alcance este valor") }
+                )
+
+                OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Nombre (opcional)") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val thresholdValue = threshold.replace(',', '.').toDoubleOrNull()
-                    if (thresholdValue != null && thresholdValue > 0) {
-                        onCreate(
-                            selectedType,
-                            thresholdValue,
-                            name.ifBlank { null },
-                            selectedProduct?.id
-                        )
+
+                Spacer(Modifier.height(4.dp))
+
+                // Botones
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDismiss) { Text("Cancelar") }
+                    Spacer(Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            val thresholdValue = threshold.replace(',', '.').toDoubleOrNull()
+                            val targetPriceValue = targetPrice.replace(',', '.').toDoubleOrNull()
+                            if (thresholdValue != null && thresholdValue > 0) {
+                                onCreate(
+                                    selectedType,
+                                    thresholdValue,
+                                    name.ifBlank { null },
+                                    selectedProduct?.id,
+                                    targetPriceValue?.takeIf { it > 0 }
+                                )
+                            }
+                        },
+                        enabled = !isSaving
+                                && selectedProduct != null
+                                && (threshold.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0
+                    ) {
+                        if (isSaving) {
+                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Crear")
+                        }
                     }
-                },
-                enabled = !isSaving
-                        && selectedProduct != null
-                        && (threshold.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0
-            ) {
-                if (isSaving) {
-                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                } else {
-                    Text("Crear")
                 }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
         }
-    )
+    }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────

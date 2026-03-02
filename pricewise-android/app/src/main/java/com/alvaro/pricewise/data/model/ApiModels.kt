@@ -271,6 +271,7 @@ data class AlertRuleResponse(
     @Json(name = "name") val name: String? = null,
     @Json(name = "productId") val productId: Long? = null,
     @Json(name = "productName") val productName: String? = null,
+    @Json(name = "targetPrice") val targetPrice: Double? = null,
     @Json(name = "createdAt") val createdAt: String? = null,
     @Json(name = "updatedAt") val updatedAt: String? = null
 )
@@ -280,7 +281,8 @@ data class CreateAlertRuleRequest(
     @Json(name = "alertType") val alertType: String,
     @Json(name = "threshold") val threshold: Double,
     @Json(name = "name") val name: String? = null,
-    @Json(name = "productId") val productId: Long? = null
+    @Json(name = "productId") val productId: Long? = null,
+    @Json(name = "targetPrice") val targetPrice: Double? = null
 )
 
 @JsonClass(generateAdapter = true)

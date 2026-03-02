@@ -66,6 +66,7 @@ public class AlertRuleService {
                 .alertType(alertType)
                 .name(request.getName())
                 .threshold(request.getThreshold())
+                .targetPrice(request.getTargetPrice())
                 .enabled(true)
                 .build();
 
@@ -87,6 +88,9 @@ public class AlertRuleService {
         }
         if (request.getName() != null) {
             rule.setName(request.getName());
+        }
+        if (request.getTargetPrice() != null) {
+            rule.setTargetPrice(request.getTargetPrice());
         }
 
         AlertRule saved = alertRuleRepository.save(rule);

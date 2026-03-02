@@ -68,6 +68,9 @@ public class AlertRule {
     @Builder.Default
     private BigDecimal threshold = new BigDecimal("15.00");
 
+    @Column(precision = 10, scale = 2)
+    private BigDecimal targetPrice;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean enabled = true;
