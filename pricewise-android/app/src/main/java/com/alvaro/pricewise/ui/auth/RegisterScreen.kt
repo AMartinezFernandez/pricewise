@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -18,6 +19,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.alvaro.pricewise.ui.theme.PwDarkNavy
+import com.alvaro.pricewise.ui.theme.PwOrangeDark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +43,7 @@ fun RegisterScreen(
     }
 
     Scaffold(
+        containerColor = PwDarkNavy,
         topBar = {
             TopAppBar(
                 title = { Text("Crear cuenta") },
@@ -47,7 +51,12 @@ fun RegisterScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = PwDarkNavy,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
             )
         }
     ) { padding ->
@@ -59,13 +68,28 @@ fun RegisterScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            val darkFieldColors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = PwOrangeDark,
+                unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
+                focusedLabelColor = PwOrangeDark,
+                unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                cursorColor = PwOrangeDark,
+                focusedSupportingTextColor = Color.White.copy(alpha = 0.5f),
+                unfocusedSupportingTextColor = Color.White.copy(alpha = 0.5f),
+                errorBorderColor = Color(0xFFEF5350),
+                errorLabelColor = Color(0xFFEF5350),
+                errorSupportingTextColor = Color(0xFFEF5350)
+            )
+
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "Empresa",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
+                color = PwOrangeDark
             )
 
             OutlinedTextField(
@@ -74,18 +98,19 @@ fun RegisterScreen(
                 label = { Text("Código de empresa *") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                colors = darkFieldColors,
                 isError = companyCode.isNotEmpty() && companyCode.length != 8,
                 supportingText = { Text("Código de 8 caracteres proporcionado por tu empresa") },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
             )
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = Color.White.copy(alpha = 0.3f))
 
             Text(
                 text = "Datos de acceso",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
+                color = PwOrangeDark
             )
 
             OutlinedTextField(
@@ -94,6 +119,7 @@ fun RegisterScreen(
                 label = { Text("Nombre de usuario *") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                colors = darkFieldColors,
                 supportingText = { Text("Entre 3 y 50 caracteres") },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
             )
@@ -104,6 +130,7 @@ fun RegisterScreen(
                 label = { Text("Email *") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                colors = darkFieldColors,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
@@ -116,6 +143,7 @@ fun RegisterScreen(
                 label = { Text("Contraseña *") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                colors = darkFieldColors,
                 visualTransformation = if (passwordVisible) VisualTransformation.None
                                        else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -123,7 +151,8 @@ fun RegisterScreen(
                         Icon(
                             imageVector = if (passwordVisible) Icons.Default.Visibility
                                           else Icons.Default.VisibilityOff,
-                            contentDescription = null
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.7f)
                         )
                     }
                 },
@@ -140,11 +169,12 @@ fun RegisterScreen(
                 label = { Text("Confirmar contraseña *") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                colors = darkFieldColors,
                 visualTransformation = PasswordVisualTransformation(),
                 isError = confirmPassword.isNotEmpty() && password != confirmPassword,
                 supportingText = {
                     if (confirmPassword.isNotEmpty() && password != confirmPassword) {
-                        Text("Las contraseñas no coinciden", color = MaterialTheme.colorScheme.error)
+                        Text("Las contraseñas no coinciden", color = Color(0xFFEF5350))
                     }
                 },
                 keyboardOptions = KeyboardOptions(
@@ -157,13 +187,13 @@ fun RegisterScreen(
             if (uiState.error != null) {
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
+                        containerColor = Color(0xFF3A2020)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = uiState.error!!,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        color = Color(0xFFF2B8B5),
                         modifier = Modifier.padding(12.dp),
                         style = MaterialTheme.typography.bodySmall
                     )

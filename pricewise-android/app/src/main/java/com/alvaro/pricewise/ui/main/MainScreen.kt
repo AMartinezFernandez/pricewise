@@ -10,6 +10,9 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import com.alvaro.pricewise.ui.theme.PwDarkNavy
+import com.alvaro.pricewise.ui.theme.PwOrangeDark
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -83,12 +86,19 @@ fun MainScreen(
             // Mostrar bottom bar solo en las tabs principales
             val showBar = currentDest in bottomItems.map { it.first }
             if (showBar) {
-                NavigationBar {
+                NavigationBar(containerColor = PwDarkNavy) {
                     bottomItems.forEach { (route, label, icon) ->
                         NavigationBarItem(
                             icon = { Icon(icon, contentDescription = label) },
                             label = { Text(label) },
                             selected = currentDest == route,
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = PwOrangeDark,
+                                selectedTextColor = PwOrangeDark,
+                                unselectedIconColor = Color.White.copy(alpha = 0.6f),
+                                unselectedTextColor = Color.White.copy(alpha = 0.6f),
+                                indicatorColor = PwOrangeDark.copy(alpha = 0.15f)
+                            ),
                             onClick = {
                                 if (currentDest != route) {
                                     innerNav.navigate(route) {

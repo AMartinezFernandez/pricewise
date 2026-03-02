@@ -80,7 +80,13 @@ fun AlertsScreen(
                     IconButton(onClick = { viewModel.loadAll() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = PwDarkNavy,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                )
             )
         },
         floatingActionButton = {

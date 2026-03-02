@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.alvaro.pricewise.ui.theme.PwDarkNavy
+import com.alvaro.pricewise.ui.theme.PwOrangeDark
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alvaro.pricewise.data.repository.AnalyticsRepository
@@ -165,12 +167,18 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.companyName)},
+                title = { Text(uiState.companyName) },
                 actions = {
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "Ajustes")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = PwDarkNavy,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                )
             )
         }
     ) { padding ->
@@ -205,7 +213,8 @@ fun DashboardScreen(
                         Text(
                             text = "Bienvenido ${uiState.username} !",
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
                     }
                 }
@@ -305,7 +314,7 @@ fun StatCard(
     icon: ImageVector,
     modifier: Modifier = Modifier,
     height: Dp = 140.dp,
-    color: Color = MaterialTheme.colorScheme.primary,
+    color: Color = PwOrangeDark,
     onClick: (() -> Unit)? = null
 ) {
     Card(
@@ -314,7 +323,8 @@ fun StatCard(
             .then(
                 if (onClick != null) Modifier.clickable { onClick() }
                 else Modifier
-            )
+            ),
+        colors = CardDefaults.cardColors(containerColor = PwDarkNavy)
     ) {
         Box(
             modifier = Modifier
@@ -338,6 +348,7 @@ fun StatCard(
                         text = value,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
+                        color = Color.White,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -346,7 +357,7 @@ fun StatCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color.White.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis

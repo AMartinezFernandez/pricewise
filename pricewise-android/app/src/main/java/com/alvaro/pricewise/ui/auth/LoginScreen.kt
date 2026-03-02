@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -29,6 +30,8 @@ import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.NoCredentialException
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.alvaro.pricewise.BuildConfig
+import com.alvaro.pricewise.ui.theme.PwDarkNavy
+import com.alvaro.pricewise.ui.theme.PwOrangeDark
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.launch
@@ -67,6 +70,7 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(PwDarkNavy)
             .padding(horizontal = 24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -76,13 +80,24 @@ fun LoginScreen(
             text = "PriceWise",
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = PwOrangeDark
         )
         Text(
             text = "Gestión de precios para tu negocio",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.White.copy(alpha = 0.7f),
             modifier = Modifier.padding(bottom = 40.dp)
+        )
+
+        // Colores de campos sobre fondo oscuro
+        val darkFieldColors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White,
+            focusedBorderColor = PwOrangeDark,
+            unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
+            focusedLabelColor = PwOrangeDark,
+            unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+            cursorColor = PwOrangeDark
         )
 
         // Campo email/usuario
@@ -92,6 +107,7 @@ fun LoginScreen(
             label = { Text("Email o usuario") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
+            colors = darkFieldColors,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Next
@@ -110,6 +126,7 @@ fun LoginScreen(
             label = { Text("Contraseña") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
+            colors = darkFieldColors,
             visualTransformation = if (passwordVisible) VisualTransformation.None
                                    else PasswordVisualTransformation(),
             trailingIcon = {
@@ -118,7 +135,8 @@ fun LoginScreen(
                         imageVector = if (passwordVisible) Icons.Default.Visibility
                                       else Icons.Default.VisibilityOff,
                         contentDescription = if (passwordVisible) "Ocultar contraseña"
-                                             else "Mostrar contraseña"
+                                             else "Mostrar contraseña",
+                        tint = Color.White.copy(alpha = 0.7f)
                     )
                 }
             },
@@ -140,13 +158,13 @@ fun LoginScreen(
         if (uiState.error != null) {
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
+                    containerColor = Color(0xFF3A2020)
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = uiState.error!!,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    color = Color(0xFFF2B8B5),
                     modifier = Modifier.padding(12.dp),
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -182,13 +200,13 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            HorizontalDivider(modifier = Modifier.weight(1f))
+            HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(alpha = 0.3f))
             Text(
                 text = "  o  ",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.White.copy(alpha = 0.5f)
             )
-            HorizontalDivider(modifier = Modifier.weight(1f))
+            HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(alpha = 0.3f))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -222,7 +240,8 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
-            enabled = !uiState.isLoading
+            enabled = !uiState.isLoading,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f))
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_google),
@@ -231,14 +250,18 @@ fun LoginScreen(
                 tint = Color.Unspecified
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Iniciar sesión con Google", style = MaterialTheme.typography.labelLarge)
+            Text(
+                "Iniciar sesión con Google",
+                style = MaterialTheme.typography.labelLarge,
+                color = PwOrangeDark
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Link a registro
         TextButton(onClick = onNavigateToRegister) {
-            Text("¿No tienes cuenta? Regístrate")
+            Text("¿No tienes cuenta? Regístrate", color = PwOrangeDark)
         }
     }
 }
