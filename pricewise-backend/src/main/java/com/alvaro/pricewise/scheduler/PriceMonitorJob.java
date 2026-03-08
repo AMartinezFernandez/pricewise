@@ -39,11 +39,6 @@ public class PriceMonitorJob implements Job {
     public void execute(JobExecutionContext context) throws JobExecutionException {
         log.info("Iniciando Job de Monitoreo de Precios");
 
-        if (!keepaService.isAvailable()) {
-            log.warn("Keepa API no configurada. Saltando ejecucion");
-            return;
-        }
-
         Set<Long> companyIds = new HashSet<>();
 
         try {
@@ -80,12 +75,18 @@ public class PriceMonitorJob implements Job {
                     .filter(p -> p.getAsin() != null && !p.getAsin().isBlank())
                     .toList();
 
-            if (!trackableProducts.isEmpty()) {
-                log.debug("Procesando lote {}: {} productos", page, trackableProducts.size());
-                processBatch(trackableProducts);
-                
+            // Filtrar productos cuya empresa tenga API key de Keepa
+            List<Product> productsWithKey = trackableProducts.stream()
+                    .filter(p -> keepaService.isAvailable(p.getCompany().getId()))
+                    .toList();
+
+            if (!productsWithKey.isEmpty()) {
+                log.debug("Procesando lote {}: {} productos ({} sin API key omitidos)",
+                        page, productsWithKey.size(), trackableProducts.size() - productsWithKey.size());
+                processBatch(productsWithKey);
+
                 // Guardar company IDs para analisis posterior
-                trackableProducts.forEach(p -> companyIds.add(p.getCompany().getId()));
+                productsWithKey.forEach(p -> companyIds.add(p.getCompany().getId()));
             }
 
             page++;
@@ -112,7 +113,7 @@ public class PriceMonitorJob implements Job {
             return CompletableFuture.completedFuture(null);
         }
 
-        return keepaService.fetchPriceByAsin(asin, product)
+        return keepaService.fetchPriceByAsin(asin, product, product.getCompany().getId())
                 .thenAccept(resultOpt -> {
                     if (resultOpt.isPresent()) {
                         log.debug("Precio actualizado para ASIN {}", asin);

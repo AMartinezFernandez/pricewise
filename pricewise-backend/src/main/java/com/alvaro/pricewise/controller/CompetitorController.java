@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.alvaro.pricewise.dto.common.ApiResponse;
 import com.alvaro.pricewise.entity.CompetitorPrice;
 import com.alvaro.pricewise.entity.Product;
+import com.alvaro.pricewise.security.UserPrincipal;
 import com.alvaro.pricewise.service.KeepaProductFactory;
 import com.alvaro.pricewise.service.KeepaService;
 import com.alvaro.pricewise.service.ProductService;
@@ -41,17 +42,20 @@ public class CompetitorController {
     private final ProductService productService;
 
     /**
-     * Verifica el estado de la integración con Keepa
+     * Verifica el estado de la integración con Keepa para la empresa del usuario.
      */
     @GetMapping("/status")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getKeepaStatus() {
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'COMPANY_ADMIN', 'ADMIN')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getKeepaStatus(
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        Long companyId = userPrincipal.requireCompanyId();
         Map<String, Object> status = new HashMap<>();
-        status.put("keepaAvailable", keepaService.isAvailable());
-        status.put("status", keepaService.getApiStatus());
+        status.put("keepaAvailable", keepaService.isAvailable(companyId));
+        status.put("status", keepaService.getApiStatus(companyId));
         status.put("timestamp", LocalDateTime.now());
 
-        if (!keepaService.isAvailable()) {
-            status.put("message", "Keepa API no configurada. Añade KEEPA_API_KEY en .env");
+        if (!keepaService.isAvailable(companyId)) {
+            status.put("message", "Keepa API no configurada. Configura tu API key en Ajustes");
         } else {
             status.put("message", "Keepa API lista para consultas");
         }
@@ -65,17 +69,20 @@ public class CompetitorController {
      */
     @GetMapping("/amazon/price/{asin}")
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'COMPANY_ADMIN', 'ADMIN')")
-    public ResponseEntity<ApiResponse<AmazonPriceDTO>> getAmazonPrice(@PathVariable String asin) {
+    public ResponseEntity<ApiResponse<AmazonPriceDTO>> getAmazonPrice(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable String asin) {
 
-        if (!keepaService.isAvailable()) {
+        Long companyId = userPrincipal.requireCompanyId();
+        if (!keepaService.isAvailable(companyId)) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Keepa API no configurada. Añade KEEPA_API_KEY en .env"));
+                    .body(ApiResponse.error("Keepa API no configurada. Configura tu API key en Ajustes"));
         }
 
         try {
             Product tempProduct = KeepaProductFactory.createTemporaryProduct(asin);
 
-            Optional<CompetitorPrice> result = keepaService.fetchPriceByAsin(asin, tempProduct)
+            Optional<CompetitorPrice> result = keepaService.fetchPriceByAsin(asin, tempProduct, companyId)
                     .get(30, TimeUnit.SECONDS);
 
             if (result.isPresent()) {
@@ -114,16 +121,17 @@ public class CompetitorController {
     @PostMapping("/amazon/sync/{productId}")
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'COMPANY_ADMIN', 'ADMIN')")
     public ResponseEntity<ApiResponse<AmazonPriceDTO>> syncProductWithAmazon(
-            @AuthenticationPrincipal com.alvaro.pricewise.security.UserPrincipal userPrincipal,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable @org.springframework.lang.NonNull Long productId,
             @RequestParam(required = false) String asin) {
 
-        if (!keepaService.isAvailable()) {
+        Long companyId = userPrincipal.requireCompanyId();
+        if (!keepaService.isAvailable(companyId)) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Keepa API no configurada"));
+                    .body(ApiResponse.error("Keepa API no configurada. Configura tu API key en Ajustes"));
         }
 
-        Product product = productService.findProductForCompany(userPrincipal.requireCompanyId(), productId);
+        Product product = productService.findProductForCompany(companyId, productId);
 
         String searchAsin = asin != null ? asin : product.getAsin();
         if (searchAsin == null || searchAsin.isEmpty()) {
@@ -132,7 +140,7 @@ public class CompetitorController {
         }
 
         try {
-            Optional<CompetitorPrice> result = keepaService.fetchPriceByAsin(searchAsin, product)
+            Optional<CompetitorPrice> result = keepaService.fetchPriceByAsin(searchAsin, product, companyId)
                     .get(30, TimeUnit.SECONDS);
 
             if (result.isPresent()) {

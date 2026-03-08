@@ -38,7 +38,6 @@ public class AdminService {
     private final CompanyRepository companyRepository;
     private final AlertRepository alertRepository;
     private final CompetitorRepository competitorRepository;
-    private final KeepaService keepaService;
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
     private final Scheduler scheduler;
@@ -225,7 +224,7 @@ public class AdminService {
                 .trackedProducts(trackedProducts)
                 .productsWithPriceDrop(0)
                 .competitorsTracked(competitorsTracked)
-                .keepaStatus(keepaService.isAvailable())
+                .keepaStatus(true) // Keepa disponible como servicio (API keys por empresa)
                 .schedulerStatus(schedulerStatus)
                 .productsByCategory(productsByCategory)
                 .userCountByCompany(userCountByCompany)

@@ -55,7 +55,6 @@ public class SecurityConfig {
             "/api/auth/google/complete-new-company",
             "/api/auth/google/complete-join",
             "/api/health",
-            "/api/competitors/status",
             "/actuator/**"
     };
 

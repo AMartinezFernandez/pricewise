@@ -79,16 +79,24 @@ cors:
 # =========================================
 # Keepa API Configuration (Amazon Price Tracking)
 # =========================================
-# IMPORTANTE: Obtener API key en https://keepa.com/#!api
-# La clave gratuita tiene límites, considera plan de pago para producción
+# Las API keys de Keepa se gestionan por empresa en la tabla company_api_keys.
+# Cada empresa configura su propia API key desde Ajustes > API Keys.
 keepa:
-  api-key: ${KEEPA_API_KEY:}
   # Locale de Amazon (ES = España, US = USA, DE = Alemania, etc.)
   default-locale: ES
   # Días de historial a solicitar en cada consulta
   history-days: 90
-  # Límite de requests por minuto (depende de tu plan)
+  # Límite de requests por minuto (depende del plan de cada empresa)
   rate-limit: 10
+
+# =========================================
+# API Keys Encryption
+# =========================================
+# Clave AES-256 para cifrar API keys en la DB (exactamente 32 caracteres)
+# IMPORTANTE: En producción, configurar variable de entorno API_KEYS_ENCRYPTION_KEY
+pricewise:
+  api-keys:
+    encryption-key: ${API_KEYS_ENCRYPTION_KEY:}
 
 # =========================================
 # Actuator (solo health)
