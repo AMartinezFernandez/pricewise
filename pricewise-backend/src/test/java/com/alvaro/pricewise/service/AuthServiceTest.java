@@ -297,8 +297,10 @@ class AuthServiceTest {
             when(passwordEncoder.encode("Password1")).thenReturn("enc");
             when(userRepository.save(any(User.class))).thenReturn(employee);
             when(jwtService.generateToken(any())).thenReturn("emp-token");
+            when(userRepository.findById(1L)).thenReturn(Optional.of(
+                    User.builder().id(1L).role(User.Role.COMPANY_ADMIN).company(testCompany).build()));
 
-            AuthResponse response = authService.createEmployee(1L, request);
+            AuthResponse response = authService.createEmployee(1L, 1L, request);
 
             assertEquals("emp-token", response.getToken());
             assertEquals("EMPLOYEE", response.getRole());
@@ -317,7 +319,7 @@ class AuthServiceTest {
             when(userRepository.existsByEmail("existing@email.com")).thenReturn(true);
 
             assertThrows(BadRequestException.class,
-                    () -> authService.createEmployee(1L, request));
+                    () -> authService.createEmployee(1L, 1L, request));
         }
 
         @Test
@@ -334,7 +336,7 @@ class AuthServiceTest {
             when(companyRepository.findById(999L)).thenReturn(Optional.empty());
 
             assertThrows(BadRequestException.class,
-                    () -> authService.createEmployee(999L, request));
+                    () -> authService.createEmployee(999L, 1L, request));
         }
     }
 }

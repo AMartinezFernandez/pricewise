@@ -1,20 +1,22 @@
 package com.alvaro.pricewise.controller;
 
-import com.alvaro.pricewise.dto.common.ApiResponse;
-import com.alvaro.pricewise.entity.User;
-import com.alvaro.pricewise.exception.ResourceNotFoundException;
-import com.alvaro.pricewise.repository.AlertRepository;
-import com.alvaro.pricewise.repository.ProductRepository;
-import com.alvaro.pricewise.repository.UserRepository;
-import com.alvaro.pricewise.security.UserPrincipal;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.alvaro.pricewise.dto.common.ApiResponse;
+import com.alvaro.pricewise.dto.user.UserDTOs.UserSummaryDTO;
+import com.alvaro.pricewise.security.UserPrincipal;
+import com.alvaro.pricewise.service.UserService;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/users")
@@ -22,23 +24,14 @@ import java.util.List;
 @PreAuthorize("hasAnyRole('ADMIN', 'COMPANY_ADMIN')")
 public class UserController {
 
-    private final UserRepository userRepository;
-    private final AlertRepository alertRepository;
-    private final ProductRepository productRepository;
+    private final UserService userService;
 
     @GetMapping
-    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<List<UserSummaryDTO>>> getUsers(
             @AuthenticationPrincipal UserPrincipal principal) {
 
-        List<User> users;
-        if ("ADMIN".equals(principal.getRole())) {
-            users = userRepository.findAll();
-        } else {
-            users = userRepository.findByCompanyId(principal.getCompanyId());
-        }
-
-        List<UserSummaryDTO> result = users.stream()
+        List<UserSummaryDTO> result = userService.getUsersByRole(principal.getRole(), principal.getCompanyId())
+                .stream()
                 .map(UserSummaryDTO::from)
                 .toList();
 
@@ -46,69 +39,17 @@ public class UserController {
     }
 
     @GetMapping("/count")
-    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Long>> getUserCount(
             @AuthenticationPrincipal UserPrincipal principal) {
-
-        long count;
-        if ("ADMIN".equals(principal.getRole())) {
-            count = userRepository.count();
-        } else {
-            count = userRepository.countByCompanyId(principal.getCompanyId());
-        }
-
+        long count = userService.getUserCount(principal.getRole(), principal.getCompanyId());
         return ResponseEntity.ok(ApiResponse.success(count));
     }
 
     @DeleteMapping("/{userId}")
-    @Transactional
     public ResponseEntity<ApiResponse<Void>> deleteUser(
             @PathVariable Long userId,
             @AuthenticationPrincipal UserPrincipal principal) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-
-        // COMPANY_ADMIN solo puede borrar usuarios de su empresa
-        if (!"ADMIN".equals(principal.getRole())) {
-            if (user.getCompany() == null || !user.getCompany().getId().equals(principal.getCompanyId())) {
-                throw new ResourceNotFoundException("Usuario no encontrado");
-            }
-            // No puede borrarse a sí mismo
-            if (user.getId().equals(principal.getUserId())) {
-                throw new com.alvaro.pricewise.exception.BadRequestException("No puedes eliminarte a ti mismo");
-            }
-            // COMPANY_ADMIN solo puede eliminar EMPLOYEE, no admins
-            if (user.getRole() == User.Role.ADMIN || user.getRole() == User.Role.COMPANY_ADMIN) {
-                throw new com.alvaro.pricewise.exception.BadRequestException("No puedes eliminar a un administrador");
-            }
-        }
-
-        alertRepository.nullifyUserForAlerts(userId);
-        productRepository.nullifyCreatedByForUser(userId);
-        userRepository.delete(user);
-
+        userService.deleteUser(userId, principal.getRole(), principal.getId(), principal.getCompanyId());
         return ResponseEntity.ok(ApiResponse.success(null, "Usuario eliminado"));
-    }
-
-    // DTO interno
-    public record UserSummaryDTO(
-            Long id,
-            String username,
-            String email,
-            String companyName,
-            String role,
-            Boolean active
-    ) {
-        public static UserSummaryDTO from(User user) {
-            return new UserSummaryDTO(
-                    user.getId(),
-                    user.getUsername(),
-                    user.getEmail(),
-                    user.getCompany() != null ? user.getCompany().getName() : null,
-                    user.getRole().name(),
-                    user.getActive()
-            );
-        }
     }
 }
