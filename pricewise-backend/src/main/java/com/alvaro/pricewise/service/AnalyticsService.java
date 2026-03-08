@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -43,7 +43,7 @@ public class AnalyticsService {
                 .getPendingRecommendations(companyId, PageRequest.of(0, 5))
                 .getContent().stream()
                 .map(RecommendationSummary::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
 
         Map<String, Long> alertsByType = new HashMap<>();
         priceAnalysisService.getAlertsByCompany(companyId, true, PageRequest.of(0, 100))
@@ -69,7 +69,7 @@ public class AnalyticsService {
 
         List<RecommendationSummary> content = recommendations.getContent().stream()
                 .map(RecommendationSummary::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
 
         return PageResponse.<RecommendationSummary>builder()
                 .content(content)
@@ -91,7 +91,7 @@ public class AnalyticsService {
 
         List<AlertSummary> content = alerts.getContent().stream()
                 .map(AlertSummary::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
 
         return PageResponse.<AlertSummary>builder()
                 .content(content)
@@ -106,22 +106,27 @@ public class AnalyticsService {
                 .build();
     }
 
+    @Transactional
     public void applyRecommendation(Long companyId, Long id) {
         priceAnalysisService.applyRecommendation(companyId, id);
     }
 
+    @Transactional
     public void dismissRecommendation(Long companyId, Long id) {
         priceAnalysisService.dismissRecommendation(companyId, id);
     }
 
+    @Transactional
     public void markAlertAsRead(Long companyId, Long id) {
         priceAnalysisService.markAlertAsRead(companyId, id);
     }
 
+    @Transactional
     public int markAllAlertsAsRead(Long companyId) {
         return priceAnalysisService.markAllAlertsAsRead(companyId);
     }
 
+    @Transactional
     public int analyzeAllProducts(Long companyId) {
         return priceAnalysisService.analyzeAllProductsForUser(companyId);
     }

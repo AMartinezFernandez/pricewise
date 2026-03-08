@@ -1,6 +1,7 @@
 package com.alvaro.pricewise.dto.admin;
 
 import com.alvaro.pricewise.entity.User;
+import jakarta.validation.constraints.Pattern;
 
 public class AdminDTOs {
 
@@ -59,13 +60,17 @@ public class AdminDTOs {
     public record UpdateUserRequest(
             String username,
             String email,
+            @Pattern(regexp = "ADMIN|COMPANY_ADMIN|EMPLOYEE", message = "Rol debe ser ADMIN, COMPANY_ADMIN o EMPLOYEE")
             String role,
             Boolean active
     ) {}
 
     public record PasswordChangeRequest(String newPassword) {}
 
-    public record RoleChangeRequest(String role) {}
+    public record RoleChangeRequest(
+            @Pattern(regexp = "ADMIN|COMPANY_ADMIN|EMPLOYEE", message = "Rol debe ser ADMIN, COMPANY_ADMIN o EMPLOYEE")
+            String role
+    ) {}
 
     public record StatusChangeRequest(Boolean active) {}
 }

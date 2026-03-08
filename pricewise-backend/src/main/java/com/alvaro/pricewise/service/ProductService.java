@@ -33,7 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class ProductService {
 
     private final ProductRepository productRepository;
@@ -283,6 +282,14 @@ public class ProductService {
     @Transactional(readOnly = true)
     public long countProducts(@org.springframework.lang.NonNull Long companyId) {
         return productRepository.countByCompanyIdAndActiveTrue(companyId);
+    }
+
+    /**
+     * Busca un producto activo verificando que pertenece a la empresa indicada.
+     */
+    @Transactional(readOnly = true)
+    public Product findProductForCompany(@org.springframework.lang.NonNull Long companyId, @org.springframework.lang.NonNull Long productId) {
+        return findProductByCompanyAndId(companyId, productId);
     }
 
     // --- Métodos privados ---

@@ -46,7 +46,7 @@ public class User {
 
     // Relación con empresa (multi-tenancy)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id", nullable = false)
+    @JoinColumn(name = "company_id")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Company company;

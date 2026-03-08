@@ -39,7 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -304,6 +303,7 @@ public class AuthService {
     /**
      * Primer paso de Google Sign-In: valida token y comprueba si el usuario ya existe.
      */
+    @Transactional(readOnly = true)
     public GoogleLoginResponse googleLogin(GoogleLoginRequest request) {
         GoogleIdToken.Payload payload = googleTokenService.verify(request.getIdToken());
         String email = payload.getEmail();
