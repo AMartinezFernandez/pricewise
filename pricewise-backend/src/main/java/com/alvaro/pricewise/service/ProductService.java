@@ -289,7 +289,7 @@ public class ProductService {
 
     private Product findProductByCompanyAndId(Long companyId, Long productId) {
         return productRepository.findById(productId)
-                .filter(p -> p.getCompany().getId().equals(companyId))
+                .filter(p -> p.getActive() && p.getCompany().getId().equals(companyId))
                 .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
     }
 

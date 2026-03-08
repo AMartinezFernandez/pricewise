@@ -134,17 +134,21 @@ public class AuthService {
 
         Company company = user.getCompany();
 
-        return UserProfileResponse.builder()
+        UserProfileResponse.UserProfileResponseBuilder builder = UserProfileResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .companyId(company.getId())
-                .companyName(company.getName())
-                .companyType(company.getBusinessType())
-                .companyPlan(company.getPlan().name())
-                .role(user.getRole().name())
-                .totalProducts(productRepository.countByCompanyId(company.getId()))
-                .build();
+                .role(user.getRole().name());
+
+        if (company != null) {
+            builder.companyId(company.getId())
+                    .companyName(company.getName())
+                    .companyType(company.getBusinessType())
+                    .companyPlan(company.getPlan().name())
+                    .totalProducts(productRepository.countByCompanyId(company.getId()));
+        }
+
+        return builder.build();
     }
 
     /**
@@ -427,6 +431,9 @@ public class AuthService {
         while (userRepository.existsByUsername(candidate)) {
             candidate = sanitized + suffix;
             suffix++;
+            if (suffix > 1000) {
+                throw new BadRequestException("No se pudo generar un nombre de usuario único");
+            }
         }
         return candidate;
     }
