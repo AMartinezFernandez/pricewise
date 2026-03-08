@@ -39,7 +39,7 @@ public class AnalyticsController {
     public ResponseEntity<ApiResponse<DashboardMetrics>> getDashboardMetrics(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ResponseEntity.ok(ApiResponse.success(
-                analyticsService.getDashboardMetrics(userPrincipal.getCompanyId())));
+                analyticsService.getDashboardMetrics(userPrincipal.requireCompanyId())));
     }
 
     @GetMapping("/recommendations")
@@ -48,14 +48,14 @@ public class AnalyticsController {
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
         return ResponseEntity.ok(ApiResponse.success(
-                analyticsService.getRecommendations(userPrincipal.getCompanyId(), page, size)));
+                analyticsService.getRecommendations(userPrincipal.requireCompanyId(), page, size)));
     }
 
     @PostMapping("/recommendations/{id}/apply")
     public ResponseEntity<ApiResponse<String>> applyRecommendation(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
-        analyticsService.applyRecommendation(userPrincipal.getCompanyId(), id);
+        analyticsService.applyRecommendation(userPrincipal.requireCompanyId(), id);
         return ResponseEntity.ok(ApiResponse.success("Recomendacion aplicada"));
     }
 
@@ -63,7 +63,7 @@ public class AnalyticsController {
     public ResponseEntity<ApiResponse<String>> dismissRecommendation(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
-        analyticsService.dismissRecommendation(userPrincipal.getCompanyId(), id);
+        analyticsService.dismissRecommendation(userPrincipal.requireCompanyId(), id);
         return ResponseEntity.ok(ApiResponse.success("Recomendacion descartada"));
     }
 
@@ -74,21 +74,21 @@ public class AnalyticsController {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "false") boolean onlyUnread) {
         return ResponseEntity.ok(ApiResponse.success(
-                analyticsService.getAlerts(userPrincipal.getCompanyId(), page, size, onlyUnread)));
+                analyticsService.getAlerts(userPrincipal.requireCompanyId(), page, size, onlyUnread)));
     }
 
     @PostMapping("/alerts/{id}/read")
     public ResponseEntity<ApiResponse<String>> markAlertAsRead(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
-        analyticsService.markAlertAsRead(userPrincipal.getCompanyId(), id);
+        analyticsService.markAlertAsRead(userPrincipal.requireCompanyId(), id);
         return ResponseEntity.ok(ApiResponse.success("Alerta marcada como leida"));
     }
 
     @PostMapping("/alerts/read-all")
     public ResponseEntity<ApiResponse<Map<String, Object>>> markAllAlertsAsRead(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        int updated = analyticsService.markAllAlertsAsRead(userPrincipal.getCompanyId());
+        int updated = analyticsService.markAllAlertsAsRead(userPrincipal.requireCompanyId());
         Map<String, Object> result = new HashMap<>();
         result.put("alertsMarkedAsRead", updated);
         return ResponseEntity.ok(ApiResponse.success(result, "Todas las alertas marcadas como leidas"));
@@ -97,7 +97,7 @@ public class AnalyticsController {
     @PostMapping("/analyze")
     public ResponseEntity<ApiResponse<Map<String, Object>>> runAnalysis(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        int analyzed = analyticsService.analyzeAllProducts(userPrincipal.getCompanyId());
+        int analyzed = analyticsService.analyzeAllProducts(userPrincipal.requireCompanyId());
         Map<String, Object> result = new HashMap<>();
         result.put("productsAnalyzed", analyzed);
         result.put("message", "Analisis completado");

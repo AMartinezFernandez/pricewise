@@ -125,17 +125,23 @@ public class PriceAnalysisService {
      */
     @Transactional
     public int analyzeAllProductsForUser(Long companyId) {
-        List<Product> products = productRepository.findByCompanyIdAndActiveTrue(companyId);
         int analyzed = 0;
+        int page = 0;
+        final int batchSize = 50;
+        Page<Product> batch;
 
-        for (Product product : products) {
-            try {
-                analyzeProduct(product);
-                analyzed++;
-            } catch (Exception e) {
-                log.error("Error analizando producto {}: {}", product.getId(), e.getMessage());
+        do {
+            batch = productRepository.findByCompanyIdAndActiveTrue(companyId, PageRequest.of(page, batchSize));
+            for (Product product : batch.getContent()) {
+                try {
+                    analyzeProduct(product);
+                    analyzed++;
+                } catch (Exception e) {
+                    log.error("Error analizando producto {}: {}", product.getId(), e.getMessage());
+                }
             }
-        }
+            page++;
+        } while (batch.hasNext());
 
         log.info("Analizados {} productos para empresa {}", analyzed, companyId);
         return analyzed;

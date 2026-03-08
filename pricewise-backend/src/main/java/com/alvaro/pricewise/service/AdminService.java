@@ -45,10 +45,15 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<UserSummary> getAllUsers() {
+        Map<Long, Long> productCountByCompany = new java.util.HashMap<>();
+        for (Object[] row : productRepository.countActiveProductsGroupedByCompany()) {
+            productCountByCompany.put((Long) row[0], (Long) row[1]);
+        }
+
         return userRepository.findAll().stream()
                 .map(user -> {
                     long count = user.getCompany() != null
-                            ? productRepository.countByCompanyIdAndActiveTrue(user.getCompany().getId())
+                            ? productCountByCompany.getOrDefault(user.getCompany().getId(), 0L)
                             : 0L;
                     return UserSummary.from(user, count);
                 })
@@ -138,7 +143,8 @@ public class AdminService {
     public void deleteUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-        userRepository.delete(user);
+        user.setActive(false);
+        userRepository.save(user);
     }
 
     // ─── Empresas ──────────────────────────────────────────

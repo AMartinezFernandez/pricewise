@@ -85,7 +85,7 @@ public class AdminController {
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long userId) {
         adminService.deleteUser(userId);
-        return ResponseEntity.ok(ApiResponse.success(null, "Usuario eliminado permanentemente"));
+        return ResponseEntity.ok(ApiResponse.success(null, "Usuario desactivado"));
     }
 
     @GetMapping("/companies")
