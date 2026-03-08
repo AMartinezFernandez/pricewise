@@ -34,7 +34,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class PriceAnalysisService {
 
     private final ProductRepository productRepository;
@@ -246,11 +245,8 @@ public class PriceAnalysisService {
     }
 
     private BigDecimal calculateSuggestedPrice(BigDecimal competitorPrice, BigDecimal marginPercent) {
-        // Precio base sugerido
-        BigDecimal suggested = competitorPrice.multiply(BigDecimal.ONE.add(marginPercent))
+        return competitorPrice.multiply(BigDecimal.ONE.add(marginPercent))
                 .setScale(2, RoundingMode.HALF_UP);
-        
-        return suggested;
     }
 
     private BigDecimal calculateMinimumPrice(Product product) {

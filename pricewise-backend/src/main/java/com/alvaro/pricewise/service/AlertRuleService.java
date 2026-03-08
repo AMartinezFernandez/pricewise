@@ -1,8 +1,6 @@
 package com.alvaro.pricewise.service;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@SuppressWarnings("null")
 public class AlertRuleService {
 
     private final AlertRuleRepository alertRuleRepository;
@@ -36,7 +33,7 @@ public class AlertRuleService {
     public List<AlertRuleResponse> getRules(Long companyId) {
         return alertRuleRepository.findByCompanyIdOrderByCreatedAtDesc(companyId).stream()
                 .map(AlertRuleResponse::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional

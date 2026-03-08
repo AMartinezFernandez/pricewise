@@ -47,7 +47,6 @@ public class ProductDTOs {
         @Size(max = 100)
         private String category;
 
-
         @Size(max = 100)
         private String brand;
 
@@ -91,7 +90,6 @@ public class ProductDTOs {
 
         @Size(max = 100)
         private String category;
-
 
         @Size(max = 100)
         private String brand;

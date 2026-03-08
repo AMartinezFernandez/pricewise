@@ -169,6 +169,7 @@ public class AdminService {
         return mapToCompanyResponse(company);
     }
 
+    @Transactional
     public CompanyResponse createCompany(CreateCompanyRequest request) {
         return authService.createCompany(request);
     }

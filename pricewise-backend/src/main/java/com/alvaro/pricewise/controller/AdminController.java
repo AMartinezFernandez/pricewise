@@ -51,7 +51,7 @@ public class AdminController {
     @PutMapping("/users/{userId}")
     public ResponseEntity<ApiResponse<UserDetail>> updateUser(
             @PathVariable Long userId,
-            @RequestBody UpdateUserRequest request) {
+            @Valid @RequestBody UpdateUserRequest request) {
         return ResponseEntity.ok(ApiResponse.success(
                 adminService.updateUser(userId, request),
                 "Usuario actualizado correctamente"));
@@ -68,7 +68,7 @@ public class AdminController {
     @PutMapping("/users/{userId}/role")
     public ResponseEntity<ApiResponse<UserSummary>> changeUserRole(
             @PathVariable Long userId,
-            @RequestBody RoleChangeRequest request) {
+            @Valid @RequestBody RoleChangeRequest request) {
         UserSummary updated = adminService.changeUserRole(userId, request.role());
         return ResponseEntity.ok(ApiResponse.success(updated, "Rol actualizado a " + updated.role()));
     }

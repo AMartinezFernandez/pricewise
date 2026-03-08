@@ -10,16 +10,22 @@ public class UserDTOs {
             String email,
             String companyName,
             String role,
-            Boolean active
+            Boolean active,
+            Long productCount
     ) {
         public static UserSummaryDTO from(User user) {
+            return from(user, 0L);
+        }
+
+        public static UserSummaryDTO from(User user, long productCount) {
             return new UserSummaryDTO(
                     user.getId(),
                     user.getUsername(),
                     user.getEmail(),
                     user.getCompany() != null ? user.getCompany().getName() : null,
                     user.getRole().name(),
-                    user.getActive()
+                    user.getActive(),
+                    productCount
             );
         }
     }

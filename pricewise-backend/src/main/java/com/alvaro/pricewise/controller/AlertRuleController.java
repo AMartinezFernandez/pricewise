@@ -31,7 +31,6 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/alert-rules")
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('COMPANY_ADMIN', 'EMPLOYEE', 'ADMIN')")
-@SuppressWarnings("null")
 public class AlertRuleController {
 
     private final AlertRuleService alertRuleService;

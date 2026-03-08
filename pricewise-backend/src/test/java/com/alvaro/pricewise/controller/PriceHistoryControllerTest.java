@@ -1,21 +1,18 @@
 package com.alvaro.pricewise.controller;
 
-import com.alvaro.pricewise.entity.PriceHistory;
-import com.alvaro.pricewise.entity.Product;
+import com.alvaro.pricewise.dto.common.PageResponse;
+import com.alvaro.pricewise.dto.history.PriceHistoryDTOs.PriceHistoryResponse;
 import com.alvaro.pricewise.exception.GlobalExceptionHandler;
 import com.alvaro.pricewise.exception.ResourceNotFoundException;
-import com.alvaro.pricewise.repository.PriceHistoryRepository;
-import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.security.JwtService;
 import com.alvaro.pricewise.security.UserPrincipal;
+import com.alvaro.pricewise.service.PriceHistoryService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,10 +22,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -43,10 +38,7 @@ class PriceHistoryControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private PriceHistoryRepository priceHistoryRepository;
-
-    @MockBean
-    private ProductRepository productRepository;
+    private PriceHistoryService priceHistoryService;
 
     @MockBean
     private JwtService jwtService;
@@ -71,11 +63,6 @@ class PriceHistoryControllerTest {
                 .build();
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
-
-        // Producto existe y pertenece a la empresa
-        Product product = Product.builder().id(PRODUCT_ID).name("Test Product").build();
-        when(productRepository.findByCompanyIdAndIdWithCreatedBy(eq(COMPANY_ID), eq(PRODUCT_ID)))
-                .thenReturn(Optional.of(product));
     }
 
     @AfterEach
@@ -83,12 +70,11 @@ class PriceHistoryControllerTest {
         SecurityContextHolder.clearContext();
     }
 
-    private PriceHistory buildPriceHistory(Long id, BigDecimal price, BigDecimal previousPrice) {
-        return PriceHistory.builder()
-                .id(id)
+    private PriceHistoryResponse buildResponse(BigDecimal price, BigDecimal previousPrice) {
+        return PriceHistoryResponse.builder()
                 .price(price)
                 .previousPrice(previousPrice)
-                .changeType(PriceHistory.ChangeType.INCREASE)
+                .changeType("INCREASE")
                 .changeReason("Manual")
                 .recordedAt(LocalDateTime.now())
                 .build();
@@ -101,9 +87,15 @@ class PriceHistoryControllerTest {
         @Test
         @DisplayName("Historial paginado devuelve 200")
         void getHistory_Paginated_Returns200() throws Exception {
-            PriceHistory ph = buildPriceHistory(1L, new BigDecimal("29.99"), new BigDecimal("24.99"));
-            when(priceHistoryRepository.findByProductId(eq(PRODUCT_ID), any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(ph)));
+            PriceHistoryResponse ph = buildResponse(new BigDecimal("29.99"), new BigDecimal("24.99"));
+            PageResponse<PriceHistoryResponse> page = PageResponse.<PriceHistoryResponse>builder()
+                    .content(List.of(ph))
+                    .totalElements(1)
+                    .totalPages(1)
+                    .build();
+
+            when(priceHistoryService.getHistory(eq(COMPANY_ID), eq(PRODUCT_ID), anyInt(), anyInt(), isNull(), isNull()))
+                    .thenReturn(page);
 
             mockMvc.perform(get(BASE_URL))
                     .andExpect(status().isOk())
@@ -115,8 +107,14 @@ class PriceHistoryControllerTest {
         @Test
         @DisplayName("Historial vacio devuelve pagina sin datos")
         void getHistory_Empty_ReturnsEmptyPage() throws Exception {
-            when(priceHistoryRepository.findByProductId(eq(PRODUCT_ID), any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
+            PageResponse<PriceHistoryResponse> page = PageResponse.<PriceHistoryResponse>builder()
+                    .content(List.of())
+                    .totalElements(0)
+                    .totalPages(0)
+                    .build();
+
+            when(priceHistoryService.getHistory(eq(COMPANY_ID), eq(PRODUCT_ID), anyInt(), anyInt(), isNull(), isNull()))
+                    .thenReturn(page);
 
             mockMvc.perform(get(BASE_URL))
                     .andExpect(status().isOk())
@@ -127,8 +125,8 @@ class PriceHistoryControllerTest {
         @Test
         @DisplayName("Producto inexistente devuelve 404")
         void getHistory_ProductNotFound_Returns404() throws Exception {
-            when(productRepository.findByCompanyIdAndIdWithCreatedBy(eq(COMPANY_ID), eq(999L)))
-                    .thenReturn(Optional.empty());
+            when(priceHistoryService.getHistory(eq(COMPANY_ID), eq(999L), anyInt(), anyInt(), isNull(), isNull()))
+                    .thenThrow(new ResourceNotFoundException("Producto no encontrado"));
 
             mockMvc.perform(get("/api/products/999/history"))
                     .andExpect(status().isNotFound())
@@ -138,9 +136,15 @@ class PriceHistoryControllerTest {
         @Test
         @DisplayName("Historial con filtro de fechas devuelve resultados")
         void getHistory_WithDateFilter_ReturnsResults() throws Exception {
-            PriceHistory ph = buildPriceHistory(1L, new BigDecimal("19.99"), new BigDecimal("15.99"));
-            when(priceHistoryRepository.findByProductIdAndDateRange(eq(PRODUCT_ID), any(), any()))
-                    .thenReturn(List.of(ph));
+            PriceHistoryResponse ph = buildResponse(new BigDecimal("19.99"), new BigDecimal("15.99"));
+            PageResponse<PriceHistoryResponse> page = PageResponse.<PriceHistoryResponse>builder()
+                    .content(List.of(ph))
+                    .totalElements(1)
+                    .totalPages(1)
+                    .build();
+
+            when(priceHistoryService.getHistory(eq(COMPANY_ID), eq(PRODUCT_ID), anyInt(), anyInt(), any(), any()))
+                    .thenReturn(page);
 
             mockMvc.perform(get(BASE_URL)
                             .param("startDate", "2026-01-01T00:00:00")
@@ -158,9 +162,9 @@ class PriceHistoryControllerTest {
         @Test
         @DisplayName("Ultimos 10 cambios devuelve lista")
         void getRecentHistory_ReturnsList() throws Exception {
-            PriceHistory ph1 = buildPriceHistory(1L, new BigDecimal("29.99"), new BigDecimal("24.99"));
-            PriceHistory ph2 = buildPriceHistory(2L, new BigDecimal("24.99"), new BigDecimal("19.99"));
-            when(priceHistoryRepository.findTop10ByProductIdOrderByRecordedAtDesc(eq(PRODUCT_ID)))
+            PriceHistoryResponse ph1 = buildResponse(new BigDecimal("29.99"), new BigDecimal("24.99"));
+            PriceHistoryResponse ph2 = buildResponse(new BigDecimal("24.99"), new BigDecimal("19.99"));
+            when(priceHistoryService.getRecentHistory(eq(COMPANY_ID), eq(PRODUCT_ID)))
                     .thenReturn(List.of(ph1, ph2));
 
             mockMvc.perform(get(BASE_URL + "/recent"))
@@ -173,7 +177,7 @@ class PriceHistoryControllerTest {
         @Test
         @DisplayName("Sin historial devuelve lista vacia")
         void getRecentHistory_Empty_ReturnsEmptyList() throws Exception {
-            when(priceHistoryRepository.findTop10ByProductIdOrderByRecordedAtDesc(eq(PRODUCT_ID)))
+            when(priceHistoryService.getRecentHistory(eq(COMPANY_ID), eq(PRODUCT_ID)))
                     .thenReturn(List.of());
 
             mockMvc.perform(get(BASE_URL + "/recent"))

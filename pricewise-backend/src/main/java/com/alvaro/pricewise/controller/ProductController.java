@@ -39,7 +39,6 @@ import org.springframework.validation.annotation.Validated;
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
 @Validated
-@SuppressWarnings("null")
 public class ProductController {
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
