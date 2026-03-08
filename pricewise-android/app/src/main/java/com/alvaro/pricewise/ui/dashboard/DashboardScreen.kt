@@ -4,9 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import com.composables.icons.lucide.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -50,8 +50,10 @@ data class DashboardUiState(
     val totalProducts: Long = 0,
     val totalSavings: String = "0 €",
     val unreadAlerts: Long = 0,
+    val pendingRecommendations: Int = 0,
     val usersCount: Long = 0,
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val error: String? = null
 )
 
@@ -76,7 +78,11 @@ class DashboardViewModel @Inject constructor(
 
     private fun loadDashboardData() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = !_uiState.value.isRefreshing,
+                isRefreshing = _uiState.value.username != "Usuario",
+                error = null
+            )
 
             // Collect user info from DataStore
             val username = tokenRepository.getUsername().firstOrNull() ?: "Usuario"
@@ -97,7 +103,9 @@ class DashboardViewModel @Inject constructor(
                             totalProducts = metrics.totalProducts.toLong(),
                             totalSavings = formatCurrency(metrics.potentialSavings),
                             unreadAlerts = metrics.unreadAlerts.toLong(),
-                            isLoading = false
+                            pendingRecommendations = metrics.pendingRecommendations,
+                            isLoading = false,
+                            isRefreshing = false
                         )
                     }
                 }
@@ -105,6 +113,7 @@ class DashboardViewModel @Inject constructor(
                 is Result.Error -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
+                        isRefreshing = false,
                         error = result.message
                     )
                 }
@@ -115,12 +124,9 @@ class DashboardViewModel @Inject constructor(
                 when (val result = userRepository.getUserCount()) {
                     is Result.Success -> {
                         val count = result.data.data ?: 0L
-                        android.util.Log.d("DashboardVM", "Recuento de usuarios recibido del servidor: $count")
                         _uiState.value = _uiState.value.copy(usersCount = count)
                     }
-                    is Result.Error -> {
-                        android.util.Log.w("DashboardVM", "Error obteniendo recuento usuarios: ${result.message}")
-                    }
+                    is Result.Error -> { /* silencioso */ }
                 }
             }
         }
@@ -170,7 +176,7 @@ fun DashboardScreen(
                 title = { Text(uiState.companyName) },
                 actions = {
                     IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "Ajustes")
+                        Icon(Lucide.Settings, contentDescription = "Ajustes")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -192,10 +198,16 @@ fun DashboardScreen(
                 CircularProgressIndicator()
             }
         } else {
-            Column(
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = { viewModel.refresh() },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+            ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -233,7 +245,7 @@ fun DashboardScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                Icons.Default.Warning,
+                                Lucide.TriangleAlert,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error
                             )
@@ -260,7 +272,7 @@ fun DashboardScreen(
                     StatCard(
                         title = "Alertas",
                         value = "",
-                        icon = Icons.Default.Notifications,
+                        icon = Lucide.Bell,
                         onClick = onNavigateToAlerts,
                         modifier = Modifier.weight(1f)
                     )
@@ -268,41 +280,49 @@ fun DashboardScreen(
                     StatCard(
                         title = "Productos",
                         value = "",
-                        icon = Icons.Default.Inventory,
+                        icon = Lucide.Package,
                         onClick = onNavigateToTracking,
                         modifier = Modifier.weight(1f)
                     )
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (uiState.role == "ADMIN" || uiState.role == "COMPANY_ADMIN") {
+                if (uiState.role == "ADMIN") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         StatCard(
                             title = "Usuarios",
                             value = "",
-                            icon = Icons.Default.Person,
-                            onClick = if (uiState.role == "ADMIN") onNavigateToAdminUsers else onNavigateToUsers,
+                            icon = Lucide.Users,
+                            onClick = onNavigateToAdminUsers,
                             modifier = Modifier.weight(1f)
                         )
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-
-                    if (uiState.role == "ADMIN") {
                         StatCard(
                             title = "Administracion",
                             value = "",
-                            icon = Icons.Default.AdminPanelSettings,
+                            icon = Lucide.ShieldCheck,
                             onClick = onNavigateToAdminDashboard,
                             modifier = Modifier.weight(1f)
                         )
-                    } else {
+                    }
+                } else if (uiState.role == "COMPANY_ADMIN") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        StatCard(
+                            title = "Usuarios",
+                            value = "",
+                            icon = Lucide.Users,
+                            onClick = onNavigateToUsers,
+                            modifier = Modifier.weight(1f)
+                        )
                         Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
+            } // PullToRefreshBox
         }
     }
 }

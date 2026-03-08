@@ -6,11 +6,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.TrendingDown
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.*
+import com.composables.icons.lucide.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,8 +48,6 @@ fun AlertsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(Unit) { viewModel.loadAll() }
-
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(uiState.actionMessage) {
         uiState.actionMessage?.let {
@@ -72,13 +68,30 @@ fun AlertsScreen(
         )
     }
 
+    val editingRule = uiState.editingRule
+    if (uiState.showEditDialog && editingRule != null) {
+        EditAlertDialog(
+            rule = editingRule,
+            isSaving = uiState.isSaving,
+            onDismiss = { viewModel.dismissEditDialog() },
+            onSave = { threshold, name, targetPrice ->
+                viewModel.updateRule(
+                    id = editingRule.id,
+                    threshold = threshold,
+                    name = name,
+                    targetPrice = targetPrice
+                )
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Alertas") },
                 actions = {
                     IconButton(onClick = { viewModel.loadAll() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
+                        Icon(Lucide.RefreshCw, contentDescription = "Actualizar")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -91,19 +104,24 @@ fun AlertsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { viewModel.showCreateDialog() }) {
-                Icon(Icons.Default.Add, "Crear alerta")
+                Icon(Lucide.Plus, "Crear alerta")
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = { viewModel.loadAll() },
+            modifier = Modifier.fillMaxSize().padding(padding)
+        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
             // Tabs
             PrimaryTabRow(selectedTabIndex = uiState.selectedTab) {
                 Tab(
                     selected = uiState.selectedTab == 0,
                     onClick = { viewModel.selectTab(0) },
                     text = { Text("Mis alertas") },
-                    icon = { Icon(Icons.Default.Notifications, null, Modifier.size(18.dp)) }
+                    icon = { Icon(Lucide.Bell, null, Modifier.size(18.dp)) }
                 )
                 Tab(
                     selected = uiState.selectedTab == 1,
@@ -117,7 +135,7 @@ fun AlertsScreen(
                             }
                         }
                     },
-                    icon = { Icon(Icons.Default.History, null, Modifier.size(18.dp)) }
+                    icon = { Icon(Lucide.Clock, null, Modifier.size(18.dp)) }
                 )
             }
 
@@ -126,6 +144,7 @@ fun AlertsScreen(
                 1 -> HistoryTab(uiState, viewModel)
             }
         }
+        } // PullToRefreshBox
     }
 }
 
@@ -144,7 +163,7 @@ private fun RulesTab(uiState: AlertsUiState, viewModel: AlertsViewModel) {
             }
             uiState.rules.isEmpty() -> {
                 EmptyState(
-                    icon = Icons.Default.NotificationsNone,
+                    icon = Lucide.BellOff,
                     message = "No tienes alertas configuradas",
                     subtitle = "Pulsa + para crear tu primera alerta",
                     modifier = Modifier.align(Alignment.Center)
@@ -163,7 +182,8 @@ private fun RulesTab(uiState: AlertsUiState, viewModel: AlertsViewModel) {
                             AlertRuleCard(
                                 rule = rule,
                                 onToggle = { viewModel.toggleRule(rule.id) },
-                                onDelete = { viewModel.deleteRule(rule.id) }
+                                onDelete = { viewModel.deleteRule(rule.id) },
+                                onEdit = { viewModel.showEditDialog(rule) }
                             )
                         }
                     }
@@ -177,7 +197,8 @@ private fun RulesTab(uiState: AlertsUiState, viewModel: AlertsViewModel) {
 private fun AlertRuleCard(
     rule: AlertRuleResponse,
     onToggle: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     val typeLabel = alertTypeLabel(rule.alertType)
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -265,11 +286,22 @@ private fun AlertRuleCard(
                 )
             )
             IconButton(
+                onClick = onEdit,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    Lucide.Pencil,
+                    contentDescription = "Editar",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+            IconButton(
                 onClick = { showDeleteConfirm = true },
                 modifier = Modifier.size(32.dp)
             ) {
                 Icon(
-                    Icons.Default.Delete,
+                    Lucide.Trash2,
                     contentDescription = "Eliminar",
                     tint = Color(0xFFEF5350),
                     modifier = Modifier.size(18.dp)
@@ -311,12 +343,12 @@ private fun HistoryTab(uiState: AlertsUiState, viewModel: AlertsViewModel) {
                             onClick = { viewModel.toggleFilter() },
                             label = { Text("No leidas") },
                             leadingIcon = if (uiState.filterUnreadOnly) {
-                                { Icon(Icons.Default.FilterList, null, Modifier.size(16.dp)) }
+                                { Icon(Lucide.Filter, null, Modifier.size(16.dp)) }
                             } else null
                         )
                         if (uiState.unreadCount > 0) {
                             TextButton(onClick = { viewModel.markAllAsRead() }) {
-                                Icon(Icons.Default.DoneAll, null, Modifier.size(16.dp))
+                                Icon(Lucide.CheckCheck, null, Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Marcar todas")
                             }
@@ -325,7 +357,7 @@ private fun HistoryTab(uiState: AlertsUiState, viewModel: AlertsViewModel) {
 
                     if (uiState.alerts.isEmpty()) {
                         EmptyState(
-                            icon = Icons.Default.History,
+                            icon = Lucide.Clock,
                             message = if (uiState.filterUnreadOnly) "No hay alertas sin leer"
                             else "Sin alertas recientes",
                             subtitle = "Las alertas se generan cuando cambian los precios",
@@ -370,9 +402,9 @@ private fun AlertCard(alert: AlertResponse, onMarkRead: (Long) -> Unit) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
             Icon(
                 imageVector = when (alert.severity) {
-                    "CRITICAL" -> Icons.Default.Error
-                    "WARNING"  -> Icons.Default.Warning
-                    else       -> Icons.Default.Info
+                    "CRITICAL" -> Lucide.CircleAlert
+                    "WARNING"  -> Lucide.TriangleAlert
+                    else       -> Lucide.Info
                 },
                 contentDescription = null,
                 tint = severityColor,
@@ -424,7 +456,7 @@ private fun AlertCard(alert: AlertResponse, onMarkRead: (Long) -> Unit) {
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
-                        Icons.Default.DoneAll,
+                        Lucide.CheckCheck,
                         contentDescription = "Marcar como leida",
                         modifier = Modifier.size(16.dp)
                     )
@@ -476,7 +508,7 @@ private fun ErrorState(error: String, onRetry: () -> Unit, modifier: Modifier = 
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Icon(
-            Icons.Default.ErrorOutline,
+            Lucide.CircleAlert,
             contentDescription = null,
             modifier = Modifier.size(56.dp),
             tint = MaterialTheme.colorScheme.error
@@ -678,6 +710,125 @@ private fun CreateAlertDialog(
     }
 }
 
+// ─── Dialogo editar alerta ───────────────────────────────────
+
+@Composable
+private fun EditAlertDialog(
+    rule: AlertRuleResponse,
+    isSaving: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (threshold: Double, name: String?, targetPrice: Double?) -> Unit
+) {
+    var threshold by remember { mutableStateOf(String.format(Locale.US, "%.1f", rule.threshold)) }
+    var name by remember { mutableStateOf(rule.name ?: "") }
+    var targetPrice by remember { mutableStateOf(rule.targetPrice?.let { String.format(Locale.US, "%.2f", it) } ?: "") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            shape = MaterialTheme.shapes.extraLarge
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "Editar alerta",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+
+                // Info de la regla (solo lectura)
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            alertTypeLabel(rule.alertType),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        if (rule.productName != null) {
+                            Text(
+                                rule.productName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                OutlinedTextField(
+                    value = threshold,
+                    onValueChange = { threshold = it },
+                    label = { Text("Umbral (%)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                    supportingText = { Text("Porcentaje de cambio que activa la alerta") }
+                )
+
+                OutlinedTextField(
+                    value = targetPrice,
+                    onValueChange = { targetPrice = it },
+                    label = { Text("Precio objetivo (€)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                    supportingText = { Text("Opcional: avisar cuando el precio alcance este valor") }
+                )
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nombre (opcional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.height(4.dp))
+
+                // Botones
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDismiss) { Text("Cancelar") }
+                    Spacer(Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            val thresholdValue = threshold.replace(',', '.').toDoubleOrNull()
+                            val targetPriceValue = targetPrice.replace(',', '.').toDoubleOrNull()
+                            if (thresholdValue != null && thresholdValue > 0) {
+                                onSave(thresholdValue, name.ifBlank { null }, targetPriceValue?.takeIf { it > 0 })
+                            }
+                        },
+                        enabled = !isSaving
+                                && (threshold.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0
+                    ) {
+                        if (isSaving) {
+                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Guardar")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 // ─── Helpers ─────────────────────────────────────────────────
 
 private fun alertTypeLabel(type: String): String = when (type) {
@@ -691,13 +842,13 @@ private fun alertTypeLabel(type: String): String = when (type) {
 }
 
 private fun alertTypeIcon(type: String): androidx.compose.ui.graphics.vector.ImageVector = when (type) {
-    "COMPETITOR_PRICE_DROP" -> Icons.AutoMirrored.Filled.TrendingDown
-    "COMPETITOR_PRICE_RISE" -> Icons.AutoMirrored.Filled.TrendingUp
-    "COMPETITOR_OUT_OF_STOCK" -> Icons.Default.RemoveShoppingCart
-    "PRICE_BELOW_COST" -> Icons.Default.Warning
-    "HIGH_MARGIN_OPPORTUNITY" -> Icons.Default.Star
-    "PRICE_MATCH_NEEDED" -> Icons.Default.Balance
-    else -> Icons.Default.Notifications
+    "COMPETITOR_PRICE_DROP" -> Lucide.TrendingDown
+    "COMPETITOR_PRICE_RISE" -> Lucide.TrendingUp
+    "COMPETITOR_OUT_OF_STOCK" -> Lucide.PackageX
+    "PRICE_BELOW_COST" -> Lucide.TriangleAlert
+    "HIGH_MARGIN_OPPORTUNITY" -> Lucide.Star
+    "PRICE_MATCH_NEEDED" -> Lucide.Scale
+    else -> Lucide.Bell
 }
 
 private fun formatRelativeTime(isoDate: String): String {

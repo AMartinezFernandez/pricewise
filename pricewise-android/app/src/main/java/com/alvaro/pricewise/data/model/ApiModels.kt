@@ -289,7 +289,8 @@ data class CreateAlertRuleRequest(
 data class UpdateAlertRuleRequest(
     @Json(name = "threshold") val threshold: Double? = null,
     @Json(name = "enabled") val enabled: Boolean? = null,
-    @Json(name = "name") val name: String? = null
+    @Json(name = "name") val name: String? = null,
+    @Json(name = "targetPrice") val targetPrice: Double? = null
 )
 
 // ─────────────────────────────────────────────

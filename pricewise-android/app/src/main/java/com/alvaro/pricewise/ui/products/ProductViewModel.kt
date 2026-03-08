@@ -140,11 +140,11 @@ class ProductViewModel @Inject constructor(
 
     private suspend fun performNormalSearch(query: String) {
         val trimmedQuery = query.trim()
-        val result = if (trimmedQuery.isBlank()) {
-            repository.getProducts(0)
-        } else {
-            repository.searchProducts(name = trimmedQuery)
+        if (trimmedQuery.isBlank()) {
+            clearSearchResults()
+            return
         }
+        val result = repository.searchProducts(name = trimmedQuery)
         when (result) {
             is Result.Success -> {
                 val pageData = result.data.data
@@ -252,6 +252,46 @@ class ProductViewModel @Inject constructor(
                     // y recarga automáticamente. Llamarlo aquí contaminaba _listState de SearchScreen.
                 }
                 is Result.Error -> _formState.value = ProductFormUiState(error = result.message)
+            }
+        }
+    }
+
+    fun updateProduct(
+        id: Long,
+        name: String,
+        asin: String,
+        currentPrice: String,
+        costPrice: String,
+        category: String,
+        brand: String,
+        description: String,
+        monitoringEnabled: Boolean
+    ) {
+        val price = currentPrice.toDoubleOrNull()
+        val cost = costPrice.toDoubleOrNull()
+        if (name.isBlank() || price == null || price <= 0) {
+            _formState.value = ProductFormUiState(error = "Nombre y precio de venta son obligatorios (precio > 0)")
+            return
+        }
+        if (cost == null || cost < 0) {
+            _formState.value = ProductFormUiState(error = "El precio de coste es obligatorio (≥ 0)")
+            return
+        }
+        viewModelScope.launch {
+            _formState.value = ProductFormUiState(isLoading = true)
+            val request = UpdateProductRequest(
+                name = name,
+                asin = asin.ifBlank { null },
+                currentPrice = price,
+                costPrice = cost,
+                category = category.ifBlank { null },
+                brand = brand.ifBlank { null },
+                description = description.ifBlank { null },
+                monitoringEnabled = monitoringEnabled
+            )
+            when (repository.updateProduct(id, request)) {
+                is Result.Success -> _formState.value = ProductFormUiState(success = true)
+                is Result.Error -> _formState.value = ProductFormUiState(error = "Error al actualizar el producto")
             }
         }
     }
