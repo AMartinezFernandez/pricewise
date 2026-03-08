@@ -34,10 +34,21 @@ class UsersViewModel @Inject constructor(
         loadUsers()
     }
 
+    fun deleteUser(userId: Long) {
+        viewModelScope.launch {
+            when (val result = userRepository.deleteUser(userId)) {
+                is Result.Success -> loadUsers()
+                is Result.Error -> {
+                    _uiState.value = _uiState.value.copy(error = result.message)
+                }
+            }
+        }
+    }
+
     private fun loadUsers() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            
+
             when (val result = userRepository.getUsers()) {
                 is Result.Success -> {
                     _uiState.value = _uiState.value.copy(

@@ -218,4 +218,7 @@ interface PriceWiseApi {
 
     @GET("api/users/count")
     suspend fun getUserCount(): Response<ApiResponse<Long>>
+
+    @DELETE("api/users/{userId}")
+    suspend fun deleteCompanyUser(@retrofit2.http.Path("userId") userId: Long): Response<ApiResponse<Void>>
 }

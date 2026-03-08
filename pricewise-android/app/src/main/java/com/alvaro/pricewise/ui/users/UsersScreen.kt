@@ -4,13 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Person
+import com.composables.icons.lucide.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,7 +36,7 @@ fun UsersScreen(
                 title = { Text("Usuarios") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Lucide.ArrowLeft, contentDescription = "Volver")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -48,7 +49,7 @@ fun UsersScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onNavigateToCreateUser) {
-                Icon(Icons.Default.Person, contentDescription = "Añadir Usuario")
+                Icon(Lucide.User, contentDescription = "Añadir Usuario")
             }
         }
     ) { padding ->
@@ -78,7 +79,10 @@ fun UsersScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(uiState.users) { user ->
-                            UserItem(user)
+                            UserItem(
+                                user = user,
+                                onDelete = { viewModel.deleteUser(user.id) }
+                            )
                         }
                     }
                 }
@@ -88,7 +92,30 @@ fun UsersScreen(
 }
 
 @Composable
-fun UserItem(user: UserSummaryResponse) {
+fun UserItem(user: UserSummaryResponse, onDelete: () -> Unit) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Eliminar usuario") },
+            text = { Text("Se eliminara a ${user.username} de forma permanente. Los productos de la empresa no se veran afectados.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    onDelete()
+                }) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -100,7 +127,7 @@ fun UserItem(user: UserSummaryResponse) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Person,
+                imageVector = Lucide.User,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
@@ -111,9 +138,9 @@ fun UserItem(user: UserSummaryResponse) {
                     )
                     .padding(8.dp)
             )
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = user.username,
@@ -131,8 +158,14 @@ fun UserItem(user: UserSummaryResponse) {
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
-            
-            StatusChip(active = user.active)
+
+            IconButton(onClick = { showDeleteDialog = true }) {
+                Icon(
+                    Lucide.Trash2,
+                    contentDescription = "Eliminar",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }

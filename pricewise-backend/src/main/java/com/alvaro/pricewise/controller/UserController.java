@@ -2,6 +2,9 @@ package com.alvaro.pricewise.controller;
 
 import com.alvaro.pricewise.dto.common.ApiResponse;
 import com.alvaro.pricewise.entity.User;
+import com.alvaro.pricewise.exception.ResourceNotFoundException;
+import com.alvaro.pricewise.repository.AlertRepository;
+import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.repository.UserRepository;
 import com.alvaro.pricewise.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +23,8 @@ import java.util.List;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final AlertRepository alertRepository;
+    private final ProductRepository productRepository;
 
     @GetMapping
     @Transactional(readOnly = true)
@@ -53,6 +58,33 @@ public class UserController {
         }
 
         return ResponseEntity.ok(ApiResponse.success(count));
+    }
+
+    @DeleteMapping("/{userId}")
+    @Transactional
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        // COMPANY_ADMIN solo puede borrar usuarios de su empresa
+        if (!"ADMIN".equals(principal.getRole())) {
+            if (user.getCompany() == null || !user.getCompany().getId().equals(principal.getCompanyId())) {
+                throw new ResourceNotFoundException("Usuario no encontrado");
+            }
+            // No puede borrarse a sí mismo
+            if (user.getId().equals(principal.getUserId())) {
+                throw new com.alvaro.pricewise.exception.BadRequestException("No puedes eliminarte a ti mismo");
+            }
+        }
+
+        alertRepository.nullifyUserForAlerts(userId);
+        productRepository.nullifyCreatedByForUser(userId);
+        userRepository.delete(user);
+
+        return ResponseEntity.ok(ApiResponse.success(null, "Usuario eliminado"));
     }
 
     // DTO interno
