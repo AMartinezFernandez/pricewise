@@ -27,4 +27,8 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     @Query("UPDATE Alert a SET a.isRead = true, a.readAt = CURRENT_TIMESTAMP " +
            "WHERE a.product.company.id = :companyId AND a.isRead = false")
     int markAllAsReadByCompanyId(@Param("companyId") Long companyId);
+
+    @Modifying
+    @Query("UPDATE Alert a SET a.user = NULL WHERE a.user.id = :userId")
+    void nullifyUserForAlerts(@Param("userId") Long userId);
 }

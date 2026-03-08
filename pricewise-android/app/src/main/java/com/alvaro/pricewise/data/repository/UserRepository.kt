@@ -29,5 +29,6 @@ class UserRepository @Inject constructor(
             )
         }
 
-
+    suspend fun deleteUser(userId: Long) =
+        safeApiCall { api.deleteCompanyUser(userId) }
 }

@@ -1,6 +1,7 @@
 package com.alvaro.pricewise.controller;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -41,6 +42,9 @@ import org.springframework.validation.annotation.Validated;
 @SuppressWarnings("null")
 public class ProductController {
 
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "name", "currentPrice", "costPrice", "category", "brand", "createdAt", "updatedAt");
+
     private final ProductService productService;
 
     @PostMapping
@@ -72,11 +76,7 @@ public class ProductController {
             @RequestParam(defaultValue = "name") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir
     ) {
-        Sort sort = sortDir.equalsIgnoreCase("desc")
-                ? Sort.by(sortBy).descending()
-                : Sort.by(sortBy).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-
+        Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
         PageResponse<ProductListResponse> response = productService.getProducts(userPrincipal.requireCompanyId(), pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -89,13 +89,16 @@ public class ProductController {
             @RequestParam(defaultValue = "name") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir
     ) {
-        Sort sort = sortDir.equalsIgnoreCase("desc")
-                ? Sort.by(sortBy).descending()
-                : Sort.by(sortBy).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-
+        Pageable pageable = PageRequest.of(page, size, buildSort(sortBy, sortDir));
         PageResponse<ProductListResponse> response = productService.getMonitoredProducts(userPrincipal.requireCompanyId(), pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    private Sort buildSort(String sortBy, String sortDir) {
+        String field = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "name";
+        return sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(field).descending()
+                : Sort.by(field).ascending();
     }
 
     @GetMapping("/search")

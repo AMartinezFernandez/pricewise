@@ -333,7 +333,7 @@ class AuthControllerTest {
             AuthResponse response = AuthResponse.of("jwt-emp-token", 2L, "empleado1",
                     "empleado@email.com", "EMPLOYEE", 1L, "Test Company");
 
-            when(authService.createEmployee(any(), any(CreateEmployeeRequest.class))).thenReturn(response);
+            when(authService.createEmployee(any(), any(), any(CreateEmployeeRequest.class))).thenReturn(response);
 
             mockMvc.perform(post(BASE_URL + "/create-employee")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -356,7 +356,7 @@ class AuthControllerTest {
                     .password("Password1")
                     .build();
 
-            when(authService.createEmployee(any(), any(CreateEmployeeRequest.class)))
+            when(authService.createEmployee(any(), any(), any(CreateEmployeeRequest.class)))
                     .thenThrow(new BadRequestException("El email ya esta registrado"));
 
             mockMvc.perform(post(BASE_URL + "/create-employee")

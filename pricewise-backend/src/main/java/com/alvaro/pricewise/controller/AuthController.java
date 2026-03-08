@@ -53,7 +53,7 @@ public class AuthController {
             @AuthenticationPrincipal @org.springframework.lang.NonNull UserPrincipal userPrincipal,
             @Valid @RequestBody @org.springframework.lang.NonNull CreateEmployeeRequest request
     ) {
-        AuthResponse response = authService.createEmployee(userPrincipal.getCompanyId(), request);
+        AuthResponse response = authService.createEmployee(userPrincipal.getCompanyId(), userPrincipal.getId(), request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Empleado creado exitosamente"));

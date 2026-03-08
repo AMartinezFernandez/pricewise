@@ -21,6 +21,7 @@ import com.alvaro.pricewise.entity.Company;
 import com.alvaro.pricewise.entity.User;
 import com.alvaro.pricewise.exception.BadRequestException;
 import com.alvaro.pricewise.exception.ResourceNotFoundException;
+import com.alvaro.pricewise.repository.AlertRepository;
 import com.alvaro.pricewise.repository.CompanyRepository;
 import com.alvaro.pricewise.repository.CompetitorRepository;
 import com.alvaro.pricewise.repository.ProductRepository;
@@ -35,6 +36,7 @@ public class AdminService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final CompanyRepository companyRepository;
+    private final AlertRepository alertRepository;
     private final CompetitorRepository competitorRepository;
     private final KeepaService keepaService;
     private final AuthService authService;
@@ -143,8 +145,12 @@ public class AdminService {
     public void deleteUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-        user.setActive(false);
-        userRepository.save(user);
+
+        // Limpiar FK antes del borrado real (alertas y productos se mantienen para la empresa)
+        alertRepository.nullifyUserForAlerts(userId);
+        productRepository.nullifyCreatedByForUser(userId);
+
+        userRepository.delete(user);
     }
 
     // ─── Empresas ──────────────────────────────────────────

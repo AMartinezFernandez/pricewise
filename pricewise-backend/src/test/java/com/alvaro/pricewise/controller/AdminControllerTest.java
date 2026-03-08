@@ -185,7 +185,7 @@ class AdminControllerTest {
         mockMvc.perform(delete("/api/admin/users/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Usuario desactivado"));
+                .andExpect(jsonPath("$.message").value("Usuario eliminado"));
 
         verify(adminService).deleteUser(1L);
     }

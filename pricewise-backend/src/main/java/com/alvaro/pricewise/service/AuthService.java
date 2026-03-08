@@ -27,7 +27,7 @@ import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.repository.UserRepository;
 import com.alvaro.pricewise.security.JwtService;
 import com.alvaro.pricewise.security.UserPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
+
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -134,17 +134,21 @@ public class AuthService {
 
         Company company = user.getCompany();
 
-        return UserProfileResponse.builder()
+        UserProfileResponse.UserProfileResponseBuilder builder = UserProfileResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .companyId(company.getId())
-                .companyName(company.getName())
-                .companyType(company.getBusinessType())
-                .companyPlan(company.getPlan().name())
-                .role(user.getRole().name())
-                .totalProducts(productRepository.countByCompanyId(company.getId()))
-                .build();
+                .role(user.getRole().name());
+
+        if (company != null) {
+            builder.companyId(company.getId())
+                    .companyName(company.getName())
+                    .companyType(company.getBusinessType())
+                    .companyPlan(company.getPlan().name())
+                    .totalProducts(productRepository.countByCompanyId(company.getId()));
+        }
+
+        return builder.build();
     }
 
     /**
@@ -152,7 +156,7 @@ public class AuthService {
      * Solo COMPANY_ADMIN y ADMIN pueden crear empleados.
      */
     @Transactional
-    public AuthResponse createEmployee(@org.springframework.lang.NonNull Long companyId, CreateEmployeeRequest request) {
+    public AuthResponse createEmployee(@org.springframework.lang.NonNull Long companyId, @org.springframework.lang.NonNull Long callerId, CreateEmployeeRequest request) {
         log.debug("Creando empleado para empresa: {}", companyId);
 
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -167,9 +171,7 @@ public class AuthService {
         Long targetCompanyId = companyId;
         User.Role targetRole = User.Role.EMPLOYEE;
 
-        User creator = userRepository.findById(SecurityContextHolder.getContext().getAuthentication() != null 
-                ? ((UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId() 
-                : 0L).orElse(null);
+        User creator = userRepository.findById(callerId).orElse(null);
 
         if (creator != null && creator.getRole() == User.Role.ADMIN) {
             // ADMIN can select company and role
@@ -185,14 +187,9 @@ public class AuthService {
                 } catch (IllegalArgumentException e) {
                     throw new BadRequestException("Rol inválido: " + request.getRole());
                 }
-            } else {
-                 // Default to EMPLOYEE if not specified, or force selection? User asked for selection.
-                 // Let's default to EMPLOYEE but allowing COMPANY_ADMIN request.
             }
         } else {
-            // COMPANY_ADMIN can only create for their own company
-            // And can mostly only create EMPLOYEEs, maybe COMPANY_ADMINs too?
-            // User request: "only can select employee or company admin"
+            // COMPANY_ADMIN solo puede crear EMPLOYEE o COMPANY_ADMIN en su empresa
             if (request.getRole() != null) {
                  try {
                     targetRole = User.Role.valueOf(request.getRole());
@@ -434,6 +431,9 @@ public class AuthService {
         while (userRepository.existsByUsername(candidate)) {
             candidate = sanitized + suffix;
             suffix++;
+            if (suffix > 1000) {
+                throw new BadRequestException("No se pudo generar un nombre de usuario único");
+            }
         }
         return candidate;
     }
