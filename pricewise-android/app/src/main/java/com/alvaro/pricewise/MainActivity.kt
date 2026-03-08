@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import com.alvaro.pricewise.data.repository.TokenRepository
 import com.alvaro.pricewise.ui.navigation.RootNavGraph
 import com.alvaro.pricewise.ui.theme.PriceWiseTheme
+import com.alvaro.pricewise.util.SessionManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -18,6 +19,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var tokenRepository: TokenRepository
 
+    @Inject
+    lateinit var sessionManager: SessionManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -25,6 +29,7 @@ class MainActivity : ComponentActivity() {
             PriceWiseTheme {
                 RootNavGraph(
                     tokenRepository = tokenRepository,
+                    sessionManager = sessionManager,
                     modifier = Modifier.fillMaxSize()
                 )
             }

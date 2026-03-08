@@ -12,8 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.alvaro.pricewise.ui.theme.PwDarkNavy
 import com.alvaro.pricewise.data.model.UserSummaryResponse
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,7 +44,13 @@ fun AdminUsersScreen(
                     IconButton(onClick = { viewModel.loadUsers() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Recargar")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = PwDarkNavy,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                )
             )
         }
     ) { padding ->

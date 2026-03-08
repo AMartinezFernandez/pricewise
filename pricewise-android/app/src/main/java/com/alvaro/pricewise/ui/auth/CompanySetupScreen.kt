@@ -10,12 +10,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.alvaro.pricewise.ui.theme.PwDarkNavy
+import com.alvaro.pricewise.ui.theme.PwOrangeDark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +50,20 @@ fun CompanySetupScreen(
         if (uiState.isSuccess) onSetupSuccess()
     }
 
+    val darkFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color.White,
+        unfocusedTextColor = Color.White,
+        focusedBorderColor = PwOrangeDark,
+        unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
+        focusedLabelColor = PwOrangeDark,
+        unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+        cursorColor = PwOrangeDark,
+        focusedSupportingTextColor = Color.White.copy(alpha = 0.5f),
+        unfocusedSupportingTextColor = Color.White.copy(alpha = 0.5f)
+    )
+
     Scaffold(
+        containerColor = PwDarkNavy,
         topBar = {
             TopAppBar(
                 title = { Text("Configurar empresa") },
@@ -55,7 +71,12 @@ fun CompanySetupScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = PwDarkNavy,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
             )
         }
     ) { padding ->
@@ -73,12 +94,13 @@ fun CompanySetupScreen(
             Text(
                 text = "Bienvenido, $googleName",
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
             Text(
                 text = googleEmail,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.White.copy(alpha = 0.7f)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -87,7 +109,7 @@ fun CompanySetupScreen(
                 text = "Para continuar, crea una empresa nueva o únete a una existente con su código",
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.White.copy(alpha = 0.7f)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -112,13 +134,13 @@ fun CompanySetupScreen(
             if (uiState.error != null) {
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
+                        containerColor = Color(0xFF3A2020)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = uiState.error!!,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        color = Color(0xFFF2B8B5),
                         modifier = Modifier.padding(12.dp),
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -135,6 +157,7 @@ fun CompanySetupScreen(
                         label = { Text("Nombre de la empresa") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
+                        colors = darkFieldColors,
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Words,
                             imeAction = ImeAction.Next
@@ -149,6 +172,7 @@ fun CompanySetupScreen(
                         label = { Text("Tipo de negocio (opcional)") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
+                        colors = darkFieldColors,
                         supportingText = { Text("Ej: ecommerce, retail, mayorista...") },
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Sentences,
@@ -192,6 +216,7 @@ fun CompanySetupScreen(
                         label = { Text("Código de empresa") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
+                        colors = darkFieldColors,
                         supportingText = { Text("Código de 8 caracteres proporcionado por tu administrador") },
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Characters,

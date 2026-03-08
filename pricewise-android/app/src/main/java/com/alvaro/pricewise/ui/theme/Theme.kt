@@ -8,54 +8,54 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
+private val PwColorScheme = lightColorScheme(
     // Naranja como accion principal
     primary = PwOrangeDark,
-    onPrimary = PwDarkNavy,
+    onPrimary = Color.White,
     primaryContainer = PwOrangeDark,
-    onPrimaryContainer = PwOrangeLight,
+    onPrimaryContainer = Color.White,
 
-    // Cyan luminoso como secundario
-    secondary = PwCyan,
-    onSecondary = PwDarkNavy,
-    secondaryContainer = PwCyanDark.copy(alpha = 0.35f),
-    onSecondaryContainer = PwCyan,
+    // Cyan como secundario
+    secondary = PwCyanDark,
+    onSecondary = Color.White,
+    secondaryContainer = PwCyanDark.copy(alpha = 0.15f),
+    onSecondaryContainer = PwCyanDark,
 
-    // Cyan medio como terciario
-    tertiary =  PwOrangeDark,
-    onTertiary = PwDarkNavy,
-    tertiaryContainer = PwCyanDark.copy(alpha = 0.25f),
-    onTertiaryContainer = PwCyanMedium,
+    // Terciario
+    tertiary = PwOrangeDark,
+    onTertiary = Color.White,
+    tertiaryContainer = PwOrangeDark.copy(alpha = 0.15f),
+    onTertiaryContainer = PwOrangeDark,
 
     // Errores
-    error = Color(0xFFF2B8B5),
-    onError = Color(0xFF601410),
-    errorContainer = Color(0xFF8C1D18),
-    onErrorContainer = Color(0xFFF9DEDC),
+    error = Color(0xFFB3261E),
+    onError = Color.White,
+    errorContainer = Color(0xFFFCE4EC),
+    onErrorContainer = Color(0xFFB3261E),
 
-    // Fondos y superficies
-    background = PwDarkNavy,
-    onBackground = Color(0xFFECEFF1),
-    surface = PwSlateGray,
-    onSurface = Color.White,
-    surfaceVariant = Color(0xFF3A4A55),
-    onSurfaceVariant = Color(0xFFCFD8DC),
+    // Fondos y superficies — fondo claro para contenido
+    background = PwLightBg,
+    onBackground = PwDarkText,
+    surface = Color.White,
+    onSurface = PwDarkText,
+    surfaceVariant = Color(0xFFEEEEEE),
+    onSurfaceVariant = PwMutedText,
 
-    // Contornos (claros para que los campos de texto se vean bien)
-    outline = Color(0xFF90A4AE),
-    outlineVariant = Color(0xFF607D8B),
+    // Contornos
+    outline = Color(0xFFBDBDBD),
+    outlineVariant = Color(0xFFE0E0E0),
 
-    // Barra inferior / navegacion
-    inverseSurface = Color(0xFFE1E3E6),
-    inverseOnSurface = PwDarkNavy,
-    inversePrimary = PwOrangeDark
+    // Inverse (para componentes que necesitan fondo oscuro)
+    inverseSurface = PwDarkNavy,
+    inverseOnSurface = Color.White,
+    inversePrimary = PwOrangeLight
 )
 
 @Composable
 fun PriceWiseTheme(
     content: @Composable () -> Unit
 ) {
-    val colorScheme = DarkColorScheme
+    val colorScheme = PwColorScheme
     val view = LocalView.current
 
     if (!view.isInEditMode) {

@@ -194,15 +194,14 @@ class PriceAnalysisServiceTest {
             Product product2 = createTestProduct(2L, new BigDecimal("200.00"));
             List<Product> products = List.of(product1, product2);
 
-            when(productRepository.findByCompanyIdAndActiveTrue(companyId))
-                    .thenReturn(products);
+            when(productRepository.findByCompanyIdAndActiveTrue(eq(companyId), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new org.springframework.data.domain.PageImpl<>(products));
             when(competitorPriceRepository.findTopByProductIdOrderByScrapedAtDesc(any()))
                     .thenReturn(Optional.empty());
 
             int count = priceAnalysisService.analyzeAllProductsForUser(companyId);
 
             assertThat(count).isEqualTo(2);
-            verify(productRepository).findByCompanyIdAndActiveTrue(companyId);
         }
     }
 

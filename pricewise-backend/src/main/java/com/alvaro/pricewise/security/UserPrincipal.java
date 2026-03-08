@@ -70,6 +70,14 @@ public class UserPrincipal implements UserDetails {
         return username;
     }
 
+    public Long requireCompanyId() {
+        if (companyId == null) {
+            throw new com.alvaro.pricewise.exception.BadRequestException(
+                    "Este endpoint requiere un usuario asociado a una empresa");
+        }
+        return companyId;
+    }
+
     @Override
     public boolean isAccountNonExpired() {
         return true;

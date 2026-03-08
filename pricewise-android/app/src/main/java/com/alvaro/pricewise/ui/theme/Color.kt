@@ -17,3 +17,8 @@ val PwOrangeLight = Color(0xFFFFB14A)
 val PwCyan = Color(0xFF6FD3F7)
 val PwCyanMedium = Color(0xFF4BB8E6)
 val PwCyanDark = Color(0xFF2C8DB5)
+
+// Claros (fondo contenido y texto sobre fondo claro)
+val PwLightBg = Color(0xFFF5F5F5)
+val PwDarkText = Color(0xFF1E2A33)
+val PwMutedText = Color(0xFF5F6B73)

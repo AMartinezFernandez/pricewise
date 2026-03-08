@@ -49,7 +49,7 @@ public class ProductController {
             @Valid @RequestBody CreateProductRequest request
     ) {
         ProductResponse response = productService.createProduct(
-                userPrincipal.getCompanyId(), userPrincipal.getId(), request);
+                userPrincipal.requireCompanyId(), userPrincipal.getId(), request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Producto creado exitosamente"));
@@ -60,7 +60,7 @@ public class ProductController {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable @org.springframework.lang.NonNull Long id
     ) {
-        ProductResponse response = productService.getProduct(userPrincipal.getCompanyId(), id);
+        ProductResponse response = productService.getProduct(userPrincipal.requireCompanyId(), id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -77,7 +77,7 @@ public class ProductController {
                 : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        PageResponse<ProductListResponse> response = productService.getProducts(userPrincipal.getCompanyId(), pageable);
+        PageResponse<ProductListResponse> response = productService.getProducts(userPrincipal.requireCompanyId(), pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -94,7 +94,7 @@ public class ProductController {
                 : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        PageResponse<ProductListResponse> response = productService.getMonitoredProducts(userPrincipal.getCompanyId(), pageable);
+        PageResponse<ProductListResponse> response = productService.getMonitoredProducts(userPrincipal.requireCompanyId(), pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -109,7 +109,7 @@ public class ProductController {
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         PageResponse<ProductListResponse> response = productService.searchProducts(
-                userPrincipal.getCompanyId(), name, category, brand, pageable
+                userPrincipal.requireCompanyId(), name, category, brand, pageable
         );
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -120,7 +120,7 @@ public class ProductController {
             @PathVariable @org.springframework.lang.NonNull Long id,
             @Valid @RequestBody UpdateProductRequest request
     ) {
-        ProductResponse response = productService.updateProduct(userPrincipal.getCompanyId(), id, request);
+        ProductResponse response = productService.updateProduct(userPrincipal.requireCompanyId(), id, request);
         return ResponseEntity.ok(ApiResponse.success(response, "Producto actualizado"));
     }
 
@@ -129,7 +129,7 @@ public class ProductController {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable @org.springframework.lang.NonNull Long id
     ) {
-        productService.deleteProduct(userPrincipal.getCompanyId(), id);
+        productService.deleteProduct(userPrincipal.requireCompanyId(), id);
         return ResponseEntity.ok(ApiResponse.success(null, "Producto eliminado"));
     }
 
@@ -137,7 +137,7 @@ public class ProductController {
     public ResponseEntity<ApiResponse<List<String>>> getCategories(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
-        List<String> categories = productService.getCategories(userPrincipal.getCompanyId());
+        List<String> categories = productService.getCategories(userPrincipal.requireCompanyId());
         return ResponseEntity.ok(ApiResponse.success(categories));
     }
 
@@ -145,7 +145,7 @@ public class ProductController {
     public ResponseEntity<ApiResponse<List<String>>> getBrands(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
-        List<String> brands = productService.getBrands(userPrincipal.getCompanyId());
+        List<String> brands = productService.getBrands(userPrincipal.requireCompanyId());
         return ResponseEntity.ok(ApiResponse.success(brands));
     }
 
@@ -153,7 +153,7 @@ public class ProductController {
     public ResponseEntity<ApiResponse<Long>> countProducts(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
-        long count = productService.countProducts(userPrincipal.getCompanyId());
+        long count = productService.countProducts(userPrincipal.requireCompanyId());
         return ResponseEntity.ok(ApiResponse.success(count));
     }
 }

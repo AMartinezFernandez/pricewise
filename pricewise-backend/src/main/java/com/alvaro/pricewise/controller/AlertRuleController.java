@@ -39,7 +39,7 @@ public class AlertRuleController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<AlertRuleResponse>>> getRules(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        List<AlertRuleResponse> rules = alertRuleService.getRules(userPrincipal.getCompanyId());
+        List<AlertRuleResponse> rules = alertRuleService.getRules(userPrincipal.requireCompanyId());
         return ResponseEntity.ok(ApiResponse.success(rules));
     }
 
@@ -47,7 +47,7 @@ public class AlertRuleController {
     public ResponseEntity<ApiResponse<AlertRuleResponse>> createRule(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody CreateAlertRuleRequest request) {
-        AlertRuleResponse rule = alertRuleService.createRule(userPrincipal.getCompanyId(), request);
+        AlertRuleResponse rule = alertRuleService.createRule(userPrincipal.requireCompanyId(), request);
         return ResponseEntity.ok(ApiResponse.success(rule, "Regla de alerta creada"));
     }
 
@@ -56,7 +56,7 @@ public class AlertRuleController {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id,
             @Valid @RequestBody UpdateAlertRuleRequest request) {
-        AlertRuleResponse rule = alertRuleService.updateRule(userPrincipal.getCompanyId(), id, request);
+        AlertRuleResponse rule = alertRuleService.updateRule(userPrincipal.requireCompanyId(), id, request);
         return ResponseEntity.ok(ApiResponse.success(rule, "Regla de alerta actualizada"));
     }
 
@@ -64,7 +64,7 @@ public class AlertRuleController {
     public ResponseEntity<ApiResponse<String>> deleteRule(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
-        alertRuleService.deleteRule(userPrincipal.getCompanyId(), id);
+        alertRuleService.deleteRule(userPrincipal.requireCompanyId(), id);
         return ResponseEntity.ok(ApiResponse.success("Regla de alerta eliminada"));
     }
 
@@ -72,7 +72,7 @@ public class AlertRuleController {
     public ResponseEntity<ApiResponse<AlertRuleResponse>> toggleRule(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long id) {
-        AlertRuleResponse rule = alertRuleService.toggleRule(userPrincipal.getCompanyId(), id);
+        AlertRuleResponse rule = alertRuleService.toggleRule(userPrincipal.requireCompanyId(), id);
         return ResponseEntity.ok(ApiResponse.success(rule));
     }
 }

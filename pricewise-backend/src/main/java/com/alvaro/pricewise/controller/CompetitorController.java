@@ -146,7 +146,7 @@ public class CompetitorController {
         Product product = productOpt.get();
 
         // Validar multi-tenancy
-        if (userPrincipal.getCompanyId() != null && !product.getCompany().getId().equals(userPrincipal.getCompanyId())) {
+        if (userPrincipal.requireCompanyId() != null && !product.getCompany().getId().equals(userPrincipal.requireCompanyId())) {
             return ResponseEntity.notFound().build();
         }
 
