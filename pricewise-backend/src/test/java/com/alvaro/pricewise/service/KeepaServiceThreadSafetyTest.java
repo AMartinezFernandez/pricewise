@@ -19,12 +19,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.alvaro.pricewise.config.KeepaConfig;
+import com.alvaro.pricewise.entity.CompanyApiKey;
 import com.alvaro.pricewise.repository.CompetitorPriceRepository;
 import com.alvaro.pricewise.repository.CompetitorRepository;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
+import java.util.Optional;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests para KeepaService enfocados en concurrencia y thread-safety.
@@ -39,50 +43,44 @@ class KeepaServiceThreadSafetyTest {
     @Mock
     private CompetitorPriceRepository competitorPriceRepository;
 
+    @Mock
+    private CompanyApiKeyService companyApiKeyService;
+
     private KeepaService keepaService;
     private KeepaConfig keepaConfig;
 
+    private static final Long COMPANY_ID = 1L;
+
     @BeforeEach
     void setUp() {
-        // Crear KeepaConfig real en lugar de mock (evita problemas con ByteBuddy/Java 25)
         keepaConfig = new KeepaConfig();
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
         Counter successCounter = Counter.builder("pricewise.keepa.requests").tag("result", "success").register(registry);
         Counter errorCounter = Counter.builder("pricewise.keepa.requests").tag("result", "error").register(registry);
         Timer timer = Timer.builder("pricewise.keepa.duration").register(registry);
         keepaService = new KeepaService(keepaConfig, competitorRepository, competitorPriceRepository,
-                successCounter, errorCounter, timer);
+                companyApiKeyService, successCounter, errorCounter, timer);
     }
 
     @Test
-    @DisplayName("Debe retornar estado correcto cuando no está configurado")
-    void isAvailable_shouldReturnFalse_whenNotConfigured() {
-        // Arrange - KeepaConfig sin API key configurada
-        keepaConfig.setApiKey(null);
-        keepaService.init();
-
-        // Act & Assert
-        assertFalse(keepaService.isAvailable());
-        assertEquals("NO_CONFIGURED", keepaService.getApiStatus());
-    }
-
-    @Test
-    @DisplayName("Debe retornar estado correcto cuando API key está vacía")
-    void isAvailable_shouldReturnFalse_whenApiKeyEmpty() {
+    @DisplayName("Debe retornar no disponible cuando empresa no tiene API key")
+    void isAvailable_shouldReturnFalse_whenNoApiKey() {
         // Arrange
-        keepaConfig.setApiKey("");
+        when(companyApiKeyService.getDecryptedKey(COMPANY_ID, CompanyApiKey.Provider.KEEPA))
+                .thenReturn(Optional.empty());
         keepaService.init();
 
         // Act & Assert
-        assertFalse(keepaService.isAvailable());
-        assertEquals("NO_CONFIGURED", keepaService.getApiStatus());
+        assertFalse(keepaService.isAvailable(COMPANY_ID));
+        assertEquals("NO_CONFIGURED", keepaService.getApiStatus(COMPANY_ID));
     }
 
     @Test
     @DisplayName("getApiStatus debe ser thread-safe con múltiples llamadas concurrentes")
     void getApiStatus_shouldBeThreadSafe() throws InterruptedException {
         // Arrange
-        keepaConfig.setApiKey(null);
+        when(companyApiKeyService.getDecryptedKey(COMPANY_ID, CompanyApiKey.Provider.KEEPA))
+                .thenReturn(Optional.empty());
         keepaService.init();
 
         int threadCount = 50;
@@ -97,7 +95,7 @@ class KeepaServiceThreadSafetyTest {
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    String status = keepaService.getApiStatus();
+                    String status = keepaService.getApiStatus(COMPANY_ID);
                     assertNotNull(status);
                     assertEquals("NO_CONFIGURED", status);
                     successCount.incrementAndGet();
@@ -122,7 +120,8 @@ class KeepaServiceThreadSafetyTest {
     @DisplayName("isAvailable debe ser thread-safe con múltiples llamadas concurrentes")
     void isAvailable_shouldBeThreadSafe() throws InterruptedException {
         // Arrange
-        keepaConfig.setApiKey(null);
+        when(companyApiKeyService.getDecryptedKey(COMPANY_ID, CompanyApiKey.Provider.KEEPA))
+                .thenReturn(Optional.empty());
         keepaService.init();
 
         int threadCount = 100;
@@ -138,7 +137,7 @@ class KeepaServiceThreadSafetyTest {
             executor.submit(() -> {
                 try {
                     startLatch.await();
-                    if (keepaService.isAvailable()) {
+                    if (keepaService.isAvailable(COMPANY_ID)) {
                         trueCount.incrementAndGet();
                     } else {
                         falseCount.incrementAndGet();
@@ -158,7 +157,6 @@ class KeepaServiceThreadSafetyTest {
         // Assert
         assertTrue(completed, "Todos los hilos deberían completar sin timeout");
         assertEquals(threadCount, trueCount.get() + falseCount.get());
-        // Sin API key, todos deberían retornar false
         assertEquals(threadCount, falseCount.get());
     }
 }

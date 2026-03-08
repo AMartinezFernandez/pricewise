@@ -149,7 +149,7 @@ public class ProductService {
         // (La búsqueda local ya incluye ASIN en el repositorio modificado)
         if (page.isEmpty() && searchTerm != null && searchTerm.matches(ASIN_PATTERN)) {
             log.info("Búsqueda de producto vacía, intentando buscar ASIN en Keepa: {}", searchTerm);
-            return searchInKeepa(searchTerm, pageable);
+            return searchInKeepa(searchTerm, companyId, pageable);
         }
 
         List<ProductListResponse> content = page.getContent().stream()
@@ -158,8 +158,8 @@ public class ProductService {
         return PageResponse.from(page, content);
     }
 
-    private PageResponse<ProductListResponse> searchInKeepa(String asin, Pageable pageable) {
-        if (!keepaService.isAvailable()) {
+    private PageResponse<ProductListResponse> searchInKeepa(String asin, Long companyId, Pageable pageable) {
+        if (!keepaService.isAvailable(companyId)) {
             log.warn("Se intentó buscar en Keepa pero el servicio no está disponible (API Key no configurada)");
             return PageResponse.<ProductListResponse>builder()
                     .content(List.of())
@@ -171,7 +171,7 @@ public class ProductService {
         try {
             Product tempProduct = KeepaProductFactory.createTemporaryProduct(asin);
 
-            return keepaService.fetchPriceByAsin(asin, tempProduct)
+            return keepaService.fetchPriceByAsin(asin, tempProduct, companyId)
                     .thenApply(optPrice -> optPrice.map(price -> {
                         ProductListResponse response = ProductListResponse.builder()
                                 .id(-1L)

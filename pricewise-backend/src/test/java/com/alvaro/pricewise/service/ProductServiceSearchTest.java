@@ -72,7 +72,7 @@ class ProductServiceSearchTest {
         // Assert
         assertEquals(1, response.getTotalElements());
         assertEquals("iPhone 13", response.getContent().get(0).getName());
-        verify(keepaService, never()).fetchPriceByAsin(any(), any());
+        verify(keepaService, never()).fetchPriceByAsin(any(), any(), any());
     }
 
     @Test
@@ -81,10 +81,10 @@ class ProductServiceSearchTest {
         Long companyId = 1L;
         String asin = "B08H93ZRK9";
         Pageable pageable = PageRequest.of(0, 10);
-        
+
         Product product = Product.builder().id(1L).name("Product with ASIN").sku(asin).build();
         Page<Product> page = new PageImpl<>(List.of(product));
-        
+
         when(productRepository.searchProducts(eq(companyId), eq(asin), any(), any(), eq(pageable)))
                 .thenReturn(page);
 
@@ -94,7 +94,7 @@ class ProductServiceSearchTest {
         // Assert
         assertEquals(1, response.getTotalElements());
         assertEquals(1L, response.getContent().get(0).getId());
-        verify(keepaService, never()).fetchPriceByAsin(any(), any());
+        verify(keepaService, never()).fetchPriceByAsin(any(), any(), any());
     }
 
     @Test
@@ -103,18 +103,18 @@ class ProductServiceSearchTest {
         Long companyId = 1L;
         String asin = "B08H93ZRK9";
         Pageable pageable = PageRequest.of(0, 10);
-        
+
         when(productRepository.searchProducts(eq(companyId), eq(asin), any(), any(), eq(pageable)))
                 .thenReturn(Page.empty());
-        
-        when(keepaService.isAvailable()).thenReturn(true);
-        
+
+        when(keepaService.isAvailable(companyId)).thenReturn(true);
+
         CompetitorPrice price = CompetitorPrice.builder()
                 .competitorProductTitle("Keepa Product Title")
                 .price(new BigDecimal("100.00"))
                 .build();
-        
-        when(keepaService.fetchPriceByAsin(eq(asin), any()))
+
+        when(keepaService.fetchPriceByAsin(eq(asin), any(), eq(companyId)))
                 .thenReturn(CompletableFuture.completedFuture(Optional.of(price)));
 
         // Act
@@ -125,8 +125,8 @@ class ProductServiceSearchTest {
         assertEquals(-1L, response.getContent().get(0).getId());
         assertEquals("Keepa Product Title", response.getContent().get(0).getName());
         assertEquals(asin, response.getContent().get(0).getSku());
-        
-        verify(keepaService).fetchPriceByAsin(eq(asin), any());
+
+        verify(keepaService).fetchPriceByAsin(eq(asin), any(), eq(companyId));
     }
 
     @Test
@@ -135,13 +135,13 @@ class ProductServiceSearchTest {
         Long companyId = 1L;
         String asin = "B08H93ZRK9";
         Pageable pageable = PageRequest.of(0, 10);
-        
+
         when(productRepository.searchProducts(eq(companyId), eq(asin), any(), any(), eq(pageable)))
                 .thenReturn(Page.empty());
-        
-        when(keepaService.isAvailable()).thenReturn(true);
-        
-        when(keepaService.fetchPriceByAsin(eq(asin), any()))
+
+        when(keepaService.isAvailable(companyId)).thenReturn(true);
+
+        when(keepaService.fetchPriceByAsin(eq(asin), any(), eq(companyId)))
                 .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         // Act
@@ -149,6 +149,6 @@ class ProductServiceSearchTest {
 
         // Assert
         assertEquals(0, response.getTotalElements());
-        verify(keepaService).fetchPriceByAsin(eq(asin), any());
+        verify(keepaService).fetchPriceByAsin(eq(asin), any(), eq(companyId));
     }
 }

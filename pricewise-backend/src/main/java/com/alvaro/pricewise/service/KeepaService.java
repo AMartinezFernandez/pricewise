@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -12,6 +13,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.alvaro.pricewise.config.KeepaConfig;
+import com.alvaro.pricewise.entity.CompanyApiKey;
 import com.alvaro.pricewise.entity.Competitor;
 import com.alvaro.pricewise.entity.CompetitorPrice;
 import com.alvaro.pricewise.entity.Product;
@@ -39,16 +41,17 @@ public class KeepaService {
     private final KeepaConfig keepaConfig;
     private final CompetitorRepository competitorRepository;
     private final CompetitorPriceRepository competitorPriceRepository;
+    private final CompanyApiKeyService companyApiKeyService;
     private final Counter keepaRequestsSuccess;
     private final Counter keepaRequestsError;
     private final Timer keepaDuration;
 
-    private KeepaAPI keepaAPI;
+    private final ConcurrentHashMap<Long, KeepaAPI> keepaInstances = new ConcurrentHashMap<>();
     private volatile Competitor amazonCompetitor;
-    
+
     // Objeto de bloqueo para sincronización del recurso compartido amazonCompetitor
     private final Object amazonCompetitorLock = new Object();
-    
+
     private Semaphore rateLimiter;
     private static final int MAX_CONCURRENT_REQUESTS = 3;
     private static final int MAX_RETRIES = 3;
@@ -57,14 +60,8 @@ public class KeepaService {
     @PostConstruct
     public void init() {
         this.rateLimiter = new Semaphore(MAX_CONCURRENT_REQUESTS);
-        
-        if (keepaConfig.isConfigured()) {
-            this.keepaAPI = new KeepaAPI(keepaConfig.getApiKey());
-            log.info("Keepa API inicializada para locale: {}", keepaConfig.getDefaultLocale());
-            initAmazonCompetitor();
-        } else {
-            log.warn("Keepa API no configurada. Añade KEEPA_API_KEY en .env");
-        }
+        initAmazonCompetitor();
+        log.info("Keepa Service inicializado (API keys por empresa)");
     }
 
     /**
@@ -112,12 +109,34 @@ public class KeepaService {
     }
 
     /**
+     * Obtiene la instancia de KeepaAPI para una empresa, creándola si no existe.
+     * Retorna Optional.empty() si la empresa no tiene API key de Keepa configurada.
+     */
+    private Optional<KeepaAPI> getKeepaForCompany(Long companyId) {
+        KeepaAPI cached = keepaInstances.get(companyId);
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+        return companyApiKeyService.getDecryptedKey(companyId, CompanyApiKey.Provider.KEEPA)
+                .map(apiKey -> keepaInstances.computeIfAbsent(companyId, id -> new KeepaAPI(apiKey)));
+    }
+
+    /**
+     * Invalida la instancia cacheada de KeepaAPI para una empresa.
+     * Llamar cuando se actualice o elimine la API key.
+     */
+    public void invalidateCache(Long companyId) {
+        keepaInstances.remove(companyId);
+    }
+
+    /**
      * Obtiene precio con retry logic y backoff exponencial.
+     * Usa la API key de Keepa configurada para la empresa del producto.
      */
     @Async("keepaExecutor")
-    public CompletableFuture<Optional<CompetitorPrice>> fetchPriceByAsin(String asin, Product product) {
+    public CompletableFuture<Optional<CompetitorPrice>> fetchPriceByAsin(String asin, Product product, Long companyId) {
         Timer.Sample sample = Timer.start();
-        return fetchPriceWithRetry(asin, product, 0)
+        return fetchPriceWithRetry(asin, product, companyId, 0)
                 .whenComplete((result, ex) -> {
                     sample.stop(keepaDuration);
                     if (ex != null || result == null || result.isEmpty()) {
@@ -128,9 +147,10 @@ public class KeepaService {
                 });
     }
 
-    private CompletableFuture<Optional<CompetitorPrice>> fetchPriceWithRetry(String asin, Product product, int attempt) {
-        if (!keepaConfig.isConfigured()) {
-            log.error("Keepa API no configurada");
+    private CompletableFuture<Optional<CompetitorPrice>> fetchPriceWithRetry(String asin, Product product, Long companyId, int attempt) {
+        Optional<KeepaAPI> keepaOpt = getKeepaForCompany(companyId);
+        if (keepaOpt.isEmpty()) {
+            log.warn("Empresa {} no tiene API key de Keepa configurada", companyId);
             return CompletableFuture.completedFuture(Optional.empty());
         }
 
@@ -144,19 +164,20 @@ public class KeepaService {
             log.debug("Reintento {} para ASIN {} despues de {}ms", attempt, asin, backoffMs);
             return CompletableFuture.supplyAsync(() -> null,
                     CompletableFuture.delayedExecutor(backoffMs, TimeUnit.MILLISECONDS))
-                    .thenCompose(ignored -> executeKeepaRequest(asin, product, attempt));
+                    .thenCompose(ignored -> executeKeepaRequest(asin, product, companyId, keepaOpt.get(), attempt));
         }
 
-        return executeKeepaRequest(asin, product, attempt);
+        return executeKeepaRequest(asin, product, companyId, keepaOpt.get(), attempt);
     }
 
-    private CompletableFuture<Optional<CompetitorPrice>> executeKeepaRequest(String asin, Product product, int attempt) {
+    private CompletableFuture<Optional<CompetitorPrice>> executeKeepaRequest(
+            String asin, Product product, Long companyId, KeepaAPI keepaAPI, int attempt) {
         CompletableFuture<Optional<CompetitorPrice>> future = new CompletableFuture<>();
 
         try {
             if (!rateLimiter.tryAcquire(30, TimeUnit.SECONDS)) {
                 log.warn("Timeout en rate limiter para ASIN: {}", asin);
-                return fetchPriceWithRetry(asin, product, attempt + 1);
+                return fetchPriceWithRetry(asin, product, companyId, attempt + 1);
             }
 
             AmazonLocale locale = getLocale(keepaConfig.getDefaultLocale());
@@ -172,7 +193,7 @@ public class KeepaService {
                                     if (competitorPrice != null) {
                                         if (product.getId() != null) {
                                             CompetitorPrice saved = competitorPriceRepository.save(competitorPrice);
-                                            log.info("Precio guardado ASIN {}: {} EUR", asin, saved.getPrice());
+                                            log.info("Precio guardado ASIN {}: {} EUR (empresa {})", asin, saved.getPrice(), companyId);
                                             future.complete(Optional.of(saved));
                                         } else {
                                             log.info("Precio obtenido ASIN {}: {} EUR", asin, competitorPrice.getPrice());
@@ -188,7 +209,7 @@ public class KeepaService {
                                 }
                             } else {
                                 log.warn("Error Keepa status={}, reintentando...", result.status);
-                                fetchPriceWithRetry(asin, product, attempt + 1)
+                                fetchPriceWithRetry(asin, product, companyId, attempt + 1)
                                         .thenAccept(future::complete);
                             }
                         } finally {
@@ -198,7 +219,7 @@ public class KeepaService {
                     .fail(failure -> {
                         rateLimiter.release();
                         log.warn("Fallo Keepa status={}, reintentando...", failure.status);
-                        fetchPriceWithRetry(asin, product, attempt + 1)
+                        fetchPriceWithRetry(asin, product, companyId, attempt + 1)
                                 .thenAccept(future::complete);
                     });
 
@@ -208,7 +229,7 @@ public class KeepaService {
         } catch (Exception e) {
             rateLimiter.release();
             log.warn("Excepcion Keepa: {}, reintentando...", e.getMessage());
-            return fetchPriceWithRetry(asin, product, attempt + 1);
+            return fetchPriceWithRetry(asin, product, companyId, attempt + 1);
         }
 
         return future;
@@ -269,11 +290,14 @@ public class KeepaService {
         };
     }
 
-    public boolean isAvailable() {
-        return keepaConfig.isConfigured() && keepaAPI != null;
+    /**
+     * Comprueba si Keepa está disponible para una empresa concreta.
+     */
+    public boolean isAvailable(Long companyId) {
+        return getKeepaForCompany(companyId).isPresent();
     }
 
-    public String getApiStatus() {
-        return isAvailable() ? "READY" : "NO_CONFIGURED";
+    public String getApiStatus(Long companyId) {
+        return isAvailable(companyId) ? "READY" : "NO_CONFIGURED";
     }
 }
