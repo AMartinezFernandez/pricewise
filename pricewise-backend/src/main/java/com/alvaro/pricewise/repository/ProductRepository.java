@@ -76,4 +76,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT COALESCE(p.category, 'Sin Categoría') AS cat, COUNT(p) AS cnt " +
            "FROM Product p GROUP BY p.category")
     List<Object[]> countProductsGroupedByCategory();
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Product p SET p.createdBy = NULL WHERE p.createdBy.id = :userId")
+    void nullifyCreatedByForUser(@Param("userId") Long userId);
 }
