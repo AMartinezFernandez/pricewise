@@ -667,6 +667,7 @@ private fun CreateAlertDialog(
                     onValueChange = { name = it },
                     label = { Text("Nombre (opcional)") },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -793,6 +794,7 @@ private fun EditAlertDialog(
                     onValueChange = { name = it },
                     label = { Text("Nombre (opcional)") },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     modifier = Modifier.fillMaxWidth()
                 )
 

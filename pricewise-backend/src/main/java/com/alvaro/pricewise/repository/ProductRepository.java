@@ -54,6 +54,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Contar productos por empresa
     long countByCompanyId(Long companyId);
     long countByCompanyIdAndActiveTrue(Long companyId);
+    long countByCompanyIdAndMonitoringEnabledTrueAndActiveTrue(Long companyId);
 
     // Obtener categorias unicas de la empresa
     @Query("SELECT DISTINCT p.category FROM Product p WHERE p.company.id = :companyId AND p.category IS NOT NULL")

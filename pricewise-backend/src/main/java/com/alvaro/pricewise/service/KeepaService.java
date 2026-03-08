@@ -143,14 +143,15 @@ public class KeepaService {
         if (attempt > 0) {
             long backoffMs = INITIAL_BACKOFF_MS * (long) Math.pow(2, attempt - 1);
             log.debug("Reintento {} para ASIN {} despues de {}ms", attempt, asin, backoffMs);
-            try {
-                Thread.sleep(backoffMs);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return CompletableFuture.completedFuture(Optional.empty());
-            }
+            return CompletableFuture.supplyAsync(() -> null,
+                    CompletableFuture.delayedExecutor(backoffMs, TimeUnit.MILLISECONDS))
+                    .thenCompose(ignored -> executeKeepaRequest(asin, product, attempt));
         }
 
+        return executeKeepaRequest(asin, product, attempt);
+    }
+
+    private CompletableFuture<Optional<CompetitorPrice>> executeKeepaRequest(String asin, Product product, int attempt) {
         CompletableFuture<Optional<CompetitorPrice>> future = new CompletableFuture<>();
 
         try {
@@ -168,7 +169,7 @@ public class KeepaService {
                             if (result.status.name().equals("OK")) {
                                 if (result.products != null && result.products.length > 0) {
                                     CompetitorPrice competitorPrice = parseKeepaProduct(result.products[0], product);
-                                    
+
                                     if (competitorPrice != null) {
                                         if (product.getId() != null) {
                                             CompetitorPrice saved = competitorPriceRepository.save(competitorPrice);

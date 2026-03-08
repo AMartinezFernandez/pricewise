@@ -196,7 +196,8 @@ class AlertsViewModel @Inject constructor(
     private fun loadProducts() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoadingProducts = true)
-            when (val result = productRepository.getMonitoredProducts(page = 0, size = 500)) {
+            val result = productRepository.getMonitoredProducts(page = 0, size = 100)
+            when (result) {
                 is Result.Success -> {
                     val products = result.data.data?.content ?: emptyList()
                     _uiState.value = _uiState.value.copy(
@@ -204,9 +205,11 @@ class AlertsViewModel @Inject constructor(
                         isLoadingProducts = false
                     )
                 }
-                is Result.Error -> _uiState.value = _uiState.value.copy(
-                    isLoadingProducts = false
-                )
+                is Result.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        isLoadingProducts = false
+                    )
+                }
             }
         }
     }

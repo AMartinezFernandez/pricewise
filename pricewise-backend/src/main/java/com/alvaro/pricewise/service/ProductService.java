@@ -2,6 +2,7 @@ package com.alvaro.pricewise.service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -198,16 +199,18 @@ public class ProductService {
                             .totalElements(0)
                             .totalPages(0)
                             .build()))
-                    .join();
+                    .get(10, TimeUnit.SECONDS);
 
+        } catch (java.util.concurrent.TimeoutException e) {
+            log.warn("Timeout buscando ASIN {} en Keepa (10s)", asin);
         } catch (Exception e) {
             log.error("Error buscando ASIN {} en Keepa: {}", asin, e.getMessage());
-            return PageResponse.<ProductListResponse>builder()
-                    .content(List.of())
-                    .totalElements(0)
-                    .totalPages(0)
-                    .build();
         }
+        return PageResponse.<ProductListResponse>builder()
+                .content(List.of())
+                .totalElements(0)
+                .totalPages(0)
+                .build();
     }
 
     @Transactional

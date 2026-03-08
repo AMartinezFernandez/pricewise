@@ -1,17 +1,19 @@
 package com.alvaro.pricewise.controller;
 
+import com.alvaro.pricewise.dto.analytics.AnalyticsDTOs.DashboardMetrics;
+import com.alvaro.pricewise.dto.analytics.AnalyticsDTOs.RecommendationSummary;
+import com.alvaro.pricewise.dto.analytics.AnalyticsDTOs.AlertSummary;
+import com.alvaro.pricewise.dto.common.PageResponse;
 import com.alvaro.pricewise.exception.GlobalExceptionHandler;
-import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.security.JwtService;
 import com.alvaro.pricewise.security.UserPrincipal;
-import com.alvaro.pricewise.service.PriceAnalysisService;
+import com.alvaro.pricewise.service.AnalyticsService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.Page;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,8 +24,6 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -40,10 +40,7 @@ class AnalyticsControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private PriceAnalysisService priceAnalysisService;
-
-    @MockBean
-    private ProductRepository productRepository;
+    private AnalyticsService analyticsService;
 
     @MockBean
     private JwtService jwtService;
@@ -79,17 +76,16 @@ class AnalyticsControllerTest {
         @Test
         @DisplayName("Devuelve metricas del dashboard")
         void shouldReturnDashboardMetrics() throws Exception {
-            when(productRepository.countByCompanyIdAndActiveTrue(1L)).thenReturn(10L);
-            when(productRepository.findByCompanyIdAndActiveTrue(1L))
-                    .thenReturn(Collections.emptyList());
-            when(priceAnalysisService.countPendingRecommendations(1L)).thenReturn(5L);
-            when(priceAnalysisService.countUnreadAlerts(1L)).thenReturn(3L);
-            when(priceAnalysisService.getTotalPotentialSavings(1L))
-                    .thenReturn(new BigDecimal("150.00"));
-            when(priceAnalysisService.getPendingRecommendations(eq(1L), any()))
-                    .thenReturn(Page.empty());
-            when(priceAnalysisService.getAlertsByCompany(eq(1L), eq(true), any()))
-                    .thenReturn(Page.empty());
+            when(analyticsService.getDashboardMetrics(1L)).thenReturn(
+                    DashboardMetrics.builder()
+                            .totalProducts(10)
+                            .activeMonitoring(3)
+                            .pendingRecommendations(5)
+                            .unreadAlerts(3)
+                            .potentialSavings(new BigDecimal("150.00"))
+                            .topRecommendations(Collections.emptyList())
+                            .alertsByType(Collections.emptyMap())
+                            .build());
 
             mockMvc.perform(get("/api/analytics/dashboard"))
                     .andExpect(status().isOk())
@@ -107,8 +103,12 @@ class AnalyticsControllerTest {
         @Test
         @DisplayName("Devuelve lista de recomendaciones paginada")
         void shouldReturnRecommendations() throws Exception {
-            when(priceAnalysisService.getPendingRecommendations(eq(1L), any()))
-                    .thenReturn(Page.empty());
+            when(analyticsService.getRecommendations(1L, 0, 20)).thenReturn(
+                    PageResponse.<RecommendationSummary>builder()
+                            .content(Collections.emptyList())
+                            .pageNumber(0).pageSize(20).totalElements(0).totalPages(0)
+                            .first(true).last(true).hasNext(false).hasPrevious(false)
+                            .build());
 
             mockMvc.perform(get("/api/analytics/recommendations"))
                     .andExpect(status().isOk())
@@ -124,7 +124,7 @@ class AnalyticsControllerTest {
         @Test
         @DisplayName("Aplica recomendacion correctamente")
         void shouldApplyRecommendation() throws Exception {
-            doNothing().when(priceAnalysisService).applyRecommendation(1L, 1L);
+            doNothing().when(analyticsService).applyRecommendation(1L, 1L);
 
             mockMvc.perform(post("/api/analytics/recommendations/1/apply"))
                     .andExpect(status().isOk())
@@ -139,7 +139,7 @@ class AnalyticsControllerTest {
         @Test
         @DisplayName("Descarta recomendacion correctamente")
         void shouldDismissRecommendation() throws Exception {
-            doNothing().when(priceAnalysisService).dismissRecommendation(1L, 1L);
+            doNothing().when(analyticsService).dismissRecommendation(1L, 1L);
 
             mockMvc.perform(post("/api/analytics/recommendations/1/dismiss"))
                     .andExpect(status().isOk())
@@ -154,8 +154,12 @@ class AnalyticsControllerTest {
         @Test
         @DisplayName("Devuelve lista de alertas paginada")
         void shouldReturnAlerts() throws Exception {
-            when(priceAnalysisService.getAlertsByCompany(eq(1L), eq(false), any()))
-                    .thenReturn(Page.empty());
+            when(analyticsService.getAlerts(1L, 0, 20, false)).thenReturn(
+                    PageResponse.<AlertSummary>builder()
+                            .content(Collections.emptyList())
+                            .pageNumber(0).pageSize(20).totalElements(0).totalPages(0)
+                            .first(true).last(true).hasNext(false).hasPrevious(false)
+                            .build());
 
             mockMvc.perform(get("/api/analytics/alerts"))
                     .andExpect(status().isOk())
@@ -171,7 +175,7 @@ class AnalyticsControllerTest {
         @Test
         @DisplayName("Marca alerta como leida")
         void shouldMarkAlertAsRead() throws Exception {
-            doNothing().when(priceAnalysisService).markAlertAsRead(1L, 1L);
+            doNothing().when(analyticsService).markAlertAsRead(1L, 1L);
 
             mockMvc.perform(post("/api/analytics/alerts/1/read"))
                     .andExpect(status().isOk())
@@ -186,7 +190,7 @@ class AnalyticsControllerTest {
         @Test
         @DisplayName("Ejecuta analisis y devuelve resultado")
         void shouldRunAnalysis() throws Exception {
-            when(priceAnalysisService.analyzeAllProductsForUser(1L)).thenReturn(5);
+            when(analyticsService.analyzeAllProducts(1L)).thenReturn(5);
 
             mockMvc.perform(post("/api/analytics/analyze"))
                     .andExpect(status().isOk())
