@@ -78,6 +78,10 @@ public class UserController {
             if (user.getId().equals(principal.getUserId())) {
                 throw new com.alvaro.pricewise.exception.BadRequestException("No puedes eliminarte a ti mismo");
             }
+            // COMPANY_ADMIN no puede eliminar a otro COMPANY_ADMIN
+            if (user.getRole() == User.Role.COMPANY_ADMIN) {
+                throw new com.alvaro.pricewise.exception.BadRequestException("No puedes eliminar a otro administrador de empresa");
+            }
         }
 
         alertRepository.nullifyUserForAlerts(userId);
