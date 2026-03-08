@@ -2,15 +2,15 @@ package com.alvaro.pricewise.ui.main
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.composables.icons.lucide.*
+import androidx.compose.ui.res.painterResource
+import com.alvaro.pricewise.R
 import com.alvaro.pricewise.ui.theme.PwDarkNavy
 import com.alvaro.pricewise.ui.theme.PwOrangeDark
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -23,8 +23,10 @@ import androidx.navigation.navArgument
 import com.alvaro.pricewise.ui.alerts.AlertsScreen
 import com.alvaro.pricewise.ui.common.OfflineBanner
 import com.alvaro.pricewise.ui.dashboard.DashboardScreen
+import com.alvaro.pricewise.ui.products.EditProductScreen
 import com.alvaro.pricewise.ui.products.ProductDetailScreen
 import com.alvaro.pricewise.ui.search.SearchScreen
+import com.alvaro.pricewise.ui.recommendations.RecommendationsScreen
 import com.alvaro.pricewise.ui.tracking.TrackingScreen
 import com.alvaro.pricewise.util.NetworkObserver
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -56,6 +58,7 @@ private sealed class Tab(val route: String) {
     object Tracking : Tab("tab_tracking")
     object Search : Tab("tab_search")
     object Alerts : Tab("tab_alerts")
+    object Recommendations : Tab("tab_recommendations")
     object Users : Tab("tab_users")
 }
 
@@ -72,10 +75,11 @@ fun MainScreen(
     val isOffline by viewModel.isOffline.collectAsState()
 
     val bottomItems = listOf(
-        Triple(Tab.Dashboard.route, "Inicio", Icons.Default.Dashboard),
-        Triple(Tab.Tracking.route, "Seguimiento", Icons.Default.Inventory),
-        Triple(Tab.Search.route, "Buscar", Icons.Default.Search),
-        Triple(Tab.Alerts.route, "Alertas", Icons.Default.Notifications)
+        Triple(Tab.Dashboard.route, "Inicio", Lucide.House),
+        Triple(Tab.Tracking.route, "Seguimiento", Lucide.Target),
+        Triple(Tab.Search.route, "Buscar", Lucide.Search),
+        Triple(Tab.Alerts.route, "Alertas", Lucide.Bell),
+        Triple(Tab.Recommendations.route, "Tips", Lucide.Lightbulb)
     )
 
 
@@ -89,7 +93,17 @@ fun MainScreen(
                 NavigationBar(containerColor = PwDarkNavy) {
                     bottomItems.forEach { (route, label, icon) ->
                         NavigationBarItem(
-                            icon = { Icon(icon, contentDescription = label) },
+                            icon = {
+                                if (route == Tab.Tracking.route) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_target_dart),
+                                        contentDescription = label,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                } else {
+                                    Icon(icon, contentDescription = label)
+                                }
+                            },
                             label = { Text(label) },
                             selected = currentDest == route,
                             colors = NavigationBarItemDefaults.colors(
@@ -171,7 +185,7 @@ fun MainScreen(
                         val encodedName = URLEncoder.encode(product.name, charset)
                         val encodedBrand = URLEncoder.encode(product.brand ?: "", charset)
                         val encodedAsin = URLEncoder.encode(product.asin ?: product.sku ?: "", charset)
-                        val price = product.currentPrice?.toString() ?: ""
+                        val price = product.currentPrice?.let { "%.2f".format(it) } ?: ""
 
                         innerNav.navigate("create_product?name=$encodedName&brand=$encodedBrand&asin=$encodedAsin&price=$price")
                     }
@@ -221,7 +235,20 @@ fun MainScreen(
                 ProductDetailScreen(
                     productId = productId,
                     onNavigateBack = { innerNav.popBackStack() },
-                    onNavigateToHistory = { id -> innerNav.navigate("price_history/$id") }
+                    onNavigateToHistory = { id -> innerNav.navigate("price_history/$id") },
+                    onNavigateToEdit = { id -> innerNav.navigate("edit_product/$id") }
+                )
+            }
+
+            composable(
+                route = "edit_product/{productId}",
+                arguments = listOf(navArgument("productId") { type = NavType.LongType })
+            ) { backStack ->
+                val productId = backStack.arguments?.getLong("productId") ?: return@composable
+                EditProductScreen(
+                    productId = productId,
+                    onProductUpdated = { innerNav.popBackStack() },
+                    onNavigateBack = { innerNav.popBackStack() }
                 )
             }
 
@@ -273,6 +300,10 @@ fun MainScreen(
                 com.alvaro.pricewise.ui.admin.AdminDashboardScreen(
                     onNavigateBack = { innerNav.popBackStack() }
                 )
+            }
+
+            composable(Tab.Recommendations.route) {
+                RecommendationsScreen()
             }
         }
         }
