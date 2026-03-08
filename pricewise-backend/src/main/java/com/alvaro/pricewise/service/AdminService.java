@@ -146,8 +146,8 @@ public class AdminService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        // Limpiar FK antes del borrado real
-        alertRepository.deleteByUserId(userId);
+        // Limpiar FK antes del borrado real (alertas y productos se mantienen para la empresa)
+        alertRepository.nullifyUserForAlerts(userId);
         productRepository.nullifyCreatedByForUser(userId);
 
         userRepository.delete(user);

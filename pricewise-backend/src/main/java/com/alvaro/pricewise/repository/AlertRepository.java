@@ -29,6 +29,6 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     int markAllAsReadByCompanyId(@Param("companyId") Long companyId);
 
     @Modifying
-    @Query("DELETE FROM Alert a WHERE a.user.id = :userId")
-    void deleteByUserId(@Param("userId") Long userId);
+    @Query("UPDATE Alert a SET a.user = NULL WHERE a.user.id = :userId")
+    void nullifyUserForAlerts(@Param("userId") Long userId);
 }
