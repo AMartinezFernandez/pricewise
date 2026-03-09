@@ -60,6 +60,11 @@ class TokenRepository @Inject constructor(
         return cachedToken
     }
 
+    /** Limpia el token en memoria (no-suspend, seguro desde interceptors) */
+    fun clearCachedToken() {
+        cachedToken = null
+    }
+
     fun getUserId(): Flow<Long?> = context.dataStore.data
         .map { prefs -> prefs[USER_ID_KEY] }
 
