@@ -1,0 +1,18 @@
+$kind: http-request
+description: >-
+  Guarda o actualiza una API key para un proveedor.
+  Actualmente solo soporta KEEPA como proveedor.
+  La key se almacena cifrada (AES-256) en la base de datos.
+url: "{{baseUrl}}/api/api-keys"
+method: POST
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  mode: raw
+  raw: |-
+    {
+      "provider": "KEEPA",
+      "apiKey": "tu-api-key-de-keepa-aqui"
+    }
+order: 2000

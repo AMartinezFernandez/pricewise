@@ -1934,7 +1934,7 @@ CREAR ARCHIVO .env:
 ------------------
 JWT_SECRET=miClaveSecreta123456
 DB_PASSWORD=miPasswordDeProduccion
-KEEPA_API_KEY=xxx-xxx-xxx
+# Las API keys de Keepa se gestionan por empresa desde la app (Ajustes)
 
 ACTIVAR PERFIL:
 --------------

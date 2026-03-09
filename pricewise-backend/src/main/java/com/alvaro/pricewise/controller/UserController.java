@@ -30,11 +30,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<List<UserSummaryDTO>>> getUsers(
             @AuthenticationPrincipal UserPrincipal principal) {
 
-        List<UserSummaryDTO> result = userService.getUsersByRole(principal.getRole(), principal.getCompanyId())
-                .stream()
-                .map(UserSummaryDTO::from)
-                .toList();
-
+        List<UserSummaryDTO> result = userService.getUsersByRole(principal.getRole(), principal.getCompanyId());
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 

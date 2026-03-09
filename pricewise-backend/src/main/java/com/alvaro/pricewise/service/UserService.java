@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.alvaro.pricewise.dto.user.UserDTOs.UserSummaryDTO;
 import com.alvaro.pricewise.entity.User;
 import com.alvaro.pricewise.exception.BadRequestException;
 import com.alvaro.pricewise.exception.ResourceNotFoundException;
@@ -23,11 +24,11 @@ public class UserService {
     private final ProductRepository productRepository;
 
     @Transactional(readOnly = true)
-    public List<User> getUsersByRole(String callerRole, Long callerCompanyId) {
-        if ("ADMIN".equals(callerRole)) {
-            return userRepository.findAll();
-        }
-        return userRepository.findByCompanyId(callerCompanyId);
+    public List<UserSummaryDTO> getUsersByRole(String callerRole, Long callerCompanyId) {
+        List<User> users = "ADMIN".equals(callerRole)
+                ? userRepository.findAll()
+                : userRepository.findByCompanyId(callerCompanyId);
+        return users.stream().map(UserSummaryDTO::from).toList();
     }
 
     @Transactional(readOnly = true)
@@ -40,6 +41,10 @@ public class UserService {
 
     @Transactional
     public void deleteUser(Long userId, String callerRole, Long callerId, Long callerCompanyId) {
+        if (userId.equals(callerId)) {
+            throw new BadRequestException("No puedes eliminarte a ti mismo");
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 

@@ -158,7 +158,7 @@ El sistema debe incluir un área de gestión accesible solo para usuarios con ro
 - Las contraseñas deben almacenarse hasheadas con BCrypt.
 - Todos los endpoints salvo registro, login y health check requieren autenticación JWT.
 - Un usuario no puede operar sobre recursos de otro usuario (verificación en capa de servicio).
-- Las variables de entorno con secretos (JWT_SECRET, DB_PASSWORD, KEEPA_API_KEY) no deben estar en el repositorio de código.
+- Las variables de entorno con secretos (JWT_SECRET, DB_PASSWORD) no deben estar en el repositorio de código. Las API keys de Keepa se gestionan por empresa desde la app (cifradas AES-256 en BD).
 
 ### RNF-02: Rendimiento
 - Las consultas de listado de productos no deben generar el problema N+1 de Hibernate.
@@ -775,8 +775,9 @@ La aplicación diferencia dos perfiles de Spring:
 |----------|-------------|
 | `JWT_SECRET` | Clave HMAC-SHA256 para firmar tokens (mínimo 32 caracteres) |
 | `DB_PASSWORD` | Contraseña de PostgreSQL |
-| `KEEPA_API_KEY` | API key de Keepa (keepa.com) |
 | `SPRING_PROFILES_ACTIVE` | `dev` o `prod` |
+
+> **Nota:** Las API keys de Keepa ya no se configuran via variable de entorno. Se gestionan por empresa desde Ajustes > Integracion Keepa (cifradas AES-256 en tabla `company_api_keys`).
 
 ---
 
@@ -1028,7 +1029,7 @@ docker-compose up -d
 
 # 3. Configurar variables de entorno
 cp .env.example .env
-# Editar .env con JWT_SECRET, DB_PASSWORD y KEEPA_API_KEY
+# Editar .env con JWT_SECRET y DB_PASSWORD
 
 # 4. Ejecutar la aplicación
 mvn spring-boot:run

@@ -1,0 +1,5 @@
+$kind: http-request
+description: Lista las API keys configuradas para la empresa del usuario autenticado.
+url: "{{baseUrl}}/api/api-keys"
+method: GET
+order: 1000

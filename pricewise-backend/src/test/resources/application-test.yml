@@ -23,7 +23,6 @@ cors:
   allow-all: true
 
 keepa:
-  api-key: ""
   default-locale: ES
   history-days: 90
   rate-limit: 10

@@ -55,7 +55,8 @@ DB_URL=jdbc:postgresql://localhost:5432/pricewise_db
 DB_USERNAME=postgres
 DB_PASSWORD=tu_password_de_bd
 SPRING_PROFILES_ACTIVE=dev
-KEEPA_API_KEY=tu_api_key_de_keepa
+
+> Las API keys de Keepa se configuran por empresa desde la app (Ajustes > Integracion Keepa).
 
 Para generar un JWT_SECRET seguro: openssl rand -base64 32
 

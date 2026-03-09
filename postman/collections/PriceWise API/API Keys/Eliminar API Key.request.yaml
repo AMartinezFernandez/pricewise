@@ -1,0 +1,5 @@
+$kind: http-request
+description: Elimina una API key. Invalida la cache de Keepa para la empresa.
+url: "{{baseUrl}}/api/api-keys/1"
+method: DELETE
+order: 4000

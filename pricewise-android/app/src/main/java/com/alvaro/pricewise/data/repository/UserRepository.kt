@@ -9,6 +9,9 @@ import javax.inject.Singleton
 class UserRepository @Inject constructor(
     private val api: PriceWiseApi
 ) {
+    suspend fun getProfile() =
+        safeApiCall { api.getProfile() }
+
     suspend fun getUsers() =
         safeApiCall { api.getUsers() }
 

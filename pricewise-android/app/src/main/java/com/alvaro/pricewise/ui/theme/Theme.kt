@@ -8,32 +8,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val PwColorScheme = lightColorScheme(
-    // Naranja como accion principal
+private val PwLightColorScheme = lightColorScheme(
     primary = PwOrangeDark,
     onPrimary = Color.White,
     primaryContainer = PwOrangeDark,
     onPrimaryContainer = Color.White,
 
-    // Cyan como secundario
     secondary = PwCyanDark,
     onSecondary = Color.White,
     secondaryContainer = PwCyanDark.copy(alpha = 0.15f),
     onSecondaryContainer = PwCyanDark,
 
-    // Terciario
     tertiary = PwOrangeDark,
     onTertiary = Color.White,
     tertiaryContainer = PwOrangeDark.copy(alpha = 0.15f),
     onTertiaryContainer = PwOrangeDark,
 
-    // Errores
     error = Color(0xFFB3261E),
     onError = Color.White,
     errorContainer = Color(0xFFFCE4EC),
     onErrorContainer = Color(0xFFB3261E),
 
-    // Fondos y superficies — fondo claro para contenido
     background = PwLightBg,
     onBackground = PwDarkText,
     surface = Color.White,
@@ -41,26 +36,62 @@ private val PwColorScheme = lightColorScheme(
     surfaceVariant = Color(0xFFEEEEEE),
     onSurfaceVariant = PwMutedText,
 
-    // Contornos
     outline = Color(0xFFBDBDBD),
     outlineVariant = Color(0xFFE0E0E0),
 
-    // Inverse (para componentes que necesitan fondo oscuro)
     inverseSurface = PwDarkNavy,
     inverseOnSurface = Color.White,
     inversePrimary = PwOrangeLight
 )
 
+private val PwDarkColorScheme = darkColorScheme(
+    primary = PwOrangeLight,
+    onPrimary = Color(0xFF1E1200),
+    primaryContainer = PwOrangeDark,
+    onPrimaryContainer = Color.White,
+
+    secondary = PwCyan,
+    onSecondary = Color(0xFF00232E),
+    secondaryContainer = PwCyanDark,
+    onSecondaryContainer = PwCyan,
+
+    tertiary = PwOrangeLight,
+    onTertiary = Color(0xFF1E1200),
+    tertiaryContainer = PwOrangeDark,
+    onTertiaryContainer = PwOrangeLight,
+
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+
+    background = Color(0xFF121A1F),
+    onBackground = Color(0xFFE1E3E5),
+    surface = Color(0xFF1A2329),
+    onSurface = Color(0xFFE1E3E5),
+    surfaceVariant = PwSlateGray,
+    onSurfaceVariant = Color(0xFFBFC8CE),
+
+    outline = Color(0xFF596A73),
+    outlineVariant = Color(0xFF3A4950),
+
+    inverseSurface = Color(0xFFE1E3E5),
+    inverseOnSurface = PwDarkNavy,
+    inversePrimary = PwOrangeDark
+)
+
 @Composable
 fun PriceWiseTheme(
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = PwColorScheme
+    val colorScheme = if (darkTheme) PwDarkColorScheme else PwLightColorScheme
     val view = LocalView.current
 
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            // En dark: iconos claros (false). En light: iconos claros (false) para PwDarkNavy TopAppBar.
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }

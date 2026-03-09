@@ -1,7 +1,7 @@
 $kind: http-request
-description: Verifica si la API de Keepa está configurada (Público)
+description: >-
+  Verifica si la API de Keepa esta configurada para la empresa del usuario.
+  Requiere autenticacion (EMPLOYEE, COMPANY_ADMIN o ADMIN).
 url: "{{baseUrl}}/api/competitors/status"
 method: GET
-auth:
-  type: noauth
 order: 1000
