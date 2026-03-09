@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alvaro.pricewise.data.repository.AuthRepository
 import com.alvaro.pricewise.util.Result
+import com.alvaro.pricewise.util.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +25,8 @@ data class AuthUiState(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -38,7 +40,10 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
             when (val result = authRepository.login(emailOrUsername, password)) {
-                is Result.Success -> _uiState.value = AuthUiState(isSuccess = true)
+                is Result.Success -> {
+                    sessionManager.resetExpiredFlag()
+                    _uiState.value = AuthUiState(isSuccess = true)
+                }
                 is Result.Error   -> _uiState.value = AuthUiState(error = result.message)
             }
         }
@@ -85,6 +90,7 @@ class AuthViewModel @Inject constructor(
                 is Result.Success -> {
                     val data = result.data
                     if (data.status == "AUTHENTICATED") {
+                        sessionManager.resetExpiredFlag()
                         _uiState.value = AuthUiState(isSuccess = true)
                     } else {
                         _uiState.value = AuthUiState(
@@ -113,7 +119,10 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = authRepository.googleCompleteNewCompany(idToken, companyName, businessType)) {
-                is Result.Success -> _uiState.value = AuthUiState(isSuccess = true)
+                is Result.Success -> {
+                    sessionManager.resetExpiredFlag()
+                    _uiState.value = AuthUiState(isSuccess = true)
+                }
                 is Result.Error -> _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = result.message
@@ -135,7 +144,10 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = authRepository.googleCompleteJoin(idToken, companyCode.uppercase())) {
-                is Result.Success -> _uiState.value = AuthUiState(isSuccess = true)
+                is Result.Success -> {
+                    sessionManager.resetExpiredFlag()
+                    _uiState.value = AuthUiState(isSuccess = true)
+                }
                 is Result.Error -> _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = result.message

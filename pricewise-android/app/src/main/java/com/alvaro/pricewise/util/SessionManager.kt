@@ -3,6 +3,7 @@ package com.alvaro.pricewise.util
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,7 +21,16 @@ class SessionManager @Inject constructor() {
     )
     val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
 
+    private val alreadyExpired = AtomicBoolean(false)
+
     fun notifySessionExpired() {
-        _sessionExpired.tryEmit(Unit)
+        if (alreadyExpired.compareAndSet(false, true)) {
+            _sessionExpired.tryEmit(Unit)
+        }
+    }
+
+    /** Llamar tras login exitoso para permitir futuras detecciones de expiración */
+    fun resetExpiredFlag() {
+        alreadyExpired.set(false)
     }
 }
