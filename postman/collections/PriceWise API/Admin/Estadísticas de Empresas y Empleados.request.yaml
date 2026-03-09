@@ -1,0 +1,9 @@
+$kind: http-request
+description: |-
+  Muestra:
+  - Total de empresas y empresas activas.
+  - **Número de empleados por empresa** (en el campo `userCountByCompany`).
+  - Estadísticas de productos y usuarios.
+url: "{{baseUrl}}/api/admin/dashboard"
+method: GET
+order: 3000

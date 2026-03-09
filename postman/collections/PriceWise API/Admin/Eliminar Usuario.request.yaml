@@ -1,0 +1,5 @@
+$kind: http-request
+description: Requiere rol ADMIN
+url: "{{baseUrl}}/api/admin/users/2"
+method: DELETE
+order: 10000

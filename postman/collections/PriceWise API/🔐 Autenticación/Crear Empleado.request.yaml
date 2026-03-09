@@ -1,0 +1,16 @@
+$kind: http-request
+description: Crea un empleado en la empresa del admin autenticado. Requiere rol
+  COMPANY_ADMIN o ADMIN.
+url: "{{baseUrl}}/api/auth/create-employee"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+        "username": "empleado_nuevo",
+        "email": "empleado_nuevo@empresa.com",
+        "password": "Password1"
+    }
+order: 4000

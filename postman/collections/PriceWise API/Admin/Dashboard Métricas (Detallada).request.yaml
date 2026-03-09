@@ -1,0 +1,5 @@
+$kind: http-request
+description: Requiere rol ADMIN.
+url: "{{baseUrl}}/api/admin/dashboard"
+method: GET
+order: 2000

@@ -1,0 +1,16 @@
+# Use this workspace to collaborate
+workspace:
+  id: 4e47e31f-8c4c-4324-8e57-ed3e3a2c58d7
+
+# All resources in the `postman/` folder are automatically registered in Local View.
+# Point to additional files outside the `postman/` folder to register them individually. Example:
+localResources:
+  specs:
+    - ../index.json
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+cloudResources:
+  collections:
+    ../postman/collections/PriceWise API: 50525245-0dcf868d-2dbf-4c40-b042-23160a58ec12
+  specs:
+    ../index.json: 6a79b68b-e3bb-4579-b15d-01e1790999ff

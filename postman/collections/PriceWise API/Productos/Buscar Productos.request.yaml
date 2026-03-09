@@ -1,0 +1,13 @@
+$kind: http-request
+url: "{{baseUrl}}/api/products/search?name=iphone"
+method: GET
+queryParams:
+  - key: name
+    value: iphone
+  - key: category
+    value: ""
+    disabled: true
+  - key: brand
+    value: ""
+    disabled: true
+order: 3000

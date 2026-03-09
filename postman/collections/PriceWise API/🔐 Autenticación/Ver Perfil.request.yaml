@@ -1,0 +1,8 @@
+$kind: http-request
+description: Obtiene el perfil del usuario autenticado
+url: "{{baseUrl}}/api/auth/profile"
+method: GET
+body:
+  type: json
+  content: ""
+order: 5000

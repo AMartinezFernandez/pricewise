@@ -1,0 +1,17 @@
+$kind: http-request
+description: Crea una nueva empresa y genera su código. Requiere rol ADMIN.
+url: "{{baseUrl}}/api/admin/companies"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+        "name": "Nueva Empresa Tech",
+        "businessType": "Retail",
+        "adminUsername": "admin_nueva",
+        "adminEmail": "admin@nuevaempresa.com",
+        "adminPassword": "Password1"
+    }
+order: 3000
