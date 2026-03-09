@@ -291,7 +291,7 @@ class ProductViewModel @Inject constructor(
             )
             when (repository.updateProduct(id, request)) {
                 is Result.Success -> _formState.value = ProductFormUiState(success = true)
-                is Result.Error -> _formState.value = ProductFormUiState(error = "Error al actualizar el producto")
+                is Result.Error -> _formState.value = ProductFormUiState(error = result.message)
             }
         }
     }

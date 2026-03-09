@@ -29,10 +29,6 @@ class RecommendationsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RecommendationsUiState())
     val uiState: StateFlow<RecommendationsUiState> = _uiState.asStateFlow()
 
-    init {
-        loadRecommendations(refresh = true)
-    }
-
     fun loadRecommendations(refresh: Boolean = false) {
         viewModelScope.launch {
             if (refresh) {
