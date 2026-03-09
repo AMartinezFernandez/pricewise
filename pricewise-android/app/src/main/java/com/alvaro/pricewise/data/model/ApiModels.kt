@@ -26,3 +26,23 @@ data class PageResponse<T>(
     val hasNext: Boolean = false,
     val hasPrevious: Boolean = false
 )
+
+// ─────────────────────────────────────────────
+// API Keys (Keepa)
+// ─────────────────────────────────────────────
+
+@JsonClass(generateAdapter = true)
+data class ApiKeyResponse(
+    val id: Long,
+    val provider: String,
+    val maskedKey: String,
+    val enabled: Boolean,
+    val createdAt: String? = null,
+    val updatedAt: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class SaveApiKeyRequest(
+    val provider: String = "KEEPA",
+    val apiKey: String
+)

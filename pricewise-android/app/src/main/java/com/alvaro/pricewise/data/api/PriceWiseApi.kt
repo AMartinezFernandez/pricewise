@@ -221,4 +221,17 @@ interface PriceWiseApi {
 
     @DELETE("api/users/{userId}")
     suspend fun deleteCompanyUser(@retrofit2.http.Path("userId") userId: Long): Response<ApiResponse<Void>>
+
+    // ─── API Keys ─────────────────────────────────────────────────────────
+    @GET("api/api-keys")
+    suspend fun getApiKeys(): Response<ApiResponse<List<com.alvaro.pricewise.data.model.ApiKeyResponse>>>
+
+    @POST("api/api-keys")
+    suspend fun saveApiKey(@Body request: com.alvaro.pricewise.data.model.SaveApiKeyRequest): Response<ApiResponse<com.alvaro.pricewise.data.model.ApiKeyResponse>>
+
+    @POST("api/api-keys/{id}/toggle")
+    suspend fun toggleApiKey(@Path("id") id: Long): Response<ApiResponse<com.alvaro.pricewise.data.model.ApiKeyResponse>>
+
+    @DELETE("api/api-keys/{id}")
+    suspend fun deleteApiKey(@Path("id") id: Long): Response<ApiResponse<Void>>
 }
