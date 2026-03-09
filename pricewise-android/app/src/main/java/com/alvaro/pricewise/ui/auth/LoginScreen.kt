@@ -4,9 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import com.composables.icons.lucide.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -132,8 +130,8 @@ fun LoginScreen(
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
-                        imageVector = if (passwordVisible) Icons.Default.Visibility
-                                      else Icons.Default.VisibilityOff,
+                        imageVector = if (passwordVisible) Lucide.Eye
+                                      else Lucide.EyeOff,
                         contentDescription = if (passwordVisible) "Ocultar contraseña"
                                              else "Mostrar contraseña",
                         tint = Color.White.copy(alpha = 0.7f)

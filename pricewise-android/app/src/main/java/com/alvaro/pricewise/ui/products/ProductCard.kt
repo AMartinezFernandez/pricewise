@@ -2,8 +2,7 @@ package com.alvaro.pricewise.ui.products
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Radar
+import com.composables.icons.lucide.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -92,7 +91,7 @@ fun ProductCard(
                     if (product.monitoringEnabled) {
                         Spacer(Modifier.height(2.dp))
                         Icon(
-                            imageVector = Icons.Default.Radar,
+                            imageVector = Lucide.Radar,
                             contentDescription = "Monitorización activa",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(14.dp)

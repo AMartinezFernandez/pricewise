@@ -4,9 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import com.composables.icons.lucide.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,12 +35,12 @@ fun AdminUsersScreen(
                 title = { Text("Gestión de Usuarios") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Lucide.ArrowLeft, contentDescription = "Volver")
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.loadUsers() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Recargar")
+                        Icon(Lucide.RefreshCw, contentDescription = "Recargar")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -150,9 +148,9 @@ private fun UserCard(
             ) {
                 // Avatar icon based on role
                 val (icon, containerColor) = when (user.role) {
-                    "ADMIN" -> Icons.Default.AdminPanelSettings to MaterialTheme.colorScheme.errorContainer
-                    "COMPANY_ADMIN" -> Icons.Default.ManageAccounts to MaterialTheme.colorScheme.primaryContainer
-                    else -> Icons.Default.Person to MaterialTheme.colorScheme.surfaceVariant
+                    "ADMIN" -> Lucide.ShieldCheck to MaterialTheme.colorScheme.errorContainer
+                    "COMPANY_ADMIN" -> Lucide.UserCog to MaterialTheme.colorScheme.primaryContainer
+                    else -> Lucide.User to MaterialTheme.colorScheme.surfaceVariant
                 }
                 Surface(
                     shape = MaterialTheme.shapes.medium,

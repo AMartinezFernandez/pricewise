@@ -4,11 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.TrendingDown
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.*
+import com.composables.icons.lucide.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -62,7 +58,7 @@ fun PriceHistoryScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Lucide.ArrowLeft, contentDescription = "Volver")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -177,22 +173,22 @@ private fun PriceHistoryItem(entry: com.alvaro.pricewise.data.model.PriceHistory
                 // Change type icon
                 val (icon, color, label) = when (entry.changeType) {
                     "INCREASE" -> Triple(
-                        Icons.AutoMirrored.Filled.TrendingUp,
+                        Lucide.TrendingUp,
                         MaterialTheme.colorScheme.error,
                         "Subida"
                     )
                     "DECREASE" -> Triple(
-                        Icons.AutoMirrored.Filled.TrendingDown,
+                        Lucide.TrendingDown,
                         MaterialTheme.colorScheme.primary,
                         "Bajada"
                     )
                     "INITIAL" -> Triple(
-                        Icons.Default.FiberNew,
+                        Lucide.Sparkles,
                         MaterialTheme.colorScheme.tertiary,
                         "Precio inicial"
                     )
                     else -> Triple(
-                        Icons.Default.Remove,
+                        Lucide.Minus,
                         MaterialTheme.colorScheme.onSurfaceVariant,
                         "Sin cambio"
                     )

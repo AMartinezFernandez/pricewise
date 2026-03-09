@@ -3,10 +3,7 @@ package com.alvaro.pricewise.ui.admin
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.CompareArrows
-import androidx.compose.material.icons.filled.*
+import com.composables.icons.lucide.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -77,12 +74,12 @@ fun AdminDashboardScreen(
                 title = { Text("Panel Admin Global") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Lucide.ArrowLeft, contentDescription = "Volver")
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.loadDashboard() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Recargar")
+                        Icon(Lucide.RefreshCw, contentDescription = "Recargar")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -141,14 +138,14 @@ fun AdminDashboardScreen(
                             title = "Usuarios",
                             value = "${dash.totalUsers}",
                             subtitle = "${dash.activeUsers} activos",
-                            icon = Icons.Default.People,
+                            icon = Lucide.Users,
                             modifier = Modifier.weight(1f)
                         )
                         MetricCard(
                             title = "Empresas",
                             value = "${dash.totalCompanies}",
                             subtitle = "${dash.activeCompanies} activas",
-                            icon = Icons.Default.Business,
+                            icon = Lucide.Building2,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -167,14 +164,14 @@ fun AdminDashboardScreen(
                             title = "Total",
                             value = "${dash.totalProducts}",
                             subtitle = "${dash.trackedProducts} con seguimiento",
-                            icon = Icons.Default.Inventory,
+                            icon = Lucide.Package,
                             modifier = Modifier.weight(1f)
                         )
                         MetricCard(
                             title = "Competidores",
                             value = "${dash.competitorsTracked}",
                             subtitle = "precios rastreados",
-                            icon = Icons.AutoMirrored.Filled.CompareArrows,
+                            icon = Lucide.ArrowLeftRight,
                             modifier = Modifier.weight(1f)
                         )
                     }

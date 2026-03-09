@@ -3,11 +3,7 @@ package com.alvaro.pricewise.ui.settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.PersonAdd
+import com.composables.icons.lucide.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -249,7 +245,7 @@ fun SettingsScreen(
                 title = { Text("Ajustes") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Lucide.ArrowLeft, contentDescription = "Volver")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -338,7 +334,7 @@ fun SettingsScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             IconButton(onClick = { showAddUserDialog = true }) {
-                                Icon(Icons.Default.PersonAdd, contentDescription = "Anadir Usuario")
+                                Icon(Lucide.UserPlus, contentDescription = "Anadir Usuario")
                             }
                         }
                         HorizontalDivider()
@@ -367,7 +363,7 @@ fun SettingsScreen(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
-                Icon(Icons.Default.Lock, contentDescription = null)
+                Icon(Lucide.Lock, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Cambiar Contrasena")
             }
@@ -383,7 +379,7 @@ fun SettingsScreen(
                     containerColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
+                Icon(Lucide.LogOut, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Cerrar Sesion")
             }

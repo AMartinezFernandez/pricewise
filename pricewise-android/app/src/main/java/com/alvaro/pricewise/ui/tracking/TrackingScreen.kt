@@ -5,10 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.TrendingDown
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import com.composables.icons.lucide.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.Lifecycle
@@ -40,6 +39,7 @@ import javax.inject.Inject
 data class TrackingUiState(
     val products: List<ProductResponse> = emptyList(),
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
     val totalElements: Long = 0,
     val hasMore: Boolean = false
@@ -65,7 +65,11 @@ class TrackingViewModel @Inject constructor(
         if (refresh) currentPage = 0
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = if (refresh) null else _uiState.value.error)
+            _uiState.value = _uiState.value.copy(
+                isLoading = _uiState.value.products.isEmpty(),
+                isRefreshing = refresh && _uiState.value.products.isNotEmpty(),
+                error = if (refresh) null else _uiState.value.error
+            )
 
             when (val result = productRepository.getMonitoredProducts(page = currentPage, size = pageSize)) {
                 is Result.Success -> {
@@ -77,12 +81,17 @@ class TrackingViewModel @Inject constructor(
                         products = currentProducts + newProducts,
                         totalElements = page?.totalElements ?: 0,
                         hasMore = !isLast,
-                        isLoading = false
+                        isLoading = false,
+                        isRefreshing = false
                     )
                     if (!isLast) currentPage++
                 }
                 is Result.Error -> {
-                    _uiState.value = _uiState.value.copy(isLoading = false, error = result.message)
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        isRefreshing = false,
+                        error = result.message
+                    )
                 }
             }
         }
@@ -138,24 +147,29 @@ fun TrackingScreen(
                 Text("Error: ${uiState.error}", color = MaterialTheme.colorScheme.error)
             }
         } else {
-            LazyColumn(
-                state = listState,
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = { viewModel.loadMonitoredProducts(refresh = true) },
                 modifier = Modifier.padding(padding)
             ) {
-                item {
-                    Text(
-                        text = "Productos en seguimiento (${uiState.totalElements})",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                items(uiState.products) { product ->
-                    TrackingProductCard(
-                        product = product,
-                        onClick = { onProductClick(product.id) }
-                    )
+                LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item {
+                        Text(
+                            text = "Productos en seguimiento (${uiState.totalElements})",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    items(uiState.products) { product ->
+                        TrackingProductCard(
+                            product = product,
+                            onClick = { onProductClick(product.id) }
+                        )
+                    }
                 }
             }
         }
@@ -208,7 +222,7 @@ fun TrackingProductCard(
                     val color = if (product.margin < 10) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
                     Row(verticalAlignment = Alignment.CenterVertically) {
                          Icon(
-                             if (product.margin < 10) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp,
+                             if (product.margin < 10) Lucide.TrendingDown else Lucide.TrendingUp,
                              contentDescription = null,
                              tint = color,
                              modifier = Modifier.size(16.dp)
