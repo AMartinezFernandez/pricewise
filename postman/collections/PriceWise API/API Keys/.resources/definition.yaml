@@ -1,0 +1,5 @@
+$kind: folder
+description: >-
+  Gestion de API Keys para integraciones externas (Keepa).
+  Solo accesible para COMPANY_ADMIN y ADMIN.
+order: 6000

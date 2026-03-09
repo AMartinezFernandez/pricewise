@@ -1,0 +1,7 @@
+$kind: http-request
+description: >-
+  Activa o desactiva una API key existente.
+  Cambiar el estado invalida la cache de Keepa para la empresa.
+url: "{{baseUrl}}/api/api-keys/1/toggle"
+method: POST
+order: 3000
