@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{baseUrl}}/api/admin/scheduler/resume"
+method: POST
+order: 4000

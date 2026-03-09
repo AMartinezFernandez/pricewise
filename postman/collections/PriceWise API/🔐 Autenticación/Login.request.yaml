@@ -1,0 +1,30 @@
+$kind: http-request
+description: Inicia sesión. **Este endpoint guarda automáticamente el token**
+  para usarlo en las demás peticiones.
+url: "{{baseUrl}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+        "emailOrUsername": "admin@pricewise.io",
+        "password": "Admin123"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: >-
+      var jsonData = pm.response.json();
+
+      if (jsonData.success && jsonData.data && jsonData.data.token) {
+          pm.collectionVariables.set('token', jsonData.data.token);
+          console.log('Token guardado automáticamente: ' + jsonData.data.token.substring(0, 10) + '...');
+          pm.expect(pm.collectionVariables.get('token')).to.not.be.empty;
+      } else {
+          console.log('No se encontró token en la respuesta');
+      }
+    language: text/javascript
+order: 2000

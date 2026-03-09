@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{baseUrl}}/api/admin/scheduler/pause"
+method: POST
+order: 3000

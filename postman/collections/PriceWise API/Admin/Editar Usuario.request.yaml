@@ -1,0 +1,14 @@
+$kind: http-request
+description: Requiere rol ADMIN. Mismo ID que Ver Usuario.
+url: "{{baseUrl}}/api/admin/users/2"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+        "username": "usuario_editado",
+        "email": "editado@example.com"
+    }
+order: 6000

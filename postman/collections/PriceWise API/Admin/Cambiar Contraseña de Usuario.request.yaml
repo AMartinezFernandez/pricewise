@@ -1,0 +1,13 @@
+$kind: http-request
+description: Requiere rol ADMIN
+url: "{{baseUrl}}/api/admin/users/2/password"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+        "newPassword": "NuevaPass1"
+    }
+order: 7000

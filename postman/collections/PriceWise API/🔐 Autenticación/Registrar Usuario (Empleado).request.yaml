@@ -1,0 +1,18 @@
+$kind: http-request
+description: Registra un nuevo usuario en una empresa existente usando su código.
+url: "{{baseUrl}}/api/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+        "username": "nuevo_empleado",
+        "email": "empleado@empresa.com",
+        "password": "Password1",
+        "companyCode": "TECH0001"
+    }
+auth:
+  type: noauth
+order: 1000

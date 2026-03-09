@@ -1,0 +1,9 @@
+$kind: http-request
+description: Sincroniza el precio de un producto existente con Amazon
+url: "{{baseUrl}}/api/competitors/amazon/sync/1?asin=B0BDHWDR12"
+method: POST
+queryParams:
+  - key: asin
+    value: B0BDHWDR12
+    description: ASIN del producto en Amazon
+order: 3000

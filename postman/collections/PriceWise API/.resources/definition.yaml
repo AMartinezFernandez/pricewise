@@ -1,0 +1,27 @@
+$kind: collection
+description: >-
+  API de PriceWise - Sistema de comparación de precios para PYMEs.
+
+
+  ### Instrucciones de Seguridad
+
+  Esta colección está configurada para manejar la autenticación automáticamente:
+
+  1.  Ejecuta la petición **Login**.
+
+  2.  El script guardará el token automáticamente en la variable `token`.
+
+  3.  Todas las demás peticiones ("Productos", "Admin", etc.) ya tienen la
+  autorización configurada.
+
+
+  ⚠️ **NOTA**: No necesitas copiar y pegar el token manualmente.
+variables:
+  baseUrl: http://localhost:9090
+  token: ""
+auth:
+  - id: ""
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{token}}"

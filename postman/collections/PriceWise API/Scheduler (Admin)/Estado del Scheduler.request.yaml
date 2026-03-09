@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{baseUrl}}/api/admin/scheduler/status"
+method: GET
+order: 1000

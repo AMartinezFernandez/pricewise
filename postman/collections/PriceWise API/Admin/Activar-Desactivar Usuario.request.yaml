@@ -1,0 +1,14 @@
+$kind: http-request
+name: Activar/Desactivar Usuario
+description: Requiere rol ADMIN
+url: "{{baseUrl}}/api/admin/users/2/status"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+        "active": false
+    }
+order: 9000

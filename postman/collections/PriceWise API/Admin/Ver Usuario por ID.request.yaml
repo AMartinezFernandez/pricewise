@@ -1,0 +1,6 @@
+$kind: http-request
+description: Requiere rol ADMIN. Usa ID 2 (primer usuario del seeder distinto al
+  admin logueado).
+url: "{{baseUrl}}/api/admin/users/2"
+method: GET
+order: 5000

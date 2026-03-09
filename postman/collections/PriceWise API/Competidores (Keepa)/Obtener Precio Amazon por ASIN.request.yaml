@@ -1,0 +1,5 @@
+$kind: http-request
+description: Consulta el precio de un producto en Amazon usando su ASIN.
+url: "{{baseUrl}}/api/competitors/amazon/price/B0BDHWDR12"
+method: GET
+order: 2000

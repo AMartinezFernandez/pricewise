@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{baseUrl}}/api/admin/scheduler/trigger-now"
+method: POST
+order: 2000

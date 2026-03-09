@@ -1,0 +1,7 @@
+$kind: http-request
+description: Verifica si la API de Keepa está configurada (Público)
+url: "{{baseUrl}}/api/competitors/status"
+method: GET
+auth:
+  type: noauth
+order: 1000
