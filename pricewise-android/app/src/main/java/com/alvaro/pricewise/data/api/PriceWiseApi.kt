@@ -233,5 +233,5 @@ interface PriceWiseApi {
     suspend fun toggleApiKey(@Path("id") id: Long): Response<ApiResponse<com.alvaro.pricewise.data.model.ApiKeyResponse>>
 
     @DELETE("api/api-keys/{id}")
-    suspend fun deleteApiKey(@Path("id") id: Long): Response<ApiResponse<Void>>
+    suspend fun deleteApiKey(@Path("id") id: Long): Response<ApiResponse<String>>
 }

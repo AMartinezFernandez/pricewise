@@ -41,6 +41,10 @@ public class UserService {
 
     @Transactional
     public void deleteUser(Long userId, String callerRole, Long callerId, Long callerCompanyId) {
+        if (userId.equals(callerId)) {
+            throw new BadRequestException("No puedes eliminarte a ti mismo");
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
