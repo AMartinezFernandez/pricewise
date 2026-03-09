@@ -156,14 +156,14 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<CompanyResponse> getAllCompanies() {
-        return companyRepository.findAll().stream()
+        return companyRepository.findAllWithUsers().stream()
                 .map(this::mapToCompanyResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public CompanyResponse getCompany(Long companyId) {
-        Company company = companyRepository.findById(companyId)
+        Company company = companyRepository.findByIdWithUsers(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Empresa no encontrada"));
         return mapToCompanyResponse(company);
     }
