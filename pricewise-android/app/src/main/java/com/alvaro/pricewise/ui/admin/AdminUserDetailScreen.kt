@@ -3,9 +3,7 @@ package com.alvaro.pricewise.ui.admin
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import com.composables.icons.lucide.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,7 +52,7 @@ fun AdminUserDetailScreen(
                 title = { Text(uiState.user?.username ?: "Usuario") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Lucide.ArrowLeft, contentDescription = "Volver")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -152,7 +150,7 @@ fun AdminUserDetailScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = !uiState.isPerformingAction
                             ) {
-                                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(Lucide.Pencil, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text("Editar usuario")
                             }
@@ -162,7 +160,7 @@ fun AdminUserDetailScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = !uiState.isPerformingAction
                             ) {
-                                Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(Lucide.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text("Cambiar contraseña")
                             }
@@ -172,7 +170,7 @@ fun AdminUserDetailScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = !uiState.isPerformingAction
                             ) {
-                                Icon(Icons.Default.Badge, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(Lucide.BadgeCheck, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text("Cambiar rol")
                             }
@@ -183,7 +181,7 @@ fun AdminUserDetailScreen(
                                 enabled = !uiState.isPerformingAction
                             ) {
                                 Icon(
-                                    if (user.active) Icons.Default.PersonOff else Icons.Default.PersonAdd,
+                                    if (user.active) Lucide.UserX else Lucide.UserPlus,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -201,7 +199,7 @@ fun AdminUserDetailScreen(
                                 ),
                                 enabled = !uiState.isPerformingAction
                             ) {
-                                Icon(Icons.Default.DeleteForever, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(Lucide.Trash2, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text("Eliminar usuario")
                             }

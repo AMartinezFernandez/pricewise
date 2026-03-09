@@ -6,11 +6,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.TrendingDown
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.*
+import com.composables.icons.lucide.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +25,7 @@ fun ProductDetailScreen(
     productId: Long,
     onNavigateBack: () -> Unit,
     onNavigateToHistory: (Long) -> Unit = {},
+    onNavigateToEdit: (Long) -> Unit = {},
     viewModel: ProductViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.detailState.collectAsState()
@@ -63,13 +60,16 @@ fun ProductDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Lucide.ArrowLeft, contentDescription = "Volver")
                     }
                 },
                 actions = {
+                    IconButton(onClick = { onNavigateToEdit(productId) }) {
+                        Icon(Lucide.Pencil, contentDescription = "Editar")
+                    }
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
-                            Icons.Default.DeleteOutline,
+                            Lucide.Trash,
                             contentDescription = "Eliminar",
                             tint = MaterialTheme.colorScheme.error
                         )
@@ -301,7 +301,7 @@ fun ProductDetailScreen(
                                         Spacer(Modifier.width(8.dp))
                                         Text("Consultando Amazon...")
                                     } else {
-                                        Icon(Icons.Default.CloudSync, contentDescription = null)
+                                        Icon(Lucide.CloudDownload, contentDescription = null)
                                         Spacer(Modifier.width(8.dp))
                                         Text("Buscar precio ahora en Amazon")
                                     }
@@ -369,7 +369,7 @@ fun ProductDetailScreen(
                                                     },
                                                     modifier = Modifier.fillMaxWidth()
                                                 ) {
-                                                    Icon(Icons.Default.Refresh, contentDescription = null)
+                                                    Icon(Lucide.RefreshCw, contentDescription = null)
                                                     Spacer(Modifier.width(8.dp))
                                                     Text("Actualizar con los nuevos datos")
                                                 }
@@ -412,10 +412,10 @@ fun ProductDetailScreen(
                                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                                             ) {
                                                 val (icon, color) = when (entry.changeType) {
-                                                    "INCREASE" -> Icons.AutoMirrored.Filled.TrendingUp to MaterialTheme.colorScheme.error
-                                                    "DECREASE" -> Icons.AutoMirrored.Filled.TrendingDown to MaterialTheme.colorScheme.primary
-                                                    "INITIAL" -> Icons.Default.FiberNew to MaterialTheme.colorScheme.onSurfaceVariant
-                                                    else -> Icons.Default.Remove to MaterialTheme.colorScheme.onSurfaceVariant
+                                                    "INCREASE" -> Lucide.TrendingUp to MaterialTheme.colorScheme.error
+                                                    "DECREASE" -> Lucide.TrendingDown to MaterialTheme.colorScheme.primary
+                                                    "INITIAL" -> Lucide.Sparkles to MaterialTheme.colorScheme.onSurfaceVariant
+                                                    else -> Lucide.Minus to MaterialTheme.colorScheme.onSurfaceVariant
                                                 }
                                                 Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = color)
                                                 Column {
@@ -450,7 +450,7 @@ fun ProductDetailScreen(
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Icon(
-                                            Icons.Default.History,
+                                            Lucide.Clock,
                                             contentDescription = null,
                                             modifier = Modifier.size(18.dp)
                                         )
