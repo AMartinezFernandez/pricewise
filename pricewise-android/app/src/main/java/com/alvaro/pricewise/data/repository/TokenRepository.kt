@@ -60,6 +60,14 @@ class TokenRepository @Inject constructor(
         return cachedToken
     }
 
+    /** Limpia el token en memoria y en DataStore (no-suspend, seguro desde interceptors) */
+    fun clearCachedToken() {
+        cachedToken = null
+        CoroutineScope(Dispatchers.IO).launch {
+            context.dataStore.edit { prefs -> prefs.remove(TOKEN_KEY) }
+        }
+    }
+
     fun getUserId(): Flow<Long?> = context.dataStore.data
         .map { prefs -> prefs[USER_ID_KEY] }
 

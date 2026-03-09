@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.alvaro.pricewise.data.repository.TokenRepository
+import com.alvaro.pricewise.util.SessionManager
 import com.alvaro.pricewise.ui.auth.CompanySetupScreen
 import com.alvaro.pricewise.ui.auth.LoginScreen
 import com.alvaro.pricewise.ui.auth.RegisterScreen
@@ -37,9 +38,20 @@ sealed class Screen(val route: String) {
 @Composable
 fun RootNavGraph(
     tokenRepository: TokenRepository,
+    sessionManager: SessionManager,
     modifier: Modifier = Modifier
 ) {
     val navController = rememberNavController()
+
+    // Escuchar evento de sesión expirada → redirigir a login
+    LaunchedEffect(Unit) {
+        sessionManager.sessionExpired.collect {
+            tokenRepository.clearSession()
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
