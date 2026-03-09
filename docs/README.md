@@ -82,13 +82,20 @@ http://localhost:9090/api-docs           OpenAPI JSON
 
 AUTENTICACION
 
-La API usa JWT para autenticacion.
+La API soporta dos metodos de autenticacion: JWT clasico y Google OAuth2.
 
-Flujo:
+Flujo clasico:
 1. El usuario obtiene un codigo de invitacion de su empresa.
 2. POST /api/auth/register con credenciales y codigo.
 3. POST /api/auth/login para obtener token.
 4. Incluir en headers: Authorization: Bearer <token>
+
+Flujo Google OAuth2:
+1. POST /api/auth/google con el idToken de Google Sign-In.
+2. Si el usuario ya existe: devuelve JWT directamente.
+3. Si es nuevo: devuelve estado needs_company con opciones:
+   a. POST /api/auth/google/complete-new-company para crear empresa nueva.
+   b. POST /api/auth/google/complete-join con companyCode para unirse a empresa existente.
 
 El token expira en 24 horas.
 
@@ -111,14 +118,23 @@ COMPANY_ADMIN - Admin de empresa, gestiona sus empleados y productos.
 EMPLOYEE      - Empleado, gestiona productos de su empresa.
 
 Rutas publicas:
-- POST /api/auth/register (requiere code)
+- POST /api/auth/register (requiere companyCode)
 - POST /api/auth/login
+- POST /api/auth/google
+- POST /api/auth/google/complete-new-company
+- POST /api/auth/google/complete-join
 - GET /api/health
 - GET /api/competitors/status
 
 Rutas protegidas (requieren token):
 - /api/products/* (Todos los roles)
 - /api/auth/profile (Todos los roles)
+- /api/auth/change-password (Todos los roles)
+- /api/auth/create-employee (COMPANY_ADMIN/ADMIN)
+- /api/users/* (COMPANY_ADMIN/ADMIN)
+- /api/api-keys/* (COMPANY_ADMIN/ADMIN)
+- /api/analytics/* (COMPANY_ADMIN/EMPLOYEE/ADMIN)
+- /api/alert-rules/* (Todos los roles)
 - /api/admin/* (solo ADMIN)
 
 
@@ -128,13 +144,21 @@ Autenticacion:
 POST /api/auth/register          Registrarse en empresa
 POST /api/auth/login             Iniciar sesion
 GET  /api/auth/profile           Ver perfil
+POST /api/auth/change-password   Cambiar contrasena
+POST /api/auth/create-employee   Crear empleado (COMPANY_ADMIN/ADMIN)
+
+Google OAuth:
+POST /api/auth/google                    Login con Google (devuelve estado: existing_user, new_user, needs_company)
+POST /api/auth/google/complete-new-company   Completar registro Google creando empresa
+POST /api/auth/google/complete-join          Completar registro Google uniendose a empresa
 
 Productos (requieren autenticacion):
 POST   /api/products             Crear producto
 GET    /api/products             Listar productos (paginado)
+GET    /api/products/monitored   Listar productos monitorizados
 GET    /api/products/{id}        Obtener producto
 PUT    /api/products/{id}        Actualizar producto
-DELETE /api/products/{id}        Eliminar producto
+DELETE /api/products/{id}        Eliminar producto (soft-delete)
 GET    /api/products/search      Buscar productos
 GET    /api/products/categories  Listar categorias
 GET    /api/products/brands      Listar marcas
@@ -162,6 +186,27 @@ PUT    /api/admin/users/{id}/password    Cambiar contraseña
 PUT    /api/admin/users/{id}/role        Cambiar rol
 PUT    /api/admin/users/{id}/status      Activar/desactivar
 DELETE /api/admin/users/{id}             Eliminar usuario
+
+Usuarios (COMPANY_ADMIN/ADMIN):
+GET    /api/users                Listar usuarios de la empresa
+GET    /api/users/count          Contar usuarios
+DELETE /api/users/{userId}       Eliminar usuario de la empresa
+
+API Keys (COMPANY_ADMIN/ADMIN):
+GET    /api/api-keys             Listar API keys de la empresa
+POST   /api/api-keys             Guardar API key (cifrada AES-256)
+POST   /api/api-keys/{id}/toggle Activar/desactivar API key
+DELETE /api/api-keys/{id}        Eliminar API key
+
+Analytics (requieren autenticacion):
+GET    /api/analytics/dashboard            Dashboard con metricas
+GET    /api/analytics/recommendations      Listar recomendaciones
+POST   /api/analytics/recommendations/{id}/apply    Aplicar recomendacion
+POST   /api/analytics/recommendations/{id}/dismiss  Descartar recomendacion
+GET    /api/analytics/alerts               Listar alertas generadas
+POST   /api/analytics/alerts/{id}/read     Marcar alerta como leida
+POST   /api/analytics/alerts/read-all      Marcar todas como leidas
+POST   /api/analytics/analyze              Ejecutar analisis de precios
 
 Nota: El SchedulerController fue eliminado del MVP.
 Los jobs de Quartz se ejecutan automaticamente sin interfaz REST.
@@ -203,13 +248,18 @@ Produccion (prod):
 
 SEGURIDAD
 
-- Autenticacion JWT stateless
+- Autenticacion JWT stateless (clasica y Google OAuth2)
+- Google OAuth2: validacion de idToken via Google API
 - Contraseñas hasheadas con BCrypt
+- API keys de Keepa cifradas con AES-256 en BD (tabla company_api_keys)
 - CORS configurable por perfil (restrictivo en produccion)
 - CSRF deshabilitado (apropiado para APIs REST)
-- Proteccion de endpoints por rol
+- Proteccion de endpoints por rol con @PreAuthorize
 - Rate limiting en login y registro (10 intentos/minuto por IP)
 - Todas las credenciales externalizadas a variables de entorno
+- Multi-tenancy: datos aislados por companyId en cada peticion
+
+Ver SEGURIDAD.md para analisis detallado.
 
 Recomendaciones:
 - No subir .env a Git
@@ -221,14 +271,18 @@ Recomendaciones:
 BASE DE DATOS
 
 Tablas:
-- users: Usuarios del sistema
-- companies: Empresas
-- products: Productos de cada empresa
-- price_history: Historial de precios
+- users: Usuarios del sistema (soporta auth clasica y Google OAuth)
+- companies: Empresas con plan y codigo de invitacion
+- products: Productos de cada empresa (soft-delete con campo active)
+- price_history: Historial de precios propios
 - competitors: Competidores configurados
-- competitor_prices: Precios de la competencia
-- alerts: Alertas generadas automaticamente
+- competitor_prices: Precios de Amazon via Keepa
+- alerts: Alertas generadas automaticamente por analisis de precios
 - alert_rules: Reglas de alerta configuradas por usuario (threshold, targetPrice)
+- company_api_keys: API keys cifradas AES-256 por empresa (Keepa)
+- audit_logs: Logs de auditoria (retirada del MVP, tabla existe pero no se usa)
+
+Ver FLYWAY.md para detalle de migraciones (V1-V8).
 
 
 USO CON POSTMAN

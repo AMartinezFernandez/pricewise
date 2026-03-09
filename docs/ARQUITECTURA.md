@@ -9,23 +9,22 @@ INDICE
 1. INTRODUCCION Y VISION GENERAL
 2. ESTRUCTURA DEL PROYECTO
 3. PATRON DE ARQUITECTURA - CAPAS
-4. JAVA Y SPRING BOOT
+4. SPRING BOOT Y SUS ANOTACIONES
 5. GESTION DE DEPENDENCIAS (INYECCION)
 6. ENTIDADES JPA Y PERSISTENCIA
 7. REPOSITORIOS Y SPRING DATA JPA
 8. SERVICIOS Y LOGICA DE NEGOCIO
-9. CONTROLADORES REST Y DTOs
+9. CONTROLADORES REST
 10. SEGURIDAD Y AUTENTICACION JWT
-11. INTEGRACION KEEPA API
-12. PROGRAMACION ASINCRONA Y MULTIHILO
-13. TAREAS PROGRAMADAS CON QUARTZ
+11. PROGRAMACION ASINCRONA Y MULTIHILO
+12. MANEJO DE EXCEPCIONES
+13. VALIDACIONES
 14. CACHE Y RENDIMIENTO
-15. MANEJO DE EXCEPCIONES
-16. VALIDACIONES
-17. CONFIGURACION Y PERFILES
-18. POOL DE CONEXIONES
-19. TESTING
-20. REFERENCIAS Y DOCUMENTACION OFICIAL
+15. TAREAS PROGRAMADAS CON QUARTZ
+16. CONFIGURACION Y PERFILES
+17. POOL DE CONEXIONES
+18. TESTING
+19. REFERENCIAS Y DOCUMENTACION OFICIAL
 
 
 ================================================================================
@@ -36,200 +35,492 @@ Este glosario define los terminos tecnicos usados en este documento.
 Consultalo cuando encuentres un termino que no conozcas.
 
 TERMINOS DE PROGRAMACION GENERAL
----------------------------------
+--------------------------------
 
 ABSTRACCION
     Ocultar complejidad mostrando solo lo esencial.
-    Ejemplo: un repositorio ofrece "findById()" sin exponer SQL.
+    Ejemplo: Un coche tiene "acelerar" sin que sepas como funciona el motor.
 
 ACOPLAMIENTO
     Grado de dependencia entre componentes.
-    - Alto acoplamiento (malo): cambiar uno afecta a muchos.
-    - Bajo acoplamiento (bueno): componentes independientes.
+    - Alto acoplamiento (malo): cambiar uno afecta a muchos otros
+    - Bajo acoplamiento (bueno): componentes independientes
 
 API (Application Programming Interface)
-    Contrato que permite que programas se comuniquen entre si.
-    En PriceWise: endpoints REST que el frontend consume.
+    Conjunto de reglas que permiten que programas se comuniquen.
+    En este proyecto, nuestra API REST permite que apps frontend 
+    se conecten al backend via HTTP.
 
-ASINCRONO
-    Operacion que no bloquea el hilo principal mientras espera.
-    La aplicacion sigue atendiendo peticiones mientras se espera la respuesta.
+BOILERPLATE
+    Codigo repetitivo que hay que escribir aunque no aporte valor.
+    Ejemplo: getters, setters, constructores, equals, hashCode.
+    Lombok elimina boilerplate generandolo automaticamente.
 
-DTO (Data Transfer Object)
-    Objeto exclusivamente para transportar datos entre capas.
-    Evita exponer la entidad directamente al exterior.
+BUG
+    Error en el codigo que causa comportamiento incorrecto.
+
+CALLBACK
+    Funcion que se pasa como argumento a otra funcion para 
+    ser ejecutada despues de que algo ocurra.
+
+CLASSPATH
+    Lista de ubicaciones donde Java busca clases y recursos.
+
+COMPILAR
+    Convertir codigo fuente (.java) en bytecode (.class) 
+    que la JVM puede ejecutar.
+
+CONSOLA / TERMINAL
+    Interfaz de linea de comandos donde ejecutas programas
+    y ves mensajes de log.
+
+DEBUG / DEPURAR
+    Proceso de encontrar y corregir errores en el codigo.
+
+DEPLOY / DESPLEGAR
+    Poner una aplicacion en un servidor para que los usuarios
+    puedan accederla.
 
 ENDPOINT
-    URL especifica de la API que realiza una accion.
-    Ejemplo: POST /api/products crea un producto.
+    URL especifica de una API que realiza una accion concreta.
+    Ejemplo: POST /api/auth/login es el endpoint de login.
 
-IDEMPOTENTE
-    Operacion que produce el mismo resultado al ejecutarse N veces.
-    PUT y DELETE deben ser idempotentes.
+FRAMEWORK
+    Estructura de software que proporciona funcionalidad base
+    sobre la que construyes tu aplicacion.
+    Spring Boot es un framework.
 
-INMUTABILIDAD
-    Objeto que no puede cambiar una vez creado.
-    Preferido para seguridad en entornos multihilo.
+INMUTABLE
+    Objeto que no puede ser modificado despues de crearse.
+    Son seguros en entornos multihilo.
+    Ejemplo: String en Java es inmutable.
 
-ORM (Object-Relational Mapping)
-    Tecnica para mapear objetos Java a tablas de base de datos.
-    JPA + Hibernate es el ORM utilizado en este proyecto.
+INSTANCIA
+    Objeto creado a partir de una clase.
+    "new User()" crea una instancia de la clase User.
 
-PAGINACION
-    Dividir grandes conjuntos de datos en paginas para no devolver todo.
-    Reduce uso de memoria y tiempo de respuesta.
+LAZY LOADING (Carga perezosa)
+    Retrasar la carga de datos hasta que realmente se necesiten.
+    Optimiza rendimiento evitando cargar datos innecesarios.
+
+LIBRERIA / BIBLIOTECA
+    Codigo ya escrito que puedes usar en tu proyecto.
+    Ejemplo: JJWT es una libreria para manejar tokens JWT.
+
+LOG / LOGGING
+    Registro de eventos que ocurren en la aplicacion.
+    Util para debugging y monitoreo.
+    Niveles: DEBUG < INFO < WARN < ERROR
+
+PARAMETRO
+    Valor que pasas a un metodo o funcion.
+
+PERSISTENCIA
+    Guardar datos de forma permanente (en BD, archivos, etc.)
+    para que sobrevivan al reinicio de la aplicacion.
+
+REFACTORIZAR
+    Mejorar la estructura del codigo sin cambiar su comportamiento.
+
+RUNTIME
+    Momento en que el programa esta ejecutandose
+    (opuesto a compile-time).
+
+SCOPE (Ambito)
+    Contexto en el que una variable o metodo es accesible.
 
 SINGLETON
-    Patron de diseno que garantiza una sola instancia de una clase.
+    Patron de diseno donde solo existe una instancia de una clase.
     Spring gestiona beans como singletons por defecto.
 
+STACK TRACE
+    Lista de llamadas a metodos que llevaron a un error.
+    Util para encontrar donde ocurrio el problema.
 
-TERMINOS DE JAVA Y SPRING
---------------------------
 
-@Autowired / @RequiredArgsConstructor
-    Inyeccion de dependencias. Spring proporciona el objeto automaticamente.
+TERMINOS DE SPRING Y JAVA EMPRESARIAL
+-------------------------------------
 
-@Bean
-    Metodo que produce un objeto gestionado por el contenedor Spring.
-
-@Component / @Service / @Repository / @Controller
-    Anotaciones que marcan clases para ser detectadas por Spring.
-    @Service y @Repository son especializaciones de @Component.
-
-@Entity
-    Marca una clase Java como tabla en la base de datos (JPA).
-
-@Transactional
-    Garantiza que todas las operaciones de BD en un metodo
-    se ejecutan atomicamente. Si una falla, todas se revierten.
+ANOTACION (@)
+    Metadatos que añades al codigo para darle comportamiento especial.
+    Ejemplo: @Service le dice a Spring que gestione esa clase.
 
 BEAN
-    Objeto cuyo ciclo de vida gestiona el contenedor Spring.
+    Objeto gestionado por el contenedor de Spring.
+    Spring crea, configura e inyecta beans automaticamente.
+    Todo @Component, @Service, @Repository, @Controller es un bean.
 
-HIBERNATE
-    Implementacion de JPA. Genera y ejecuta SQL automaticamente.
+CONTENEDOR (Spring Container)
+    El "motor" de Spring que gestiona los beans.
+    Crea instancias, inyecta dependencias, gestiona ciclo de vida.
 
-IOC (Inversion of Control)
-    El framework gestiona la creacion de objetos, no el programador.
-    Spring inyecta dependencias donde se necesitan.
+CONTEXTO (ApplicationContext)
+    El contenedor de Spring donde viven todos los beans.
+    Puedes obtener beans del contexto.
 
-JAKARTA VALIDATION
-    Libreria de validacion de campos con anotaciones como @NotNull,
-    @Size, @Email, @DecimalMin.
+DTO (Data Transfer Object)
+    Objeto simple para transferir datos entre capas.
+    No tiene logica, solo campos y getters/setters.
+    Separa la representacion externa de la interna.
+
+ENTITY (Entidad)
+    Clase Java que representa una tabla de base de datos.
+    Marcada con @Entity. Cada instancia es una fila.
+
+INYECCION DE DEPENDENCIAS (DI)
+    Patron donde las dependencias se "inyectan" desde fuera
+    en lugar de crearlas dentro de la clase.
+    Spring lo hace automaticamente via constructores/@Autowired.
+
+IoC (Inversion of Control)
+    Principio donde el framework controla el flujo del programa
+    en lugar del programador. Spring decide cuando crear beans.
 
 JPA (Java Persistence API)
-    Especificacion estandar de Java para acceso a base de datos.
-    Hibernate es la implementacion usada en este proyecto.
+    Especificacion estandar de Java para ORM.
+    Define como mapear objetos Java a tablas de BD.
+    Hibernate es la implementacion mas usada.
 
-LAZY / EAGER LOADING
-    LAZY: la relacion se carga solo cuando se accede a ella (eficiente).
-    EAGER: la relacion se carga siempre junto al padre (puede ser costoso).
+ORM (Object-Relational Mapping)
+    Tecnica que mapea objetos de programacion a tablas de BD.
+    Escribes clases Java, el ORM genera SQL automaticamente.
 
-LOMBOK
-    Libreria que genera boilerplate automaticamente via anotaciones:
-    @Data genera getters/setters/equals/hashCode/toString.
-    @Builder genera el patron builder.
-    @RequiredArgsConstructor genera constructor de campos finales.
+POJO (Plain Old Java Object)
+    Clase Java simple sin dependencias de frameworks.
+    Solo tiene campos, constructor, getters y setters.
+
+REPOSITORY (Repositorio)
+    Componente que abstrae el acceso a datos.
+    Intermediario entre la logica de negocio y la BD.
+
+SERVICE (Servicio)
+    Componente que contiene la logica de negocio.
+    Coordina operaciones entre repositorios.
+
+TRANSACCION
+    Conjunto de operaciones que deben ejecutarse como unidad.
+    Si una falla, todas se revierten (rollback).
+    Garantiza integridad de datos.
+
+
+TERMINOS DE BASE DE DATOS
+-------------------------
+
+ACID
+    Propiedades de transacciones fiables:
+    - Atomicity: todo o nada
+    - Consistency: datos siempre validos
+    - Isolation: transacciones no interfieren entre si
+    - Durability: cambios persistidos sobreviven a caidas
+
+COMMIT
+    Confirmar una transaccion, haciendo sus cambios permanentes.
+
+CONSTRAINT (Restriccion)
+    Regla que limita los datos que pueden guardarse.
+    Ejemplos: NOT NULL, UNIQUE, FOREIGN KEY.
+
+DDL (Data Definition Language)
+    Comandos SQL para definir estructura: CREATE, ALTER, DROP.
+
+DML (Data Manipulation Language)
+    Comandos SQL para manipular datos: SELECT, INSERT, UPDATE, DELETE.
+
+FK (Foreign Key / Clave Foranea)
+    Campo que referencia la clave primaria de otra tabla.
+    Crea relaciones entre tablas.
+
+INDICE (Index)
+    Estructura que acelera busquedas en una columna.
+    Como el indice de un libro.
+
+JOIN
+    Operacion que combina filas de varias tablas
+    basandose en una relacion entre ellas.
+
+JPQL (Java Persistence Query Language)
+    Lenguaje de consultas similar a SQL pero para entidades JPA.
+    Usa nombres de clases y campos en lugar de tablas y columnas.
+
+MIGRACION
+    Cambio controlado en el esquema de la BD.
+    Historico de cambios versionados.
+
+PK (Primary Key / Clave Primaria)
+    Campo unico que identifica cada fila de una tabla.
+
+POOL (de conexiones)
+    Conjunto de conexiones a BD listas para usar.
+    Evita crear/destruir conexiones constantemente (costoso).
+    HikariCP es el pool que usamos.
+
+QUERY (Consulta)
+    Peticion a la BD para obtener o modificar datos.
+
+ROLLBACK
+    Revertir una transaccion, deshaciendo todos sus cambios.
+
+SCHEMA (Esquema)
+    Estructura de la BD: tablas, columnas, tipos, relaciones.
 
 
 TERMINOS DE SEGURIDAD
-----------------------
+---------------------
 
-BCrypt
-    Algoritmo de hash unidireccional para contrasenas.
-    Incluye "salt" automaticamente para prevenir ataques de diccionario.
+AUTENTICACION
+    Verificar la identidad del usuario ("quien eres").
+    Ejemplo: login con email/password.
+
+AUTORIZACION
+    Verificar permisos ("que puedes hacer").
+    Ejemplo: solo ADMIN puede borrar usuarios.
+
+BCRYPT
+    Algoritmo de hash diseñado para contraseñas.
+    Lento a proposito para dificultar ataques.
+    Incluye salt automaticamente.
+
+CLAIM
+    Pieza de informacion contenida en un JWT.
+    Ejemplo: "sub" (subject/usuario), "exp" (expiracion).
 
 CORS (Cross-Origin Resource Sharing)
-    Politica del navegador que controla desde que dominios se puede
-    consumir la API. Configurable por entorno.
+    Mecanismo que permite peticiones desde otros dominios.
+    Necesario cuando el frontend esta en otro servidor.
 
 CSRF (Cross-Site Request Forgery)
-    Ataque que engana al usuario para ejecutar acciones no deseadas.
-    Desactivado en APIs REST sin estado (JWT no necesita CSRF).
+    Ataque donde un sitio malicioso engaña al navegador
+    para hacer peticiones no deseadas.
+    JWT stateless no es vulnerable, por eso lo desactivamos.
+
+ENCRIPTACION
+    Transformar datos para que solo quien tiene la clave
+    pueda leerlos. Proceso reversible.
+
+HASH
+    Transformacion irreversible de datos.
+    Mismo input = mismo output, pero no puedes revertirlo.
+    Usado para contraseñas.
 
 JWT (JSON Web Token)
     Token firmado que contiene informacion del usuario.
-    Formato: Header.Payload.Signature (codificado en Base64).
+    Stateless: el servidor no guarda sesiones.
+
+SALT
+    Valor aleatorio añadido antes de hashear.
+    Evita que contraseñas iguales tengan el mismo hash.
+
+SESION
+    Estado guardado en el servidor asociado a un usuario.
+    JWT es stateless (sin sesion en servidor).
+
+TOKEN
+    Cadena de texto que representa una autenticacion.
+    El cliente lo envía en cada peticion.
+
+
+TERMINOS DE CONCURRENCIA Y MULTIHILO
+------------------------------------
+
+ASINCRONO (Async)
+    Operacion que no bloquea el hilo que la inicia.
+    El hilo puede hacer otras cosas mientras espera.
+
+BLOQUEO (Lock)
+    Mecanismo para que solo un hilo acceda a un recurso.
+    Previene condiciones de carrera.
+
+BLOQUEAR (Block)
+    Cuando un hilo se detiene esperando algo
+    (respuesta de red, BD, otro hilo).
+
+COMPLETABLEFUTURE
+    Clase Java que representa el resultado futuro de una operacion.
+    Permite encadenar acciones cuando el resultado este listo.
+
+CONDICION DE CARRERA (Race Condition)
+    Bug que ocurre cuando dos hilos modifican el mismo dato
+    simultaneamente con resultado impredecible.
+
+CONCURRENCIA
+    Multiples tareas ejecutandose en periodos superpuestos.
+    No necesariamente al mismo tiempo.
+
+DEADLOCK
+    Situacion donde dos hilos se esperan mutuamente
+    y ninguno puede continuar.
+
+EXECUTOR
+    Componente que gestiona la ejecucion de tareas
+    en un pool de hilos.
+
+HILO (Thread)
+    Unidad de ejecucion independiente dentro de un proceso.
+    Multiples hilos pueden ejecutarse en paralelo.
+
+PARALELISMO
+    Multiples tareas ejecutandose literalmente al mismo tiempo
+    en diferentes nucleos del procesador.
+
+POOL (de hilos)
+    Conjunto de hilos reutilizables para ejecutar tareas.
+    Evita crear/destruir hilos constantemente (costoso).
+    ThreadPoolTaskExecutor es el pool que usamos.
+
+SEMAFORO (Semaphore)
+    Mecanismo que limita el numero de accesos concurrentes.
+    Ejemplo: max 3 llamadas simultaneas a la API.
+
+SINCRONIZADO (Synchronized)
+    Mecanismo Java para que solo un hilo ejecute
+    una seccion de codigo a la vez.
+
+THREAD-SAFE
+    Codigo que funciona correctamente con multiples hilos.
+    No tiene condiciones de carrera.
+
+VOLATILE
+    Modificador Java que garantiza visibilidad inmediata
+    de cambios en una variable entre hilos.
+
+
+TERMINOS DE TESTING
+-------------------
+
+ASSERT / ASSERTION
+    Verificacion de que un valor es el esperado.
+    Si falla, el test falla.
+    Ejemplo: assertEquals(expected, actual)
+
+COVERAGE (Cobertura)
+    Porcentaje de codigo ejecutado por los tests.
+    80%+ es un buen objetivo.
+
+FIXTURE
+    Datos de prueba preparados antes de ejecutar tests.
+
+INTEGRACION (Test de)
+    Test que prueba multiples componentes juntos.
+    Ejemplo: servicio con BD real.
+
+MOCK
+    Objeto falso que simula el comportamiento de uno real.
+    Usados para aislar el codigo que se esta testeando.
+    Mockito es la libreria que usamos.
+
+STUB
+    Mock simple que devuelve valores predefinidos.
+
+TEST UNITARIO
+    Test que prueba una unidad de codigo aislada
+    (normalmente un metodo o clase).
+
+TDD (Test-Driven Development)
+    Metodologia donde escribes tests antes del codigo.
+
+
+TERMINOS DE API REST
+--------------------
+
+BODY
+    Contenido de una peticion/respuesta HTTP.
+    Normalmente JSON en APIs REST.
+
+CRUD
+    Create, Read, Update, Delete - operaciones basicas de datos.
+    Mapeadas a POST, GET, PUT/PATCH, DELETE.
+
+HEADER
+    Metadatos de una peticion/respuesta HTTP.
+    Ejemplo: Authorization, Content-Type.
+
+HTTP
+    Protocolo de comunicacion web.
+    Define como cliente y servidor intercambian mensajes.
+
+JSON (JavaScript Object Notation)
+    Formato de texto para intercambiar datos.
+    Ejemplo: {"nombre": "Juan", "edad": 30}
+
+PAGINACION
+    Dividir resultados grandes en paginas mas pequeñas.
+    Evita cargar miles de registros de golpe.
+
+PATH VARIABLE
+    Valor dinamico en la URL.
+    GET /api/products/{id} -> id es path variable.
+
+QUERY PARAMETER
+    Parametro en la URL despues de "?".
+    GET /api/products?page=1&size=20
+
+REQUEST (Peticion)
+    Mensaje del cliente al servidor pidiendo algo.
+
+RESPONSE (Respuesta)
+    Mensaje del servidor al cliente con el resultado.
+
+REST (Representational State Transfer)
+    Estilo de arquitectura para APIs web.
+    Recursos (URLs), verbos HTTP (GET/POST/PUT/DELETE), stateless.
 
 STATELESS
-    El servidor no guarda sesiones. Toda la informacion va en el JWT.
-    Permite escalar horizontalmente sin estado compartido.
+    El servidor no guarda estado entre peticiones.
+    Cada peticion lleva toda la informacion necesaria.
+    JWT permite autenticacion stateless.
+
+STATUS CODE
+    Numero que indica el resultado de una peticion HTTP.
+    200=OK, 404=No encontrado, 500=Error servidor.
 
 
-TERMINOS DE INTEGRACIONES
---------------------------
+TERMINOS DE INFRAESTRUCTURA
+---------------------------
 
-ASIN
-    Amazon Standard Identification Number. Identificador unico de
-    producto en Amazon. Formato: B0XXXXXXXXX.
+CONTENEDOR (Docker)
+    Entorno aislado y ligero para ejecutar aplicaciones.
+    Incluye todo lo necesario: codigo, runtime, dependencias.
 
-BACKOFF EXPONENCIAL
-    Estrategia de reintento: cada intento fallido espera el doble
-    que el anterior. Reduce presion sobre APIs externas.
+VARIABLE DE ENTORNO
+    Valor de configuracion definido fuera del codigo.
+    El sistema operativo o contenedor lo proporciona.
+    Ejemplo: DB_PASSWORD, JWT_SECRET.
 
-CIRCUIT BREAKER
-    Patron que detiene llamadas a un servicio externo si este falla
-    repetidamente, para no saturar con reintentos infinitos.
-
-KEEPA
-    Servicio que ofrece API para consultar precios historicos y
-    actuales de productos Amazon en multiples localizaciones.
-
-SEMAFORO
-    Mecanismo de control de concurrencia que limita cuantas operaciones
-    pueden ejecutarse simultaneamente.
-
-WEBHOOK
-    Notificacion HTTP que un servicio externo envia al tuyo cuando
-    ocurre un evento.
-
-
+YAML / YML
+    Formato de texto para configuracion, legible para humanos.
+    Alternativa a JSON, usa indentacion en lugar de llaves.
 ================================================================================
 1. INTRODUCCION Y VISION GENERAL
 ================================================================================
 
-PriceWise es una API REST backend para monitorizacion y analisis de precios
-orientada a PYMEs. Permite gestionar el catalogo propio de productos, consultar
-precios de competidores (principalmente Amazon via Keepa) y generar alertas y
-recomendaciones de precios con logica de negocio automatizada.
+PriceWise es una aplicacion de monitorizacion de precios que permite a usuarios
+rastrear sus productos y compararlos con la competencia (principalmente Amazon).
 
 PROBLEMA QUE RESUELVE:
-- Dificultad para saber si el precio propio es competitivo
-- Sin visibilidad de como evolucionan los precios de la competencia
-- Toma de decisiones de precio sin datos objetivos
-- Stock de alertas manuales para seguimiento de precios
+- Los comerciantes necesitan saber si sus precios son competitivos
+- Amazon cambia precios constantemente
+- Monitorear manualmente es tedioso y propenso a errores
 
 SOLUCION TECNICA:
-- API REST documentada con OpenAPI / Swagger
-- Base de datos relacional PostgreSQL con historial de precios
-- Integracion asincrona con Keepa API para precios de Amazon
-- Motor de analisis que genera recomendaciones automaticas
-- Tarea programada cada 6 horas que actualiza precios de competencia
-- Seguridad JWT stateless con roles COMPANY_ADMIN, EMPLOYEE y ADMIN
-- Aislamiento multi-tenant por empresa (Company)
+- API REST para gestion de productos
+- Integracion con Keepa API para precios de Amazon
+- Sistema de alertas y recomendaciones automaticas
+- Procesamiento asincrono para no bloquear la aplicacion
 
 TECNOLOGIAS ELEGIDAS Y JUSTIFICACION:
 
-| Tecnologia           | Para que                        | Por que esta y no otra                  |
-|----------------------|---------------------------------|-----------------------------------------|
-| Java 17              | Lenguaje de programacion        | LTS, ecosistema maduro, tipado fuerte   |
-| Spring Boot 3.2      | Framework principal             | Estandar de la industria, productivo    |
-| Spring Security 6    | Autenticacion / autorizacion    | Integrado, configurable, JWT nativo     |
-| PostgreSQL 14+       | Base de datos relacional        | ACID, JSON, indices avanzados           |
-| Spring Data JPA      | Acceso a base de datos          | Queries automaticas, menos SQL manual   |
-| Hibernate            | ORM                             | Implementacion JPA mas madura           |
-| JWT (jjwt 0.12.3)   | Tokens de sesion stateless      | Sin estado, escalable, estandar RFC7519 |
-| Quartz Scheduler     | Tareas programadas              | Robusto, persistente, configurable      |
-| Keepa API            | Precios Amazon                  | Unica API fiable para Amazon            |
-| Lombok               | Reducir boilerplate             | Menos codigo repetitivo, mas legible    |
-| SpringDoc OpenAPI    | Documentacion API               | Auto-generada desde el codigo           |
-| HikariCP             | Pool de conexiones BD           | El mas rapido de la industria           |
-| Docker / Docker Compose | Entorno de desarrollo        | Reproducible, sin instalar Postgres     |
+| Tecnologia      | Para que                  | Por que esta y no otra                    |
+|-----------------|---------------------------|-------------------------------------------|
+| Spring Boot     | Framework base            | Productividad, ecosistema, documentacion  |
+| PostgreSQL      | Base de datos             | Robustez, ACID, escalabilidad             |
+| JWT             | Autenticacion             | Stateless, ideal para APIs                |
+| Quartz          | Tareas programadas        | Mas flexible que @Scheduled               |
+| HikariCP        | Pool de conexiones        | El mas rapido, default de Spring Boot     |
+| Lombok          | Reducir boilerplate       | Codigo limpio sin getters/setters         |
 
 REFERENCIAS:
 - Spring Boot: https://spring.io/projects/spring-boot
-- Spring Security: https://spring.io/projects/spring-security
+- Documentacion oficial: https://docs.spring.io/spring-boot/docs/current/reference/html/
 
 
 ================================================================================
@@ -239,1154 +530,1028 @@ REFERENCIAS:
 ESTRUCTURA DE CARPETAS:
 
 pricewise-backend/
-├── src/
-│   ├── main/
-│   │   ├── java/com/alvaro/pricewise/
-│   │   │   ├── PriceWiseApplication.java   # Entry point, activa scheduling y cache
-│   │   │   ├── config/
-│   │   │   │   ├── SecurityConfig.java     # JWT, CORS, BCrypt, cadena de filtros
-│   │   │   │   ├── AsyncConfig.java        # Executor para llamadas Keepa
-│   │   │   │   ├── KeepaConfig.java        # Propiedades de configuracion Keepa
-│   │   │   │   ├── SchedulerConfig.java    # Configuracion del job Quartz
-│   │   │   │   └── OpenApiConfig.java      # Info Swagger / OpenAPI
-│   │   │   ├── controller/
-│   │   │   │   ├── AuthController.java     # Login, registro, perfil
-│   │   │   │   ├── ProductController.java  # CRUD productos
-│   │   │   │   ├── CompetitorController.java  # Keepa status y sync
-│   │   │   │   ├── AdminController.java    # Gestion de usuarios (ADMIN)
-│   │   │   │   ├── AnalyticsController.java  # Metricas y analisis
-│   │   │   │   └── HealthController.java   # Health check
-│   │   │   ├── service/
-│   │   │   │   ├── AuthService.java        # Registro, login, tokens
-│   │   │   │   ├── ProductService.java     # CRUD, historial, cache
-│   │   │   │   ├── KeepaService.java       # Integracion Amazon/Keepa
-│   │   │   │   └── PriceAnalysisService.java # Alertas y recomendaciones
-│   │   │   ├── entity/
-│   │   │   │   ├── User.java               # Usuario con rol y empresa
-│   │   │   │   ├── Company.java             # Empresa (multi-tenancy)
-│   │   │   │   ├── Product.java            # Producto con SKU/EAN
-│   │   │   │   ├── PriceHistory.java       # Historico de precios
-│   │   │   │   ├── Competitor.java         # Tienda competidora
-│   │   │   │   ├── CompetitorPrice.java    # Precio de competidor
-│   │   │   │   ├── Alert.java              # Alertas de precio
-│   │   │   │   └── PriceRecommendation.java # Recomendaciones IA
-│   │   │   ├── repository/
-│   │   │   │   ├── UserRepository.java         # LEFT JOIN FETCH para Company
-│   │   │   │   ├── CompanyRepository.java      # findByCompanyCode
-│   │   │   │   ├── ProductRepository.java
-│   │   │   │   ├── PriceHistoryRepository.java
-│   │   │   │   ├── CompetitorRepository.java
-│   │   │   │   ├── CompetitorPriceRepository.java
-│   │   │   │   ├── AlertRepository.java
-│   │   │   │   └── PriceRecommendationRepository.java
-│   │   │   ├── security/
-│   │   │   │   ├── JwtService.java         # Generacion y validacion JWT
-│   │   │   │   ├── JwtAuthenticationFilter.java  # Filtro por peticion HTTP
-│   │   │   │   ├── RateLimitingFilter.java # Rate limiting en auth endpoints
-│   │   │   │   ├── UserPrincipal.java      # Objeto autenticado en contexto
-│   │   │   │   └── CustomUserDetailsService.java # Carga usuario desde BD
-│   │   │   ├── scheduler/
-│   │   │   │   └── PriceMonitorJob.java    # Tarea Quartz cada 6 horas
-│   │   │   ├── dto/
-│   │   │   │   ├── auth/                   # LoginRequest, RegisterRequest, AuthResponse
-│   │   │   │   ├── product/                # ProductRequest, ProductResponse, SearchRequest
-│   │   │   │   ├── admin/                  # UserUpdateRequest, AdminStatsResponse
-│   │   │   │   ├── analytics/              # DashboardResponse, StatsResponse
-│   │   │   │   └── common/                 # ApiResponse, PageResponse
-│   │   │   └── exception/
-│   │   │       ├── BadRequestException.java
-│   │   │       ├── ResourceNotFoundException.java
-│   │   │       └── GlobalExceptionHandler.java
-│   │   └── resources/
-│   │       └── application.yml             # Configuracion Spring Boot
-│   └── test/
-│       └── java/com/alvaro/pricewise/      # Tests unitarios e integracion
-├── pom.xml                                 # Dependencias Maven
-├── docker-compose.yml                      # PostgreSQL local
-├── Dockerfile                              # Imagen de produccion
-├── .env.example                            # Variables de entorno de ejemplo
-├── PriceWise_API.postman_collection.json   # Coleccion Postman
-└── README.md                              # Documentacion de inicio
+├── src/main/java/com/alvaro/pricewise/
+│   ├── PriceWiseApplication.java      # Punto de entrada
+│   ├── config/                         # Configuraciones de Spring
+│   ├── controller/                     # Controladores REST (entrada HTTP)
+│   ├── dto/                            # Data Transfer Objects
+│   ├── entity/                         # Entidades JPA (tablas)
+│   ├── exception/                      # Excepciones personalizadas
+│   ├── repository/                     # Acceso a datos
+│   ├── scheduler/                      # Tareas programadas
+│   ├── security/                       # JWT y filtros de seguridad
+│   └── service/                        # Logica de negocio
+├── src/main/resources/
+│   └── application.yml                 # Configuracion
+├── src/test/java/                      # Tests unitarios e integracion
+└── pom.xml                             # Dependencias Maven
 
 POR QUE ESTA ESTRUCTURA:
 
-La estructura sigue una arquitectura en capas clasica de Spring Boot:
+Esta estructura sigue el patron "Package by Layer" (paquetes por capa):
+- Separa responsabilidades claramente
+- Facilita encontrar codigo relacionado
+- Es la convencion de Spring Boot
 
-1. CONTROLLER: Recibe peticiones HTTP, delega al servicio, devuelve respuesta.
-   - Sin logica de negocio. Solo traduce HTTP a llamadas Java.
+ALTERNATIVA: Package by Feature (paquetes por funcionalidad)
+- Tendriamos: user/, product/, analytics/
+- Cada uno con su controller, service, repository
+- Mejor para proyectos muy grandes
 
-2. SERVICE: Toda la logica de negocio aqui.
-   - Transacciones, reglas de precios, orquestacion de repositorios.
-
-3. REPOSITORY: Acceso a base de datos mediante Spring Data JPA.
-   - Queries automaticas y personalizadas sin SQL manual.
-
-4. ENTITY: Modelos de datos mapeados a tablas PostgreSQL.
-
-5. SECURITY: Filtro JWT separado para no contaminar la logica de negocio.
-
-6. DTO: Contratos de entrada/salida sin exponer entidades internas.
+DOCUMENTACION:
+- Guia de estructura: https://docs.spring.io/spring-boot/docs/current/reference/html/using.html#using.structuring-your-code
 
 
 ================================================================================
 3. PATRON DE ARQUITECTURA - CAPAS
 ================================================================================
 
-PriceWise usa arquitectura en capas (Layered Architecture) siguiendo el
-estandar de Spring Boot.
+Usamos arquitectura de 3 capas (Three-Tier Architecture):
 
-DIAGRAMA DE CAPAS:
+┌─────────────────────────────────────────────────────────────────┐
+│                         CAPA DE PRESENTACION                     │
+│                     (Controllers + DTOs)                         │
+│                                                                  │
+│  • Recibe peticiones HTTP                                        │
+│  • Valida entrada con @Valid                                     │
+│  • Convierte DTOs a entidades y viceversa                       │
+│  • Devuelve respuestas JSON                                      │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓ ↑
+┌─────────────────────────────────────────────────────────────────┐
+│                         CAPA DE NEGOCIO                          │
+│                          (Services)                              │
+│                                                                  │
+│  • Contiene reglas de negocio                                   │
+│  • Coordina operaciones entre repositorios                       │
+│  • Maneja transacciones con @Transactional                      │
+│  • NO conoce HTTP ni JSON                                        │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓ ↑
+┌─────────────────────────────────────────────────────────────────┐
+│                         CAPA DE DATOS                            │
+│                   (Repositories + Entities)                      │
+│                                                                  │
+│  • Mapea objetos Java a tablas SQL                              │
+│  • Ejecuta queries (JPQL o nativos)                             │
+│  • Abstrae el acceso a base de datos                            │
+└─────────────────────────────────────────────────────────────────┘
 
-+-------------------------------------------------------------------+
-|                     CAPA PRESENTACION                             |
-|                    (Controllers + DTOs)                           |
-|                                                                   |
-|  Recibe peticiones HTTP, valida entrada, formatea salida JSON     |
-+-------------------------------------------------------------------+
-                              v ^
-+-------------------------------------------------------------------+
-|                     CAPA NEGOCIO                                  |
-|                       (Services)                                  |
-|                                                                   |
-|  Reglas de precio, alertas, recomendaciones, transacciones        |
-+-------------------------------------------------------------------+
-                              v ^
-+-------------------------------------------------------------------+
-|                     CAPA DATOS                                    |
-|              (Repositories + Entities)                            |
-|                                                                   |
-|  Acceso a PostgreSQL via JPA. Queries, filtros, paginacion        |
-+-------------------------------------------------------------------+
-                              v ^
-+-------------------------------------------------------------------+
-|                       BASE DE DATOS                               |
-|                       (PostgreSQL)                                |
-|                                                                   |
-|  Tablas: users, products, price_history, competitors,             |
-|  competitor_prices, alerts, price_recommendations                 |
-+-------------------------------------------------------------------+
+POR QUE SEPARAR EN CAPAS:
 
-FLUJO DE DATOS (Request -> Response):
+1. MANTENIBILIDAD: Cambios en una capa no afectan a otras
+   Ejemplo: Cambiar de PostgreSQL a MySQL solo afecta a la capa de datos
 
-       +-------------+
-       |   Cliente   |  (frontend / Postman)
-       +------+------+
-              | HTTP Request + JWT
-              v
-       +-------------+
-       |  JWT Filter |  Verifica token, extrae usuario
-       +------+------+
-              |
-              v
-       +-------------+
-       | Controller  |  Recibe @RequestBody, llama servicio
-       +------+------+
-              |
-              v
-       +-------------+
-       |   Service   |  Logica de negocio, @Transactional
-       +------+------+
-              |
-              v
-       +-------------+
-       | Repository  |  Consulta / persiste en BD
-       +------+------+
-              |
-              v
-       +-------------+
-       | PostgreSQL  |  Datos persistidos
-       +-------------+
+2. TESTABILIDAD: Podemos hacer mock de cada capa
+   Ejemplo: Testar ProductService sin base de datos real
 
-EJEMPLO CONCRETO - FLUJO DE "CREAR PRODUCTO":
+3. REUSABILIDAD: Servicios pueden ser usados por multiples controllers
+   Ejemplo: ProductService usado por ProductController y SchedulerController
 
-1. POST /api/products con JSON y header Authorization: Bearer <token>
-2. JwtAuthenticationFilter valida token y carga UserPrincipal en contexto
-3. ProductController recibe @RequestBody ProductRequest validado por @Valid
-4. ProductController llama productService.createProduct(request, userId)
-5. ProductService verifica unicidad de SKU
-6. ProductService guarda el producto en BD
-7. ProductService registra entrada en PriceHistory como INITIAL
-8. ProductService invalida cache de categorias y marcas del usuario
-9. Controller devuelve ApiResponse con el ProductResponse creado
+4. SEPARACION DE RESPONSABILIDADES (SoC):
+   - Controller: "Como llegue la peticion"
+   - Service: "Que hacer con los datos"
+   - Repository: "Como guardar/leer de BD"
+
+REFERENCIAS:
+- Clean Architecture: https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html
+- Spring MVC: https://docs.spring.io/spring-framework/reference/web/webmvc.html
 
 
 ================================================================================
-4. JAVA Y SPRING BOOT
+4. SPRING BOOT Y SUS ANOTACIONES
 ================================================================================
 
-JAVA 17 - CARACTERISTICAS USADAS
-----------------------------------
+Spring Boot es un framework que simplifica la creacion de aplicaciones Spring.
 
-RECORDS (DTOs inmutables):
-En algunos DTOs se podrian usar records, aunque en este proyecto se usa
-principalmente Lombok @Data por compatibilidad con frameworks.
-
-SWITCH EXPRESSIONS:
-Usados en logica de calculo de tipo de cambio de precio:
-
-    ChangeType changeType = switch (comparison) {
-        case 1  -> ChangeType.INCREASE;
-        case -1 -> ChangeType.DECREASE;
-        default -> ChangeType.NO_CHANGE;
-    };
-
-VAR (inferencia de tipos local):
-    var products = productRepository.findByUserId(userId);
-
-SPRING BOOT 3.2
-----------------
-
-AUTOCONFIGURACION:
-Spring Boot configura automaticamente componentes segun las dependencias
-presentes en el classpath. Por ejemplo, detecta que hay JPA + Postgres y
-configura el datasource automaticamente.
-
-ANOTACIONES CLAVE:
+ANOTACION @SpringBootApplication
+--------------------------------
+Ubicacion: PriceWiseApplication.java
 
 @SpringBootApplication
-    Combina @Configuration + @EnableAutoConfiguration + @ComponentScan.
-    Solo se usa en PriceWiseApplication.java.
-
-@RestController
-    Combina @Controller + @ResponseBody. Todos los metodos devuelven
-    JSON automaticamente.
-
-@Service
-    Marca clase como servicio Spring. Habilita transacciones con
-    @Transactional.
-
-@Repository
-    Marca interfaz como repositorio. Spring Data JPA genera la
-    implementacion automaticamente.
-
-@Transactional
-    Garantiza atomicidad. Si saveProduct() falla a mitad, todo se
-    revierte. Sin esta anotacion, podria guardarse el producto sin
-    el historial de precios.
-
-EJEMPLO DE CONTROLADOR TIPICO:
-
-@RestController
-@RequestMapping("/api/products")
-@RequiredArgsConstructor
-public class ProductController {
-
-    private final ProductService productService;
-
-    @PostMapping
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<ProductResponse>> createProduct(
-            @Valid @RequestBody ProductRequest request,
-            @AuthenticationPrincipal UserPrincipal principal) {
-
-        ProductResponse product = productService.createProduct(request, principal.getId());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Producto creado", product));
+public class PriceWiseApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(PriceWiseApplication.class, args);
     }
 }
 
-REFERENCIAS:
-- Spring Boot: https://spring.io/projects/spring-boot
-- Spring MVC: https://docs.spring.io/spring-framework/reference/web/webmvc.html
+Esta anotacion es equivalente a 3 anotaciones juntas:
+
+1. @Configuration: Indica que la clase puede definir beans
+2. @EnableAutoConfiguration: Configura automaticamente segun dependencias
+3. @ComponentScan: Escanea este paquete y subpaquetes buscando componentes
+
+POR QUE @SpringBootApplication:
+- Una sola anotacion en lugar de tres
+- Convencion sobre configuracion
+- Menos codigo, menos errores
+
+ANOTACIONES DE COMPONENTES
+--------------------------
+
+@Component    - Componente generico gestionado por Spring
+@Service      - Servicio de logica de negocio (semanticamente igual que @Component)
+@Repository   - Acceso a datos (anade traduccion de excepciones de BD)
+@Controller   - Controlador MVC que devuelve vistas
+@RestController - Controlador REST que devuelve JSON (@Controller + @ResponseBody)
+@Configuration  - Clase de configuracion que define beans
+
+EJEMPLO PRACTICO:
+
+@Service                          // Spring lo detecta y crea una instancia
+@RequiredArgsConstructor          // Lombok: genera constructor con campos final
+public class ProductService {
+    
+    private final ProductRepository productRepository;  // Inyectado automaticamente
+    
+    @Transactional                // Spring gestiona la transaccion
+    public Product save(Product p) {
+        return productRepository.save(p);
+    }
+}
+
+CICLO DE VIDA DE LOS BEANS:
+
+1. Spring escanea el classpath buscando @Component y similares
+2. Crea instancias de cada componente (beans)
+3. Inyecta dependencias en constructores/@Autowired
+4. Ejecuta metodos @PostConstruct
+5. Beans listos para usar
+6. Al cerrar: ejecuta metodos @PreDestroy
+
+DOCUMENTACION OFICIAL:
+- Spring Core: https://docs.spring.io/spring-framework/reference/core.html
+- Anotaciones: https://docs.spring.io/spring-framework/reference/core/beans/classpath-scanning.html
 
 
 ================================================================================
 5. GESTION DE DEPENDENCIAS (INYECCION)
 ================================================================================
 
-Spring gestiona todos los objetos (beans) y los inyecta automaticamente.
+INYECCION DE DEPENDENCIAS (DI) - Concepto fundamental de Spring
 
-POR QUE INYECCION DE DEPENDENCIAS:
-- Las clases no crean sus propias dependencias (bajo acoplamiento)
-- Facil de testear (se pueden inyectar mocks)
-- Spring gestiona el ciclo de vida (singleton por defecto)
+QUE ES:
+En lugar de crear objetos manualmente, Spring los "inyecta" donde se necesitan.
 
-PATRON PREFERIDO EN PRICEWISE: Constructor Injection con Lombok
----------------------------------------------------------------
+SIN INYECCION (MAL):
+public class ProductService {
+    private ProductRepository repo = new ProductRepository(); // Mal: acoplamiento
+}
 
-// Lombok genera el constructor con todos los campos final
-@Service
+CON INYECCION (BIEN):
+public class ProductService {
+    private final ProductRepository repo; // Spring lo inyecta
+    
+    public ProductService(ProductRepository repo) {  // Constructor injection
+        this.repo = repo;
+    }
+}
+
+FORMAS DE INYECCION:
+
+1. POR CONSTRUCTOR (RECOMENDADA):
+   @Service
+   @RequiredArgsConstructor  // Lombok genera el constructor
+   public class ProductService {
+       private final ProductRepository productRepository;
+   }
+
+   Por que es la mejor:
+   - Los campos pueden ser final (inmutables)
+   - Las dependencias son claras y obligatorias
+   - Facilita el testing (puedes pasar mocks en el constructor)
+   - No permite instancias incompletas
+
+2. POR SETTER (NO RECOMENDADA):
+   @Autowired
+   public void setRepository(ProductRepository repo) {
+       this.repo = repo;
+   }
+
+   Problemas:
+   - Permite objetos sin todas las dependencias
+   - Campos no pueden ser final
+
+3. POR CAMPO (EVITAR):
+   @Autowired
+   private ProductRepository repo;
+
+   Problemas:
+   - No se puede hacer final
+   - Dificil de testear sin reflection
+   - Dependencias ocultas
+
+@REQUIREDARGSCONSTRUCTOR DE LOMBOK:
+Genera automaticamente un constructor con todos los campos "final":
+
 @RequiredArgsConstructor
 public class ProductService {
-
-    private final ProductRepository productRepository;
-    private final UserRepository userRepository;
-    private final PriceAnalysisService priceAnalysisService;
-
-    // Spring inyecta los tres beans automaticamente al crear el servicio
+    private final ProductRepository productRepository;    // En constructor
+    private final UserRepository userRepository;          // En constructor
+    private String optionalField;                         // NO en constructor
 }
 
-POR QUE CONSTRUCTOR INJECTION Y NO @Autowired EN CAMPO:
-- Los campos final garantizan inmutabilidad
-- El objeto nunca esta en estado parcialmente inicializado
-- Mas facil de testear sin Spring
-
-SCOPES DE SPRING BEANS:
-
-| Scope       | Descripcion                      | Usado en          |
-|-------------|----------------------------------|-------------------|
-| @Singleton  | Una instancia para toda la app   | Services, Repos   |
-| @Prototype  | Nueva instancia cada vez         | No usado aqui     |
-| @RequestScoped | Una instancia por request HTTP | No usado aqui     |
-
-CONFIGURACION MANUAL (AppConfig / SecurityConfig):
-Cuando Spring no puede crear el bean automaticamente, se usa @Bean:
-
-@Configuration
-public class SecurityConfig {
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(...) { ... }
+// Lombok genera:
+public ProductService(ProductRepository productRepository, UserRepository userRepository) {
+    this.productRepository = productRepository;
+    this.userRepository = userRepository;
 }
 
-REFERENCIAS:
-- Dependency Injection: https://spring.io/guides/gs/rest-service/
+DOCUMENTACION:
+- DI en Spring: https://docs.spring.io/spring-framework/reference/core/beans/dependencies/factory-collaborators.html
+- Lombok: https://projectlombok.org/features/constructor
 
 
 ================================================================================
 6. ENTIDADES JPA Y PERSISTENCIA
 ================================================================================
 
-Las entidades son clases Java mapeadas a tablas de PostgreSQL via JPA + Hibernate.
+JPA (Java Persistence API) es el estandar de Java para ORM (Object-Relational Mapping).
+Hibernate es la implementacion mas usada de JPA.
 
-VENTAJAS DE JPA SOBRE SQL PURO:
-- Generacion automatica de SQL
-- Verificacion en tiempo de compilacion de relaciones
-- Migracion de esquema con Hibernate DDL auto
-- Operaciones CRUD sin SQL manual
-
-ENTIDADES EN PRICEWISE:
-------------------------
-
-1. USER - Usuarios del sistema
+ANOTACIONES JPA PRINCIPALES
+---------------------------
 
 @Entity
-@Table(name = "users", uniqueConstraints = {
-    @UniqueConstraint(columnNames = "email"),
-    @UniqueConstraint(columnNames = "username")
-})
+-------
+Marca una clase como entidad persistible (tabla en BD).
+
+@Entity
+@Table(name = "products")  // Nombre de tabla (opcional si coincide con clase)
+public class Product {
+    ...
+}
+
+Por que @Entity:
+- JPA necesita saber que clases mapear a tablas
+- Hibernate genera el DDL automaticamente
+
+@Id y @GeneratedValue
+---------------------
+@Id                                           // Este campo es la clave primaria
+@GeneratedValue(strategy = GenerationType.IDENTITY)  // Auto-increment
+private Long id;
+
+Estrategias de generacion:
+- IDENTITY: Auto-increment de la BD (el mas comun)
+- SEQUENCE: Secuencias (mejor para batch inserts)
+- TABLE: Tabla auxiliar (evitar, lento)
+- AUTO: Hibernate decide
+
+@Column
+-------
+Configura propiedades de la columna.
+
+@Column(name = "current_price", nullable = false, precision = 10, scale = 2)
+private BigDecimal currentPrice;
+
+@Column(unique = true)       // Restriccion UNIQUE
+private String email;
+
+@Column(length = 1000)       // VARCHAR(1000)
+private String description;
+
+RELACIONES ENTRE ENTIDADES
+--------------------------
+
+@ManyToOne - Muchos a uno (lo mas comun)
+-----------------------------------------
+Muchos productos pertenecen a un usuario.
+
+@Entity
+public class Product {
+    @ManyToOne(fetch = FetchType.LAZY)  // No cargar usuario automaticamente
+    @JoinColumn(name = "user_id", nullable = false)  // FK en esta tabla
+    private User user;
+}
+
+Por que LAZY:
+- Evita cargar datos innecesarios
+- Mejora rendimiento
+- El usuario se carga solo cuando se accede
+
+@OneToMany - Uno a muchos
+-------------------------
+Un usuario tiene muchos productos.
+
+@Entity
 public class User {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private String username;     // Unico, 3-50 chars
-    private String email;        // Unico, formato valido
-    private String password;     // BCrypt hash
-    private String businessName; // Nombre del negocio
-    private String businessType; // Tipo de empresa
-    @Enumerated(EnumType.STRING)
-    private Role role;           // COMPANY_ADMIN, EMPLOYEE o ADMIN
-    private Boolean active;      // Soft-enable/disable
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Company company;     // Empresa a la que pertenece
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Product> products = new ArrayList<>();
 }
 
-Roles del sistema:
-- ADMIN: Super-administrador de la plataforma (acceso total)
-- COMPANY_ADMIN: Administrador de una empresa (gestiona su empresa y empleados)
-- EMPLOYEE: Empleado de una empresa (operaciones basicas dentro de su empresa)
+mappedBy: indica que la FK esta en la otra tabla (Product.user)
+cascade: propaga operaciones (si borras usuario, borra productos)
 
-Por que estos campos:
-- role como String en BD (no numero): legible en consultas directas
-- active para desactivar sin borrar (historial preservado)
-- company: FK a la tabla companies para aislamiento multi-tenant
-- businessName/businessType: contexto de negocio para personalizacion futura
+@ManyToMany - Muchos a muchos
+-----------------------------
+Requiere tabla intermedia. No lo usamos en PriceWise pero:
 
-1b. COMPANY - Empresas del sistema (Multi-Tenancy)
+@ManyToMany
+@JoinTable(
+    name = "product_tags",
+    joinColumns = @JoinColumn(name = "product_id"),
+    inverseJoinColumns = @JoinColumn(name = "tag_id")
+)
+private Set<Tag> tags;
 
-@Entity
-@Table(name = "companies")
-public class Company {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private String name;          // Nombre de la empresa
-    private String companyCode;   // Codigo unico (UUID substring) para registro
-    private String businessType;  // Tipo de negocio
-    private String plan;          // Plan activo (FREE, PREMIUM, etc.)
-    private Integer maxProducts;  // Limite de productos
-    private Integer maxUsers;     // Limite de usuarios
-    private Boolean active;
-    @OneToMany(mappedBy = "company")
-    private List<User> users;     // Usuarios de la empresa
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-}
-
-Por que esta entidad:
-- Centraliza la informacion de empresa para multi-tenancy
-- Permite escalar a modelo SaaS con planes y limites por empresa
-- Todos los datos (productos, alertas, etc.) se aislan via companyId
-
-2. PRODUCT - Productos del catalogo del usuario
+INDICES
+-------
+Mejoran velocidad de consultas.
 
 @Entity
 @Table(name = "products", indexes = {
-    @Index(name = "idx_product_sku",      columnList = "sku"),
-    @Index(name = "idx_product_user",     columnList = "user_id"),
+    @Index(name = "idx_product_sku", columnList = "sku"),
+    @Index(name = "idx_product_user", columnList = "user_id"),
     @Index(name = "idx_product_category", columnList = "category")
 })
+public class Product { ... }
+
+Por que estos indices:
+- sku: Buscamos productos por SKU frecuentemente
+- user_id: Filtramos por usuario en casi todas las queries
+- category: Filtramos por categoria
+
+AUDITORIA AUTOMATICA
+--------------------
+@EntityListeners(AuditingEntityListener.class)
 public class Product {
-    private Long id;
-    private String name;              // max 200 chars
-    private String description;       // max 1000 chars
-    private String sku;               // Codigo interno, unico
-    private String ean;               // Codigo de barras EAN-13
-    private BigDecimal currentPrice;  // Precio actual (precision 12,2)
-    private BigDecimal costPrice;     // Coste para calcular margen
-    private String category;
-    private String brand;
-    private String imageUrl;
-    private Boolean active;           // Soft delete
-    private Boolean monitoringEnabled;// Si se monitorea la competencia
-    @ManyToOne(fetch = FetchType.LAZY)
-    private User user;
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
-    private List<PriceHistory> priceHistory;
-}
-
-Metodo helper getMargin():
-    Calcula margen = (currentPrice - costPrice) / costPrice * 100
-    Devuelve null si no hay costPrice configurado.
-
-Por que los indices:
-- idx_product_sku: busquedas frecuentes por codigo interno
-- idx_product_user: todas las queries filtran por usuario propietario
-- idx_product_category: filtros de busqueda y queries de categorias
-
-3. PRICEHISTORY - Historico de precios
-
-@Entity
-@Table(name = "price_history", indexes = {
-    @Index(columnList = "product_id"),
-    @Index(columnList = "recorded_at")
-})
-public class PriceHistory {
-    private Long id;
-    private BigDecimal price;
-    private BigDecimal previousPrice;
-    @Enumerated(EnumType.STRING)
-    private ChangeType changeType;    // INCREASE, DECREASE, NO_CHANGE, INITIAL
-    private String changeReason;
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Product product;
-    private LocalDateTime recordedAt;
-}
-
-Por que registrar changeType:
-- Permite analytics de tendencia sin recalcular siempre
-- INITIAL marca la primera entrada para no confundirla con cambios
-
-4. COMPETITOR - Tiendas competidoras
-
-@Entity
-@Table(name = "competitors")
-public class Competitor {
-    private Long id;
-    private String name;              // Unico, ej: "Amazon ES"
-    private String code;              // Clave corta: "amazon_es"
-    private String baseUrl;
-    private String logoUrl;
-    @Enumerated(EnumType.STRING)
-    private SourceType sourceType;    // API, SCRAPING, MANUAL
-    private String sourceConfig;      // JSON de configuracion (API keys, etc.)
-    private Boolean active;
-    private LocalDateTime lastScrapedAt;
-}
-
-Por que sourceType como enum:
-- Permite implementar estrategias distintas segun origen de datos
-- API: Keepa; SCRAPING: Jsoup; MANUAL: entrada manual del usuario
-
-5. COMPETITORPRICE - Precios de competidores
-
-@Entity
-@Table(name = "competitor_prices")
-public class CompetitorPrice {
-    private Long id;
-    private BigDecimal price;
-    private BigDecimal originalPrice;
-    private String currency;          // EUR por defecto
-    private Boolean available;
-    private Boolean freeShipping;
-    private BigDecimal shippingCost;
-    private String productUrl;
-    private String competitorProductTitle;
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Product product;
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Competitor competitor;
-    private LocalDateTime scrapedAt;
-    private String source;
-}
-
-Metodo getPriceDifferencePercentage():
-    (competitorPrice - ourPrice) / ourPrice * 100
-    Positivo = competidor mas caro. Negativo = competidor mas barato.
-
-6. ALERT - Alertas de precio
-
-@Entity
-@Table(name = "alerts")
-public class Alert {
-    private Long id;
-    @Enumerated(EnumType.STRING)
-    private AlertType alertType;      // COMPETITOR_PRICE_DROP, PRICE_BELOW_COST, etc.
-    private String title;
-    private String message;
-    @Enumerated(EnumType.STRING)
-    private Severity severity;        // INFO, WARNING, CRITICAL
-    private Boolean isRead;
-    @ManyToOne(fetch = FetchType.LAZY)
-    private User user;
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Product product;
+    @CreatedDate
     private LocalDateTime createdAt;
-    private LocalDateTime readAt;
+    
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
 }
 
-7. PRICERECOMMENDATION - Recomendaciones de precio
+Requiere @EnableJpaAuditing en una clase @Configuration.
 
-@Entity
-@Table(name = "price_recommendations")
-public class PriceRecommendation {
-    private Long id;
-    @Enumerated(EnumType.STRING)
-    private RecommendationType recommendationType;  // PRICE_TOO_HIGH, etc.
-    private BigDecimal suggestedPrice;
-    @Enumerated(EnumType.STRING)
-    private Status status;       // PENDING, APPLIED, DISMISSED
-    @Enumerated(EnumType.STRING)
-    private Priority priority;   // LOW, MEDIUM, HIGH, URGENT
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Product product;
-    private LocalDateTime appliedAt;
-    private LocalDateTime dismissedAt;
-}
-
-DATABASE:
----------
-
-@SpringBootApplication
-Con DDL auto = update en desarrollo: Hibernate crea/actualiza tablas automaticamente.
-Con DDL auto = validate en produccion: Solo verifica que el esquema es correcto.
-
-ESTRATEGIA DE IDENTIFICADORES:
-GenerationType.IDENTITY delega la generacion del ID a PostgreSQL (SERIAL/BIGSERIAL).
-Es la estrategia mas eficiente con PostgreSQL.
-
-REFERENCIAS:
-- JPA: https://jakarta.ee/specifications/persistence/
+DOCUMENTACION:
+- JPA Specification: https://jakarta.ee/specifications/persistence/
 - Hibernate: https://hibernate.org/orm/documentation/
-
-SEEDING DE DATOS (DatabaseSeeder):
-----------------------------------
-Al arrancar, si la base de datos esta vacia, se crea:
-1. Empresa "PriceWise Admin Corp" (ADMIN)
-2. Usuario "admin" (Role ADMIN)
-
-Adicionalmente, si no existen, se generan 3 empresas de prueba:
-- Tech Solutions (TECH001)
-- Global Retail (RETAIL01)
-- Consulting Pro (CONSULT1)
-Cada una con 1 admin y 3 empleados para pruebas manuales.
+- Spring Data JPA: https://docs.spring.io/spring-data/jpa/reference/
 
 
 ================================================================================
 7. REPOSITORIOS Y SPRING DATA JPA
 ================================================================================
 
-Los repositorios son interfaces. Spring Data JPA genera la implementacion SQL
-automaticamente en tiempo de compilacion.
+Spring Data JPA genera implementaciones de repositorios automaticamente.
 
-JERARQUIA DE INTERFACES:
-    Repository (base)
-        -> CrudRepository (CRUD basico)
-            -> PagingAndSortingRepository (paginacion)
-                -> JpaRepository (+ flush, batch, etc.)
+INTERFAZ BASE
+-------------
 
-PRICEWISE EXTIENDE JpaRepository SIEMPRE.
-
-TIPOS DE QUERIES EN PRICEWISE:
--------------------------------
-
-1. DERIVED QUERIES (automaticas por nombre):
-
-interface ProductRepository extends JpaRepository<Product, Long> {
-
-    // Spring genera: SELECT * FROM products WHERE company_id = ? AND active = true
-    List<Product> findByCompanyIdAndActiveTrue(Long companyId);
-
-    // Spring genera: SELECT COUNT(*) FROM products WHERE company_id = ? AND active = true
-    long countByCompanyIdAndActiveTrue(Long companyId);
-
-    // JPQL con DISTINCT para filtros de busqueda
-    @Query("SELECT DISTINCT p.category FROM Product p WHERE p.company.id = :companyId AND p.active = true")
-    List<String> findDistinctCategoriesByCompanyId(@Param("companyId") Long companyId);
+public interface ProductRepository extends JpaRepository<Product, Long> {
+    // Spring genera automaticamente: save, findById, findAll, delete, etc.
 }
 
-2. CUSTOM JPQL QUERIES (con JOIN FETCH para prevenir N+1):
+JpaRepository hereda de:
+- CrudRepository: operaciones CRUD basicas
+- PagingAndSortingRepository: paginacion y ordenacion
+- JpaRepository: flush, batch operations
 
-@Query("SELECT p FROM Product p LEFT JOIN FETCH p.createdBy " +
-       "WHERE p.company.id = :companyId AND p.id = :productId AND p.active = true")
-Optional<Product> findByCompanyIdAndIdWithCreatedBy(
-        @Param("companyId") Long companyId, @Param("productId") Long productId);
+QUERY METHODS
+-------------
+Spring genera queries a partir del nombre del metodo:
 
-@Query("SELECT p FROM Product p WHERE p.company.id = :companyId " +
+// SELECT * FROM products WHERE user_id = ?
+List<Product> findByUserId(Long userId);
+
+// SELECT * FROM products WHERE name LIKE ?
+List<Product> findByNameContaining(String name);
+
+// SELECT * FROM products WHERE active = true AND monitoring_enabled = true
+List<Product> findByActiveTrueAndMonitoringEnabledTrue();
+
+// SELECT * FROM products WHERE user_id = ? ORDER BY created_at DESC LIMIT 1
+Optional<Product> findFirstByUserIdOrderByCreatedAtDesc(Long userId);
+
+PALABRAS CLAVE SOPORTADAS:
+- findBy, readBy, getBy, queryBy, countBy, existsBy, deleteBy
+- And, Or
+- Is, Equals
+- Between, LessThan, GreaterThan
+- Like, Containing, StartingWith, EndingWith
+- True, False
+- OrderBy, Asc, Desc
+- First, Top
+
+@QUERY - JPQL PERSONALIZADO
+---------------------------
+Cuando la query method se vuelve muy larga:
+
+@Query("SELECT p FROM Product p WHERE p.user.id = :userId " +
        "AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
-       "AND (:category IS NULL OR p.category = :category) " +
-       "AND p.active = true")
-Page<Product> searchProducts(@Param("companyId") Long companyId,
-                              @Param("name") String name,
-                              @Param("category") String category,
-                              Pageable pageable);
+       "AND (:category IS NULL OR p.category = :category)")
+Page<Product> searchProducts(@Param("userId") Long userId,
+                             @Param("name") String name,
+                             @Param("category") String category,
+                             Pageable pageable);
 
-3. PAGINACION:
+Por que JPQL y no SQL nativo:
+- Portable entre bases de datos
+- Usa nombres de clases/campos Java
+- Validado en tiempo de compilacion
 
-// En el controller:
-Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+QUERY NATIVO
+------------
+Para queries muy complejas o especificas de PostgreSQL:
 
-// En el repositorio:
-Page<Product> findByUserIdAndActiveTrue(Long userId, Pageable pageable);
+@Query(value = "SELECT * FROM products WHERE similarity(name, :term) > 0.3",
+       nativeQuery = true)
+List<Product> findBySimilarity(@Param("term") String term);
 
-// La respuesta incluye: content, totalElements, totalPages, number, size
+PAGINACION
+----------
+Spring soporta paginacion transparente:
 
-VENTAJAS SOBRE SQL MANUAL:
-- Sin riesgo de SQL Injection (queries parametrizadas siempre)
-- Refactoring seguro (el compilador detecta errores)
-- Menos codigo para operaciones estandar
+// En Repository
+Page<Product> findByUserId(Long userId, Pageable pageable);
 
-REFERENCIAS:
-- Spring Data JPA: https://spring.io/projects/spring-data-jpa
-- Query Methods: https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#jpa.query-methods
+// En Service
+Pageable pageable = PageRequest.of(0, 20, Sort.by("name").ascending());
+Page<Product> page = productRepository.findByUserId(userId, pageable);
+
+// Page contiene:
+page.getContent();       // Lista de productos
+page.getTotalElements(); // Total en BD
+page.getTotalPages();    // Total de paginas
+page.getNumber();        // Pagina actual
+page.hasNext();          // Hay mas paginas?
+
+DOCUMENTACION:
+- Spring Data JPA Reference: https://docs.spring.io/spring-data/jpa/reference/
+- Query Methods: https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html
 
 
 ================================================================================
 8. SERVICIOS Y LOGICA DE NEGOCIO
 ================================================================================
 
-Los servicios contienen toda la logica de negocio. Son @Transactional por defecto
-para garantizar consistencia de datos.
+Los servicios contienen la logica de negocio de la aplicacion.
 
-AUTHSERVICE:
------------
+ESTRUCTURA DE UN SERVICIO
+-------------------------
 
-Responsabilidades:
-- Registro de usuario con validacion de unicidad
-- Login con generacion de JWT
-- Creacion de empleados (COMPANY_ADMIN)
-- Recuperacion de perfil autenticado
+@Slf4j                          // Logger de Lombok
+@Service                        // Componente de Spring
+@RequiredArgsConstructor        // Constructor con dependencias
+public class ProductService {
 
-Flujo de registro:
-1. Verificar que el email no existe: userRepository.existsByEmail()
-2. Verificar que el username no existe: userRepository.existsByUsername()
-3. Validar companyCode y asociar a empresa existente
-4. Codificar contrasena: passwordEncoder.encode(rawPassword)
-5. Guardar usuario con rol EMPLOYEE por defecto
-6. Generar JWT y devolver AuthResponse
-
-Flujo de login (optimizado):
-1. Autenticar con authenticationManager.authenticate()
-2. Extraer UserPrincipal del contexto de seguridad (ya cargado por Spring Security)
-3. Generar JWT con los datos del UserPrincipal
-4. Devolver AuthResponse con id, username, email, role, companyId, companyName
-   NOTA: No se re-consulta la BD; UserPrincipal ya contiene todos los datos necesarios
-   (companyName, role, displayUsername) desde la carga inicial en CustomUserDetailsService
-
-PRODUCTSERVICE:
---------------
-
-Responsabilidades:
-- CRUD completo con aislamiento por empresa (companyId)
-- Registro automatico de historial de precios al crear/actualizar
-- Busqueda con filtros y paginacion
-- Invalidacion de cache al modificar productos
-- Busqueda fallback por ASIN en Keepa cuando no hay resultados locales
-
-Flujo de creacion de producto:
-1. Obtener Company y User del repositorio
-2. Verificar unicidad de SKU si se proporciona
-3. Construir Product con builder de Lombok (asociado a Company y createdBy)
-4. Guardar en BD: productRepository.save(product)
-5. Registrar PriceHistory con tipo INITIAL
-6. Invalidar cache de categorias y marcas de la empresa
-
-Flujo de actualizacion:
-1. Cargar producto y verificar que pertenece a la empresa (companyId)
-2. Detectar si el precio ha cambiado
-3. Si cambia: calcular ChangeType (INCREASE o DECREASE)
-4. Registrar nueva entrada en PriceHistory
-5. Guardar producto actualizado
-6. Devolver ProductResponse mapeado
-
-Flujo de consulta de detalle:
-1. findByCompanyIdAndIdWithCreatedBy() con JOIN FETCH para cargar createdBy
-2. Evita N+1 al acceder a createdBy.getUsername() en el mapeo a DTO
-
-KEEPASERVICE:
-------------
-
-Responsabilidades:
-- Consultar precios de Amazon via API Keepa
-- Gestionar concurrencia y reintentos
-- Crear entrada en Competitor si no existe
-
-Caracteristicas clave:
-- Thread-safe: uso de Semaphore(3) para maximo 3 peticiones concurrentes
-- Backoff exponencial: espera 1s, 2s, 4s entre reintentos (max 3)
-- Async: devuelve CompletableFuture para no bloquear el hilo
-- Double-checked locking para inicializacion del competidor Amazon
-- Timeout: 30 segundos por peticion
-- Locales soportados: ES, US, DE, FR, UK, IT, CA, JP
-
-PRICEANALYSISSERVICE:
---------------------
-
-Responsabilidades:
-- Analizar precios propios vs competencia
-- Generar recomendaciones de precio automaticas
-- Crear alertas para cambios significativos
-
-Umbrales configurados:
-- HIGH_PRICE_THRESHOLD = 10%: si el precio propio es >10% mas caro que la media
-  de competidores, generar recomendacion PRICE_TOO_HIGH
-- LOW_PRICE_THRESHOLD = 10%: si el precio propio es >10% mas barato,
-  generar recomendacion PRICE_TOO_LOW (oportunidad de subir margen)
-- SUDDEN_CHANGE_THRESHOLD = 15%: cambio mayor al 15% en competidor
-  genera alerta inmediata
-
-REFERENCIAS:
-- Spring Transactions: https://docs.spring.io/spring-framework/reference/data-access/transaction.html
-
-
-================================================================================
-9. CONTROLADORES REST Y DTOs
-================================================================================
-
-CONTROLADORES:
---------------
-
-Los controladores son finos (thin controllers): solo reciben la peticion,
-delegan al servicio y devuelven la respuesta. Sin logica de negocio.
-
-ENDPOINTS PUBLICOS (sin autenticacion):
-    POST   /api/auth/register          - Registro nuevo usuario (requiere companyCode)
-    POST   /api/auth/login             - Login, devuelve JWT
-    GET    /api/health                 - Health check
-    GET    /api/competitors/status     - Estado disponibilidad Keepa
-
-ENDPOINTS AUTENTICADOS (USER o ADMIN):
-    GET    /api/auth/profile           - Perfil del usuario autenticado
-    POST   /api/auth/create-employee   - Crear empleado (solo COMPANY_ADMIN)
-    POST   /api/products               - Crear producto
-    GET    /api/products               - Listar productos (paginado)
-    GET    /api/products/{id}          - Detalle producto
-    PUT    /api/products/{id}          - Actualizar producto
-    DELETE /api/products/{id}          - Borrado logico
-    GET    /api/products/search        - Buscar con filtros
-    GET    /api/products/categories    - Categorias del usuario (cacheado)
-    GET    /api/products/brands        - Marcas del usuario (cacheado)
-    GET    /api/products/count         - Total de productos
-    GET    /api/competitors/amazon/price/{asin}     - Precio Amazon por ASIN
-    POST   /api/competitors/amazon/sync/{productId} - Sincronizar con Amazon
-
-ENDPOINTS ADMIN (solo ADMIN):
-    POST   /api/admin/companies                 - Crear nueva empresa + admin
-    GET    /api/admin/stats                     - Estadisticas del sistema
-    GET    /api/admin/dashboard                 - Metricas con desglose por empresa
-    GET    /api/admin/users                     - Listar usuarios
-    GET    /api/admin/users/{id}                - Detalle usuario
-    PUT    /api/admin/users/{id}                - Actualizar usuario
-    PUT    /api/admin/users/{id}/password       - Cambiar contrasena
-    PUT    /api/admin/users/{id}/role           - Cambiar rol
-    PUT    /api/admin/users/{id}/status         - Activar/desactivar
-    DELETE /api/admin/users/{id}                - Eliminar permanentemente
-    GET    /api/admin/scheduler/status          - Estado del scheduler
-    POST   /api/admin/scheduler/trigger-now    - Ejecutar job ahora
-    POST   /api/admin/scheduler/pause          - Pausar scheduler
-    POST   /api/admin/scheduler/resume         - Reanudar scheduler
-
-DOCUMENTACION:
-    GET    /swagger-ui.html   - Interfaz Swagger interactiva
-    GET    /api-docs          - Especificacion OpenAPI en JSON
-    GET    /actuator/**       - Metricas y estado Spring Actuator
-
-FORMATO DE RESPUESTA:
----------------------
-
-Respuesta exitosa:
-{
-  "success": true,
-  "message": "Producto creado correctamente",
-  "data": { ... },
-  "timestamp": "2026-02-10T10:30:00"
+    private final ProductRepository productRepository;
+    private final UserRepository userRepository;
+    private final PriceHistoryRepository priceHistoryRepository;
+    
+    @Transactional              // Metodo transaccional
+    public ProductResponse createProduct(Long userId, CreateProductRequest request) {
+        // 1. Validaciones de negocio
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        
+        // 2. Crear entidad
+        Product product = Product.builder()
+            .name(request.getName())
+            .user(user)
+            .build();
+        
+        // 3. Guardar
+        product = productRepository.save(product);
+        
+        // 4. Operaciones adicionales
+        createPriceHistory(product);
+        
+        // 5. Convertir a DTO y devolver
+        return ProductResponse.fromEntity(product);
+    }
 }
 
-Respuesta paginada:
-{
-  "success": true,
-  "data": [ ... ],
-  "page": 0,
-  "size": 20,
-  "totalElements": 150,
-  "totalPages": 8,
-  "isFirst": true,
-  "isLast": false
+@TRANSACTIONAL - GESTION DE TRANSACCIONES
+-----------------------------------------
+Spring gestiona transacciones automaticamente.
+
+@Transactional
+public void transferMoney(Long from, Long to, BigDecimal amount) {
+    accountRepository.withdraw(from, amount);    // Si falla aqui...
+    accountRepository.deposit(to, amount);       // ...esto no se ejecuta
 }
 
-Respuesta de error:
-{
-  "success": false,
-  "message": "Producto no encontrado con id: 99",
-  "timestamp": "2026-02-10T10:30:00"
-}
+Comportamiento:
+1. Spring abre transaccion antes del metodo
+2. Si el metodo termina bien: COMMIT
+3. Si hay excepcion RuntimeException: ROLLBACK
+4. Si hay excepcion checked: COMMIT (configurable)
 
-DTOs:
------
+Opciones importantes:
 
-Los DTOs separan el contrato de la API de la entidad interna.
-Ventajas:
-- Se pueden cambiar las entidades sin romper la API
-- Se puede incluir/excluir campos segun lo que necesita el cliente
-- La validacion (@Valid) se hace en el DTO, no en la entidad
+@Transactional(readOnly = true)  // Optimiza para solo lectura
+public List<Product> getProducts() { ... }
+
+@Transactional(propagation = Propagation.REQUIRES_NEW)  // Nueva transaccion
+public void logAction() { ... }
+
+@Transactional(isolation = Isolation.SERIALIZABLE)  // Nivel de aislamiento
+public void criticalOperation() { ... }
+
+PROPAGATION (Propagacion):
+- REQUIRED (default): Usa transaccion existente o crea nueva
+- REQUIRES_NEW: Siempre crea nueva transaccion
+- SUPPORTS: Usa existente o ejecuta sin transaccion
+- MANDATORY: Debe existir transaccion, si no, excepcion
+
+POR QUE @TRANSACTIONAL EN SERVICIOS:
+- Un servicio puede llamar a multiples repositorios
+- Todas las operaciones deben ser atomicas
+- Si algo falla, todo se revierte
+
+PATRON DTO (Data Transfer Object)
+---------------------------------
+Separamos entidades JPA de objetos de respuesta API.
+
+Por que DTOs:
+1. No exponer estructura interna de BD
+2. Ocultar campos sensibles (password)
+3. Combinar datos de varias entidades
+4. Evitar problemas de serializacion con LAZY loading
+5. Versionado de API independiente de entidades
 
 Ejemplo:
 
-// Request (entrada)
-public class ProductRequest {
-    @NotBlank
-    @Size(max = 200)
-    private String name;
-    @NotNull
-    @DecimalMin("0.01")
-    private BigDecimal price;
-    // ...
-}
-
-// Response (salida)
-public class ProductResponse {
+// Entidad - refleja la tabla
+@Entity
+public class User {
     private Long id;
-    private String name;
-    private BigDecimal currentPrice;
-    private BigDecimal margin;        // Calculado, no existe en BD
+    private String email;
+    private String password;  // No queremos exponerlo
     private LocalDateTime createdAt;
-    // Sin campo password, sin campos internos
 }
 
-REFERENCIAS:
+// DTO - lo que devuelve la API
+public class UserProfileResponse {
+    private Long id;
+    private String email;
+    // Sin password!
+    private long totalProducts;  // Dato calculado
+}
+
+DOCUMENTACION:
+- Transacciones: https://docs.spring.io/spring-framework/reference/data-access/transaction.html
+
+
+================================================================================
+9. CONTROLADORES REST
+================================================================================
+
+Los controladores reciben peticiones HTTP y devuelven respuestas.
+
+ANATOMIA DE UN CONTROLADOR
+--------------------------
+
+@RestController                           // Controlador REST
+@RequestMapping("/api/products")          // Prefijo de rutas
+@RequiredArgsConstructor
+@Tag(name = "Productos", description = "CRUD de productos")  // OpenAPI
+public class ProductController {
+
+    private final ProductService productService;
+
+    @PostMapping                          // POST /api/products
+    @Operation(summary = "Crear producto")  // Documentacion OpenAPI
+    public ResponseEntity<ApiResponse<ProductResponse>> createProduct(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,  // Usuario actual
+            @Valid @RequestBody CreateProductRequest request        // Body JSON validado
+    ) {
+        ProductResponse response = productService.createProduct(
+            userPrincipal.getId(), 
+            request
+        );
+        return ResponseEntity
+            .status(HttpStatus.CREATED)     // 201 Created
+            .body(ApiResponse.success(response, "Producto creado"));
+    }
+
+    @GetMapping("/{id}")                   // GET /api/products/123
+    public ResponseEntity<ApiResponse<ProductResponse>> getProduct(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable Long id          // Variable de ruta
+    ) {
+        ProductResponse response = productService.getProduct(userPrincipal.getId(), id);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping                            // GET /api/products?page=0&size=20
+    public ResponseEntity<ApiResponse<Page<ProductResponse>>> getProducts(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "0") int page,    // Query param
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        // ...
+    }
+}
+
+ANOTACIONES HTTP
+----------------
+
+@GetMapping    - GET (obtener datos)
+@PostMapping   - POST (crear recursos)
+@PutMapping    - PUT (actualizar completo)
+@PatchMapping  - PATCH (actualizar parcial)
+@DeleteMapping - DELETE (eliminar)
+
+ANOTACIONES DE PARAMETROS
+-------------------------
+
+@PathVariable - Variable en la URL
+  GET /api/products/{id} -> @PathVariable Long id
+
+@RequestParam - Parametro de query string
+  GET /api/products?name=foo -> @RequestParam String name
+
+@RequestBody - Cuerpo de la peticion (JSON)
+  POST /api/products con JSON -> @RequestBody CreateProductRequest request
+
+@RequestHeader - Header HTTP
+  Authorization: Bearer xxx -> @RequestHeader("Authorization") String auth
+
+@AuthenticationPrincipal - Usuario autenticado
+  Inyecta el usuario del token JWT
+
+RESPONSEENTITY
+--------------
+Permite controlar la respuesta completa (status, headers, body).
+
+// 201 Created con body
+return ResponseEntity.status(HttpStatus.CREATED).body(data);
+
+// 200 OK con body
+return ResponseEntity.ok(data);
+
+// 204 No Content (sin body)
+return ResponseEntity.noContent().build();
+
+// 404 Not Found
+return ResponseEntity.notFound().build();
+
+// Con headers personalizados
+return ResponseEntity.ok()
+    .header("X-Custom-Header", "value")
+    .body(data);
+
+WRAPPER ApiResponse
+-------------------
+Estandarizamos todas las respuestas:
+
+public class ApiResponse<T> {
+    private boolean success;
+    private String message;
+    private T data;
+    private List<String> errors;
+    private LocalDateTime timestamp;
+}
+
+Por que un wrapper:
+1. Respuestas consistentes
+2. Siempre sabemos donde estan los datos
+3. Mensajes de error estandarizados
+4. Facilita el frontend
+
+DOCUMENTACION:
 - Spring MVC: https://docs.spring.io/spring-framework/reference/web/webmvc.html
+- REST con Spring: https://spring.io/guides/tutorials/rest
 
 
 ================================================================================
 10. SEGURIDAD Y AUTENTICACION JWT
 ================================================================================
 
-Ver SEGURIDAD.md para el analisis completo de seguridad.
+Usamos Spring Security con autenticacion JWT (JSON Web Token).
 
-RESUMEN DE LA IMPLEMENTACION:
+POR QUE JWT:
+- Stateless: no necesita sesiones en servidor
+- Escalable: cualquier servidor puede validar el token
+- Autocontenido: contiene info del usuario en el propio token
+- Estandar: ampliamente soportado
 
-1. FLUJO DE AUTENTICACION:
+ESTRUCTURA DE UN JWT:
+--------------------
+eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyQGVtYWlsLmNvbSIsImlhdCI6MTcwMDAwMDAwMH0.firma
 
-   Cliente envia:  POST /api/auth/login { email, password }
-   Servidor responde: { token: "eyJ...", expiresIn: 86400 }
-   Cliente guarda el token.
-   En cada peticion: Authorization: Bearer eyJ...
+Tres partes separadas por punto:
+1. Header: algoritmo de firma (HS256)
+2. Payload: datos del usuario (claims)
+3. Signature: firma para verificar integridad
 
-2. VALIDACION DE TOKEN (por peticion):
+FLUJO DE AUTENTICACION:
+----------------------
 
-   JwtAuthenticationFilter.doFilterInternal():
-   a. Extraer header Authorization
-   b. Validar formato "Bearer <token>"
-   c. Extraer username del token
-   d. Verificar firma HMAC-SHA256 con JWT_SECRET
-   e. Verificar que no ha expirado
-   f. Cargar usuario desde BD (UserDetailsServiceImpl)
-   g. Guardar UserPrincipal en SecurityContextHolder
+┌──────────┐                              ┌──────────┐
+│  Cliente │                              │ Servidor │
+└────┬─────┘                              └────┬─────┘
+     │                                         │
+     │ POST /api/auth/login                    │
+     │ {email, password}                       │
+     │────────────────────────────────────────>│
+     │                                         │
+     │         Valida credenciales             │
+     │         Genera JWT                      │
+     │                                         │
+     │ {token: "eyJ...", userId, email}        │
+     │<────────────────────────────────────────│
+     │                                         │
+     │ GET /api/products                       │
+     │ Authorization: Bearer eyJ...            │
+     │────────────────────────────────────────>│
+     │                                         │
+     │         Valida token                    │
+     │         Extrae usuario                  │
+     │         Ejecuta peticion                │
+     │                                         │
+     │ {products: [...]}                       │
+     │<────────────────────────────────────────│
 
-3. CONTROL DE ACCESO:
+COMPONENTES DE SEGURIDAD:
+------------------------
 
-   @PreAuthorize("hasRole('ADMIN')")    - Solo admins
-   @PreAuthorize("hasAnyRole('USER', 'ADMIN')")  - Autenticados
+1. SecurityConfig.java - Configuracion central
+   - Define rutas publicas/protegidas
+   - Configura CORS
+   - Anade filtro JWT
+   - Configura hash de contraseñas
 
-   NOTA: La seguridad de propiedad se verifica en el servicio:
-   if (!product.getUser().getId().equals(userId)) {
-       throw new BadRequestException("No tienes permiso para este producto");
-   }
+2. JwtService.java - Operaciones con tokens
+   - generateToken(): crea token firmado
+   - extractUsername(): obtiene email del token
+   - isTokenValid(): valida firma y expiracion
 
-CONFIGURACION DE CORS:
-    dev:  allowedOriginPatterns = "*", allowCredentials = false (seguro con wildcard)
-    prod: allowedOrigins configurado por variable de entorno, allowCredentials = true
-    Headers permitidos: Authorization, Content-Type, Accept, Origin, X-Requested-With
+3. JwtAuthenticationFilter.java - Intercepta cada request
+   - Extrae token del header Authorization
+   - Valida token
+   - Establece autenticacion en SecurityContext
 
-REFERENCIAS:
-- Spring Security: https://spring.io/projects/spring-security
+4. UserPrincipal.java - Representa usuario autenticado
+   - Implementa UserDetails de Spring Security
+   - Envuelve entidad User
+
+CONFIGURACION DE SEGURIDAD:
+--------------------------
+
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+        // Desactivar CSRF (no necesario con JWT stateless)
+        .csrf(AbstractHttpConfigurer::disable)
+        
+        // Configurar CORS
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        
+        // Headers de seguridad
+        .headers(headers -> headers
+            .frameOptions(frame -> frame.deny())      // Previene clickjacking
+            .contentTypeOptions(content -> {})        // Previene MIME sniffing
+        )
+        
+        // Rutas publicas y protegidas
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/api/auth/**").permitAll()  // Login/registro publico
+            .requestMatchers("/api/health").permitAll()   // Health check publico
+            .anyRequest().authenticated()                  // Todo lo demas requiere auth
+        )
+        
+        // Sesiones stateless (no cookies)
+        .sessionManagement(session -> session
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        )
+        
+        // Nuestro filtro JWT antes del filtro de username/password
+        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+    return http.build();
+}
+
+HASH DE CONTRASEÑAS:
+-------------------
+Usamos BCrypt, el estandar de la industria.
+
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+}
+
+Por que BCrypt:
+- Diseñado especificamente para contraseñas
+- Salt automatico (cada hash es diferente)
+- "Cost factor" configurable (mas lento = mas seguro)
+- Resistente a ataques de fuerza bruta
+
+Ejemplo:
+"password123" -> "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
+
+VALIDACION DE CONTRASEÑAS:
+-------------------------
+Usamos regex para forzar contraseñas seguras:
+
+@Pattern(
+    regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$",
+    message = "Debe contener mayuscula, minuscula y numero"
+)
+@Size(min = 8, max = 100)
+private String password;
+
+- (?=.*[a-z]) - Al menos una minuscula
+- (?=.*[A-Z]) - Al menos una mayuscula
+- (?=.*\\d)   - Al menos un digito
+- .+$         - Uno o mas caracteres
+
+DOCUMENTACION:
+- Spring Security: https://docs.spring.io/spring-security/reference/
 - JWT: https://jwt.io/introduction
+- BCrypt: https://en.wikipedia.org/wiki/Bcrypt
+- JJWT Library: https://github.com/jwtk/jjwt
 
 
 ================================================================================
-11. INTEGRACION KEEPA API
+11. PROGRAMACION ASINCRONA Y MULTIHILO
 ================================================================================
 
-Keepa proporciona acceso programatico a precios historicos y actuales de
-productos de Amazon.
+Usamos programacion asincrona para operaciones lentas (API externa).
 
-CONFIGURACION:
+POR QUE ASINCRONO:
+- Las llamadas a Keepa API tardan ~500ms-2s
+- Sin async, el hilo se bloquea esperando
+- Con async, el hilo puede atender otras peticiones
+- Mejor utilizacion de recursos
 
-@ConfigurationProperties(prefix = "keepa")
-public class KeepaConfig {
-    private String defaultLocale;    // "ES" por defecto
-    private int historyDays;         // 90 dias por defecto
-    private int rateLimit;           // 10 requests/min por defecto
-}
-// Nota: Las API keys se gestionan por empresa en tabla company_api_keys (cifrado AES-256)
+COMPONENTES PRINCIPALES:
+-----------------------
 
-LLAMADA A KEEPA:
+1. @EnableAsync - Activa soporte asincrono
+2. @Async("executor") - Marca metodo como asincrono
+3. ThreadPoolTaskExecutor - Pool de hilos configurado
+4. CompletableFuture<T> - Resultado futuro de operacion asincrona
 
-public CompletableFuture<Optional<CompetitorPrice>> getAmazonPrice(
-        String asin, Long productId) {
-
-    return CompletableFuture.supplyAsync(() -> {
-        // 1. Adquirir semaforo (max 3 concurrentes)
-        semaphore.acquire();
-        try {
-            // 2. Ejecutar con reintentos
-            return executeWithRetry(asin, productId);
-        } finally {
-            // 3. Liberar semaforo siempre
-            semaphore.release();
-        }
-    }, keepaExecutor);
-}
-
-private Optional<CompetitorPrice> executeWithRetry(String asin, Long productId) {
-    int attempts = 0;
-    while (attempts < MAX_RETRIES) {
-        try {
-            // Llamada a Keepa API
-            KeepaAPI api = new KeepaAPI(config.getApiKey());
-            Request request = Request.getProductRequest(
-                parseLocale(config.getDefaultLocale()),
-                0,   // system offers
-                config.getPriceHistoryDays(),
-                asin
-            );
-            Response response = api.sendRequestWithOptionsRetry(request);
-            // Mapear respuesta a CompetitorPrice
-            return mapToCompetitorPrice(response, productId);
-        } catch (Exception e) {
-            attempts++;
-            if (attempts < MAX_RETRIES) {
-                // Backoff exponencial: 1s, 2s, 4s
-                Thread.sleep(1000L * (long) Math.pow(2, attempts - 1));
-            }
-        }
-    }
-    return Optional.empty();
-}
-
-POR QUE SEMAFORO Y NO SOLO ASYNC:
-- Keepa tiene limite de peticiones por segundo segun el plan
-- Sin semaforo se podrian lanzar 50+ peticiones simultaneas desde el scheduler
-- El Semaphore(3) garantiza maximo 3 peticiones concurrentes a Keepa
-
-POR QUE CompletableFuture:
-- El hilo principal HTTP no se bloquea esperando respuesta de Keepa
-- La peticion de sincronizacion devuelve respuesta inmediata al cliente
-- La actualizacion de precio ocurre en segundo plano
-
-LOCALES DE AMAZON SOPORTADOS:
-    ES (España)   -> amazon.es
-    US (EEUU)     -> amazon.com
-    DE (Alemania) -> amazon.de
-    FR (Francia)  -> amazon.fr
-    UK (Reino Unido) -> amazon.co.uk
-    IT (Italia)   -> amazon.it
-    CA (Canada)   -> amazon.ca
-    JP (Japon)    -> amazon.co.jp
-
-REFERENCIAS:
-- Keepa API: https://keepa.com/#!discuss/t/keepa-api/99
-
-
-================================================================================
-12. PROGRAMACION ASINCRONA Y MULTIHILO
-================================================================================
-
-PriceWise usa programacion asincrona para no bloquear el servidor durante
-las llamadas a la API de Keepa.
-
-EXECUTOR PERSONALIZADO:
+CONFIGURACION DE POOLS:
+----------------------
 
 @Configuration
 @EnableAsync
-public class AsyncConfig {
+public class AsyncConfig implements AsyncConfigurer {
 
-    @Bean("keepaExecutor")
+    @Bean(name = "keepaExecutor")
     public Executor keepaExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(3);
-        executor.setMaxPoolSize(10);
+        
+        // Hilos minimos siempre activos
+        executor.setCorePoolSize(2);
+        
+        // Hilos maximos bajo carga
+        executor.setMaxPoolSize(5);
+        
+        // Tareas en espera si todos los hilos ocupados
         executor.setQueueCapacity(50);
-        executor.setThreadNamePrefix("keepa-");
+        
+        // Prefijo para identificar en logs
+        executor.setThreadNamePrefix("Keepa-");
+        
+        // Que hacer si la cola esta llena
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        
+        // Esperar a tareas pendientes antes de cerrar
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        
         executor.initialize();
         return executor;
     }
 }
 
-Por que no el executor por defecto de Spring:
-- El executor por defecto es compartido con otras tareas async
-- Un executor dedicado para Keepa aísla su impacto en el resto de la app
-- El prefijo "keepa-" en el nombre del hilo facilita el debug de logs
+EXPLICACION DE POLITICAS DE RECHAZO:
+-----------------------------------
+
+Cuando la cola esta llena y todos los hilos ocupados:
+
+- CallerRunsPolicy (usado): El hilo que llama ejecuta la tarea
+  Pro: No se pierde ninguna tarea
+  Contra: Puede bloquear el hilo llamante
+
+- AbortPolicy: Lanza RejectedExecutionException
+- DiscardPolicy: Descarta la tarea silenciosamente
+- DiscardOldestPolicy: Descarta la tarea mas antigua de la cola
+
+USO DE @ASYNC:
+-------------
+
+@Service
+public class KeepaService {
+    
+    @Async("keepaExecutor")  // Ejecutar en pool keepaExecutor
+    public CompletableFuture<Optional<CompetitorPrice>> fetchPriceByAsin(String asin, Product product) {
+        // Este metodo se ejecuta en otro hilo
+        Optional<CompetitorPrice> result = callKeepaApi(asin);
+        return CompletableFuture.completedFuture(result);
+    }
+}
+
+// Uso:
+CompletableFuture<Optional<CompetitorPrice>> future = keepaService.fetchPriceByAsin("B0...", product);
+// El hilo principal continua...
+Optional<CompetitorPrice> result = future.get();  // Bloquea hasta tener resultado
 
 COMPLETABLEFUTURE:
+-----------------
+Representa el resultado futuro de una operacion asincrona.
 
-// Lanzar peticion async
-CompletableFuture<Optional<CompetitorPrice>> future =
-    keepaService.getAmazonPrice(asin, productId);
+Metodos importantes:
 
-// El hilo principal puede seguir trabajando...
+// Crear
+CompletableFuture.completedFuture(value)  // Ya completado
+CompletableFuture.supplyAsync(() -> ...)  // Ejecutar async
 
-// Esperar resultado (con timeout)
-Optional<CompetitorPrice> result = future.get(30, TimeUnit.SECONDS);
+// Transformar
+.thenApply(x -> transform(x))      // Transformar resultado
+.thenAccept(x -> consume(x))       // Consumir sin devolver
+.thenCompose(x -> anotherFuture)   // Encadenar futuros
 
-// Combinar multiples futures en paralelo (PriceMonitorJob)
-List<CompletableFuture<Void>> futures = products.stream()
-    .map(p -> keepaService.getAmazonPrice(p.getSku(), p.getId())
-        .thenAccept(price -> price.ifPresent(this::savePrice)))
-    .collect(Collectors.toList());
+// Combinar
+CompletableFuture.allOf(f1, f2, f3)    // Esperar todos
+CompletableFuture.anyOf(f1, f2, f3)    // Esperar cualquiera
 
-CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+// Manejar errores
+.exceptionally(ex -> defaultValue)
+.handle((result, ex) -> ...)
 
-REFERENCIAS:
-- CompletableFuture: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html
-- Spring Async: https://spring.io/guides/gs/async-method/
+SEMAPHORE - CONTROL DE CONCURRENCIA:
+-----------------------------------
+Limitamos llamadas concurrentes a la API.
 
+private final Semaphore rateLimiter = new Semaphore(3);  // Max 3 concurrentes
 
-================================================================================
-13. TAREAS PROGRAMADAS CON QUARTZ
-================================================================================
-
-Quartz Scheduler ejecuta PriceMonitorJob cada 6 horas automaticamente.
-
-CONFIGURACION:
-
-@Configuration
-public class SchedulerConfig {
-
-    @Bean
-    public JobDetail priceMonitorJobDetail() {
-        return JobBuilder.newJob(PriceMonitorJob.class)
-            .withIdentity("priceMonitorJob")
-            .storeDurably()
-            .build();
-    }
-
-    @Bean
-    public Trigger priceMonitorTrigger(JobDetail priceMonitorJobDetail) {
-        return TriggerBuilder.newTrigger()
-            .forJob(priceMonitorJobDetail)
-            .withIdentity("priceMonitorTrigger")
-            .withSchedule(
-                CronScheduleBuilder.cronSchedule("0 0 */6 * * ?")  // Cada 6 horas
-            )
-            .build();
+public void callApi() {
+    rateLimiter.acquire();  // Espera si hay 3 llamadas activas
+    try {
+        // Llamar API
+    } finally {
+        rateLimiter.release();  // Libera para el siguiente
     }
 }
 
-FLUJO DEL JOB (PriceMonitorJob):
+Por que Semaphore:
+- Keepa tiene rate limits (maximo peticiones por minuto)
+- Evitamos saturar la API y ser bloqueados
+- Semaphore es thread-safe por diseno
 
-1. Obtener productos con monitoringEnabled = true y SKU que empieza por "B0" (ASINs)
-2. Procesar en lotes de 50 con 1 segundo de pausa entre lotes
-3. Para cada producto, llamar keepaService.getAmazonPrice(sku, productId)
-4. Si hay precio nuevo, guardarlo en CompetitorPrice
-5. Ejecutar priceAnalysisService.analyzeUserProducts(userId)
-6. Registrar estadisticas de ejecucion en logs
+SINCRONIZACION CON SYNCHRONIZED:
+-------------------------------
+Para proteger recursos compartidos.
 
-POR QUE LOTES DE 50:
-- Limita el numero de peticiones concurrentes a Keepa
-- Evita agotar la quota de la API en una sola ejecucion
-- El delay de 1 segundo entre lotes da tiempo a procesar respuestas
+Problema: amazonCompetitor es accedido por multiples hilos.
 
-POR QUE QUARTZ Y NO @Scheduled:
-- Quartz persiste el estado del job en BD (si el servidor cae, no pierde el trigger)
-- Permite pausar/reanudar via la API de admin (/api/admin/scheduler/*)
-- Mejor para produccion que @Scheduled (puramente en memoria)
+Solucion: Double-checked locking pattern
 
-REFERENCIAS:
-- Quartz: http://www.quartz-scheduler.org/documentation/
+private volatile Competitor amazonCompetitor;  // volatile = visible a todos los hilos
+private final Object lock = new Object();
 
-
-================================================================================
-14. CACHE Y RENDIMIENTO
-================================================================================
-
-CACHE EN MEMORIA:
-
-Se usa Spring Cache con implementacion Simple (ConcurrentHashMap en memoria).
-Solo se cachean queries costosas y relativamente estaticas.
-
-QUERIES CACHEADAS:
-
-@Cacheable(value = "categories", key = "#companyId")
-public List<String> getCategories(Long companyId) {
-    return productRepository.findDistinctCategoriesByCompanyId(companyId);
+private Competitor getAmazonCompetitor() {
+    Competitor localRef = amazonCompetitor;  // Lectura local (rapida)
+    if (localRef == null) {                  // Primer check sin lock
+        synchronized (lock) {                 // Adquirir lock
+            localRef = amazonCompetitor;     // Segundo check
+            if (localRef == null) {
+                initAmazonCompetitor();
+                localRef = amazonCompetitor;
+            }
+        }
+    }
+    return localRef;
 }
 
-@Cacheable(value = "brands", key = "#companyId")
-public List<String> getBrands(Long companyId) {
-    return productRepository.findDistinctBrandsByCompanyId(companyId);
-}
+Por que volatile:
+- Garantiza que todos los hilos ven el valor actualizado
+- Sin volatile, cada hilo puede tener una "copia" desactualizada
 
-INVALIDACION DE CACHE:
+Por que double-checked locking:
+- Evita sincronizacion en cada acceso (costoso)
+- Solo sincroniza durante inicializacion
+- Patron estandar para singleton lazy
 
-@CacheEvict(value = {"categories", "brands"}, key = "#companyId")
-public ProductResponse createProduct(Long companyId, Long userId, CreateProductRequest request) { ... }
-
-@CacheEvict(value = {"categories", "brands"}, key = "#companyId")
-public ProductResponse updateProduct(Long companyId, Long productId, UpdateProductRequest request) { ... }
-
-POR QUE CACHEAR CATEGORIAS Y MARCAS:
-- Se usan en filtros de busqueda, se piden frecuentemente
-- Cambian raramente (solo al crear/modificar productos)
-- Sin cache: query DISTINCT en tabla products en cada request
-
-PREVENCION DE N+1 QUERIES:
-
-Ademas de la cache, se aplican dos estrategias para prevenir N+1:
-
-1. Hibernate batch fetch size (global):
-   spring.jpa.properties.hibernate.default_batch_fetch_size: 16
-   Cuando se accede a colecciones LAZY, Hibernate carga hasta 16 proxies en una sola query.
-
-2. JOIN FETCH en queries criticas:
-   findByCompanyIdAndIdWithCreatedBy() usa LEFT JOIN FETCH p.createdBy
-   para cargar el usuario creador en una sola query al consultar detalle de producto.
-
-INDICES DE POSTGRESQL:
-Los indices definidos en las entidades (ver seccion 6) son la primera
-linea de defensa para el rendimiento. La cache es un complemento.
-
-POOL DE CONEXIONES (HIKARICP):
-- corePoolSize:  5 conexiones siempre abiertas
-- maximumPoolSize: 20 conexiones maximas
-- connectionTimeout: 30 segundos de espera para obtener conexion
-- idleTimeout: 600 segundos antes de cerrar conexion inactiva
-
-REFERENCIAS:
-- Spring Cache: https://docs.spring.io/spring-framework/reference/integration/cache.html
-- HikariCP: https://github.com/brettwooldridge/HikariCP
+DOCUMENTACION:
+- @Async: https://docs.spring.io/spring-framework/reference/integration/scheduling.html#scheduling-annotation-support-async
+- CompletableFuture: https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html
+- Semaphore: https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Semaphore.html
+- Thread Safety: https://jenkov.com/tutorials/java-concurrency/thread-safety.html
 
 
 ================================================================================
-15. MANEJO DE EXCEPCIONES
+12. MANEJO DE EXCEPCIONES
 ================================================================================
+
+Spring permite manejar excepciones de forma centralizada con @ControllerAdvice.
 
 EXCEPCIONES PERSONALIZADAS:
+--------------------------
+
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
 
 public class BadRequestException extends RuntimeException {
     public BadRequestException(String message) {
@@ -1394,196 +1559,493 @@ public class BadRequestException extends RuntimeException {
     }
 }
 
-public class ResourceNotFoundException extends RuntimeException {
-    public ResourceNotFoundException(String resource, Long id) {
-        super(resource + " no encontrado con id: " + id);
-    }
-}
+Por que RuntimeException:
+- No requiere try-catch explicito
+- @Transactional hace rollback automatico
+- Mas limpio el codigo
 
-HANDLER GLOBAL:
+MANEJADOR GLOBAL:
+----------------
 
-@RestControllerAdvice
+@Slf4j
+@RestControllerAdvice  // Aplica a todos los controladores
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BadRequestException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<Void> handleBadRequest(BadRequestException ex) {
-        return ApiResponse.error(ex.getMessage());
-    }
-
+    // Recurso no encontrado -> 404
     @ExceptionHandler(ResourceNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ApiResponse<Void> handleNotFound(ResourceNotFoundException ex) {
-        return ApiResponse.error(ex.getMessage());
+    public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(ResourceNotFoundException ex) {
+        log.warn("Recurso no encontrado: {}", ex.getMessage());
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(ApiResponse.error(ex.getMessage()));
     }
 
+    // Error de validacion -> 400
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<Map<String, String>> handleValidation(
-            MethodArgumentNotValidException ex) {
-        Map<String, String> errors = ex.getBindingResult()
-            .getFieldErrors().stream()
-            .collect(Collectors.toMap(
-                FieldError::getField,
-                FieldError::getDefaultMessage
-            ));
-        return ApiResponse.error("Error de validacion", errors);
+    public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException ex) {
+        List<String> errors = ex.getBindingResult().getFieldErrors().stream()
+            .map(e -> e.getField() + ": " + e.getDefaultMessage())
+            .toList();
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error("Error de validacion", errors));
+    }
+
+    // Violacion de restricciones de BD -> 409 Conflict
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String message = "Error de integridad de datos";
+        if (ex.getMostSpecificCause().getMessage().toLowerCase().contains("duplicate")) {
+            message = "Ya existe un registro con esos datos";
+        }
+        return ResponseEntity
+            .status(HttpStatus.CONFLICT)
+            .body(ApiResponse.error(message));
+    }
+
+    // Credenciales invalidas -> 401
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
+        return ResponseEntity
+            .status(HttpStatus.UNAUTHORIZED)
+            .body(ApiResponse.error("Credenciales invalidas"));
+    }
+
+    // Acceso denegado -> 403
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity
+            .status(HttpStatus.FORBIDDEN)
+            .body(ApiResponse.error("No tienes permisos para esta operacion"));
+    }
+
+    // Cualquier otra excepcion -> 500
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
+        log.error("Error interno", ex);  // Log completo con stack trace
+        return ResponseEntity
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(ApiResponse.error("Error interno del servidor"));  // Mensaje generico
     }
 }
 
-POR QUE @RestControllerAdvice:
-- Centraliza el manejo de errores en un solo lugar
-- Evita try-catch en cada controlador
-- Garantiza formato de error consistente en toda la API
+CODIGOS HTTP Y CUANDO USARLOS:
+-----------------------------
 
-REFERENCIAS:
-- Spring Exception Handling: https://spring.io/blog/2013/11/01/exception-handling-in-spring-mvc
+| Codigo | Nombre                | Cuando usar                                    |
+|--------|----------------------|------------------------------------------------|
+| 200    | OK                   | Exito general                                  |
+| 201    | Created              | Recurso creado exitosamente                    |
+| 204    | No Content           | Exito sin contenido (DELETE)                   |
+| 400    | Bad Request          | Datos invalidos del cliente                    |
+| 401    | Unauthorized         | No autenticado                                 |
+| 403    | Forbidden            | Autenticado pero sin permisos                  |
+| 404    | Not Found            | Recurso no existe                              |
+| 409    | Conflict             | Conflicto (duplicado, estado invalido)         |
+| 422    | Unprocessable Entity | Semanticamente incorrecto                      |
+| 500    | Internal Server Error| Error del servidor                             |
+
+POR QUE OCULTAR DETALLES EN 500:
+- No exponer estructura interna
+- No revelar vulnerabilidades
+- Mensajes de error ayudan a atacantes
+- El log tiene los detalles para debugging
+
+DOCUMENTACION:
+- Exception Handling: https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-exceptionhandler.html
+- HTTP Status Codes: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
 
 
 ================================================================================
-16. VALIDACIONES
+13. VALIDACIONES
 ================================================================================
 
-VALIDACION DE ENTRADA (Jakarta Validation):
+Usamos Bean Validation (JSR-380) para validar datos de entrada.
 
-// En el DTO
-public class ProductRequest {
-    @NotBlank(message = "El nombre es obligatorio")
-    @Size(max = 200, message = "El nombre no puede exceder 200 caracteres")
-    private String name;
+ANOTACIONES DE VALIDACION:
+-------------------------
 
-    @NotNull(message = "El precio es obligatorio")
-    @DecimalMin(value = "0.01", message = "El precio debe ser mayor a 0")
-    @Digits(integer = 10, fraction = 2)
-    private BigDecimal price;
+// Obligatoriedad
+@NotNull                    // No puede ser null
+@NotEmpty                   // No puede ser null ni vacio
+@NotBlank                   // No puede ser null, vacio ni solo espacios
 
+// Texto
+@Size(min=3, max=50)        // Longitud entre min y max
+@Pattern(regexp="...")      // Debe coincidir con regex
+@Email                      // Formato de email valido
+
+// Numeros
+@Min(0)                     // Valor minimo
+@Max(100)                   // Valor maximo
+@Positive                   // Mayor que 0
+@PositiveOrZero             // Mayor o igual a 0
+@DecimalMin("0.01")         // Para BigDecimal
+
+// Fechas
+@Past                       // Fecha en el pasado
+@Future                     // Fecha en el futuro
+@PastOrPresent              // Pasado o ahora
+
+EJEMPLO DE DTO VALIDADO:
+-----------------------
+
+public class RegisterRequest {
+    
+    @NotBlank(message = "El username es obligatorio")
+    @Size(min = 3, max = 50, message = "Username entre 3 y 50 caracteres")
+    private String username;
+
+    @NotBlank(message = "El email es obligatorio")
     @Email(message = "Formato de email invalido")
-    private String contactEmail;
+    private String email;
+
+    @NotBlank(message = "La contraseña es obligatoria")
+    @Size(min = 8, max = 100, message = "Contraseña entre 8 y 100 caracteres")
+    @Pattern(
+        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$",
+        message = "Debe contener mayuscula, minuscula y numero"
+    )
+    private String password;
 }
 
-// En el controlador
-public ResponseEntity<?> create(@Valid @RequestBody ProductRequest request) {
-    // @Valid dispara la validacion. Si falla, lanza MethodArgumentNotValidException
-    // que GlobalExceptionHandler captura y formatea
+ACTIVAR VALIDACION EN CONTROLLER:
+--------------------------------
+
+@PostMapping("/register")
+public ResponseEntity<...> register(@Valid @RequestBody RegisterRequest request) {
+    // Si validacion falla, lanza MethodArgumentNotValidException
+    // GlobalExceptionHandler lo captura y devuelve 400 con errores
 }
 
-VALIDACIONES DE NEGOCIO EN SERVICIO:
-// Unicidad
-if (productRepository.existsBySkuAndUserId(request.getSku(), userId)) {
-    throw new BadRequestException("Ya existe un producto con el SKU: " + request.getSku());
+@Valid activa la validacion del objeto.
+
+VALIDACION PERSONALIZADA:
+------------------------
+Puedes crear anotaciones propias:
+
+@Target({ElementType.FIELD})
+@Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = SkuValidator.class)
+public @interface ValidSku {
+    String message() default "SKU invalido";
+    Class<?>[] groups() default {};
+    Class<?>[] payload() default {};
 }
 
-// Propiedad
-if (!product.getUser().getId().equals(userId)) {
-    throw new BadRequestException("No tienes permiso para modificar este producto");
+public class SkuValidator implements ConstraintValidator<ValidSku, String> {
+    @Override
+    public boolean isValid(String value, ConstraintValidatorContext context) {
+        return value == null || value.matches("^[A-Z0-9]{10}$");
+    }
 }
 
-REFERENCIAS:
-- Jakarta Validation: https://jakarta.ee/specifications/bean-validation/
+DOCUMENTACION:
+- Bean Validation: https://beanvalidation.org/2.0/spec/
+- Hibernate Validator: https://hibernate.org/validator/documentation/
 
 
 ================================================================================
-17. CONFIGURACION Y PERFILES
+14. CACHE Y RENDIMIENTO
 ================================================================================
 
-PERFILES DE SPRING:
+Usamos Spring Cache para evitar consultas repetidas a la base de datos.
 
-dev (local):
-- show-sql: true  (muestra SQL generado en consola)
-- ddl-auto: update  (crea/actualiza tablas automaticamente)
-- CORS: allow-all: true  (acepta peticiones de cualquier origen)
-- Logging: DEBUG en com.alvaro.pricewise
-
-prod:
-- show-sql: false
-- ddl-auto: validate  (solo verifica, no modifica esquema)
-- CORS: allow-all: false, dominios configurados explicitamente
-- Logging: WARN
-
-VARIABLES DE ENTORNO REQUERIDAS:
-
-| Variable                  | Descripcion                          | Ejemplo                                            |
-|---------------------------|--------------------------------------|----------------------------------------------------|
-| JWT_SECRET                | Clave HMAC-SHA256 (min 32 chars)     | un-secreto-de-32-o-mas-chars                       |
-| DB_URL                    | URL JDBC de PostgreSQL               | jdbc:postgresql://localhost:5432/pricewise          |
-| DB_USERNAME               | Usuario de PostgreSQL                | postgres                                           |
-| DB_PASSWORD               | Contrasena PostgreSQL                | mi_password_segura                                 |
-| SPRING_PROFILES_ACTIVE    | Perfil activo                        | dev o prod                                         |
-
-> Nota: Las API keys de Keepa se gestionan por empresa desde Ajustes > Integracion Keepa (no via variable de entorno).
-
-CONFIGURACION BASICA (application.yml):
-
-server:
-  port: 9090
+CONFIGURACION:
+-------------
 
 spring:
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/pricewise}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD}
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 30000
+  cache:
+    type: simple  # Cache en memoria (HashMap)
 
+@EnableCaching en una clase @Configuration activa el soporte.
+
+ANOTACIONES DE CACHE:
+--------------------
+
+@Cacheable - Guarda resultado si no existe
+------------------------------------------------
+@Cacheable(value = "categories", key = "#userId")
+public List<String> getCategories(Long userId) {
+    return productRepository.findDistinctCategoriesByUserId(userId);
+}
+
+Primera llamada: ejecuta metodo, guarda resultado
+Siguientes llamadas: devuelve de cache sin ejecutar
+
+@CacheEvict - Invalida cache
+----------------------------
+@CacheEvict(value = {"categories", "brands"}, key = "#userId")
+public ProductResponse createProduct(Long userId, CreateProductRequest request) {
+    // Al crear producto, invalida cache de categorias/marcas
+}
+
+@CachePut - Actualiza cache
+---------------------------
+@CachePut(value = "products", key = "#result.id")
+public Product updateProduct(Product product) {
+    return productRepository.save(product);
+}
+
+Siempre ejecuta el metodo y actualiza cache.
+
+CLAVES DE CACHE (key):
+---------------------
+- #userId          -> valor del parametro
+- #result.id       -> campo del resultado
+- #p0              -> primer parametro
+- #root.methodName -> nombre del metodo
+
+LIMITACIONES DEL CACHE SIMPLE:
+-----------------------------
+- Se pierde al reiniciar
+- No compartido entre instancias
+- Sin control de tamaño
+
+ALTERNATIVAS PARA PRODUCCION:
+- Redis: Distribuido, persistente
+- Caffeine: Local, muy rapido, con eviction
+- EhCache: Local, configurable
+
+DOCUMENTACION:
+- Spring Cache: https://docs.spring.io/spring-framework/reference/integration/cache.html
+
+
+================================================================================
+15. TAREAS PROGRAMADAS CON QUARTZ
+================================================================================
+
+Usamos Quartz Scheduler para ejecutar tareas periodicamente.
+
+POR QUE QUARTZ Y NO @Scheduled:
+- Persistencia de jobs (sobrevive reinicios)
+- Clustering (un solo nodo ejecuta)
+- Configuracion dinamica
+- Mejor para tareas complejas
+
+COMPONENTES:
+-----------
+
+1. Job - La tarea a ejecutar
+@Component
+public class PriceMonitorJob implements Job {
+    @Override
+    public void execute(JobExecutionContext context) {
+        // Logica de actualizacion de precios
+    }
+}
+
+2. JobDetail - Configuracion del job
+@Bean
+public JobDetail priceMonitorJobDetail() {
+    return JobBuilder.newJob(PriceMonitorJob.class)
+        .withIdentity("priceMonitorJob")
+        .storeDurably()
+        .build();
+}
+
+3. Trigger - Cuando ejecutar
+@Bean
+public Trigger priceMonitorTrigger(JobDetail jobDetail) {
+    return TriggerBuilder.newTrigger()
+        .forJob(jobDetail)
+        .withIdentity("priceMonitorTrigger")
+        .withSchedule(SimpleScheduleBuilder.simpleSchedule()
+            .withIntervalInHours(6)
+            .repeatForever())
+        .startAt(Date.from(Instant.now().plusSeconds(60)))  // 1 min despues
+        .build();
+}
+
+TIPOS DE TRIGGER:
+----------------
+- SimpleTrigger: Intervalos fijos (cada 6 horas)
+- CronTrigger: Expresiones cron (0 0 */6 * * ?)
+- CalendarIntervalTrigger: Intervalos de calendario
+
+EXPRESIONES CRON:
+----------------
+┌───────────── segundo (0-59)
+│ ┌───────────── minuto (0-59)
+│ │ ┌───────────── hora (0-23)
+│ │ │ ┌───────────── dia del mes (1-31)
+│ │ │ │ ┌───────────── mes (1-12)
+│ │ │ │ │ ┌───────────── dia de semana (0-7)
+│ │ │ │ │ │
+* * * * * *
+
+"0 0 6 * * ?"     - Cada dia a las 6:00
+"0 */30 * * * ?"  - Cada 30 minutos
+"0 0 */4 * * ?"   - Cada 4 horas
+
+DOCUMENTACION:
+- Quartz: https://www.quartz-scheduler.org/documentation/
+- Spring Quartz: https://docs.spring.io/spring-boot/docs/current/reference/html/io.html#io.quartz
+
+
+================================================================================
+16. CONFIGURACION Y PERFILES
+================================================================================
+
+ESTRUCTURA DE application.yml:
+-----------------------------
+
+El archivo se divide por perfiles usando ---
+
+spring:
+  application:
+    name: pricewise
+  datasource:
+    url: jdbc:postgresql://localhost:5432/pricewise_db
+    
+---
+# Perfil DESARROLLO
+spring:
+  config:
+    activate:
+      on-profile: dev
   jpa:
-    hibernate:
-      ddl-auto: update
+    show-sql: true
+
+---
+# Perfil PRODUCCION
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
     show-sql: false
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    properties:
-      hibernate:
-        default_batch_fetch_size: 16  # Previene N+1 en relaciones LAZY
+
+VARIABLES DE ENTORNO:
+--------------------
+Valores sensibles no van en el codigo:
 
 jwt:
-  secret: ${JWT_SECRET}
-  expiration: 86400000  # 24 horas
+  secret: ${JWT_SECRET:valorPorDefecto}
+  
+datasource:
+  password: ${DB_PASSWORD:postgres}
 
-keepa:
-  default-locale: ES
-  history-days: 90
-  rate-limit: 10
-# Las API keys de Keepa se gestionan por empresa en tabla company_api_keys
+Sintaxis ${VARIABLE:default}:
+- Busca variable de entorno VARIABLE
+- Si no existe, usa el valor por defecto
 
-REFERENCIAS:
-- Spring Profiles: https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.profiles
+CREAR ARCHIVO .env:
+------------------
+JWT_SECRET=miClaveSecreta123456
+DB_PASSWORD=miPasswordDeProduccion
+# Las API keys de Keepa se gestionan por empresa desde la app (Ajustes)
+
+ACTIVAR PERFIL:
+--------------
+Varias formas:
+
+1. En application.yml:
+spring:
+  profiles:
+    active: dev
+
+2. Variable de entorno:
+SPRING_PROFILES_ACTIVE=prod
+
+3. Argumento de linea de comandos:
+java -jar app.jar --spring.profiles.active=prod
+
+DOCUMENTACION:
+- External Configuration: https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.external-config
 
 
 ================================================================================
-18. POOL DE CONEXIONES
+17. POOL DE CONEXIONES
 ================================================================================
 
-HikariCP gestiona las conexiones a PostgreSQL.
+Usamos HikariCP, el pool de conexiones por defecto de Spring Boot.
 
-SIN POOL: cada request abre una conexion (lento, costoso)
-CON POOL: las conexiones se reutilizan (rapido, eficiente)
+POR QUE UN POOL:
+- Crear conexiones es costoso (~100ms)
+- Reutilizar conexiones es rapido (~1ms)
+- Control del numero maximo de conexiones
 
-CONFIGURACION OPTIMA PARA PRICEWISE:
+CONFIGURACION:
+-------------
 
 spring:
   datasource:
     hikari:
-      maximum-pool-size: 20        # Maximo 20 conexiones simultaneas
-      minimum-idle: 5              # 5 siempre abiertas en reposo
-      idle-timeout: 600000         # Cerrar inactivas tras 10 min
-      connection-timeout: 30000    # Esperar 30s antes de error
-      max-lifetime: 1800000        # Renovar conexion cada 30 min
+      # Conexiones siempre listas
+      minimum-idle: 5
+      
+      # Maximo de conexiones
+      maximum-pool-size: 20
+      
+      # Tiempo esperando conexion libre
+      connection-timeout: 30000  # 30s
+      
+      # Tiempo maximo en idle antes de cerrar
+      idle-timeout: 600000       # 10 min
+      
+      # Vida maxima de una conexion
+      max-lifetime: 1800000      # 30 min
+      
+      # Detectar conexiones no devueltas
+      leak-detection-threshold: 60000  # 1 min
 
-FORMULA PARA maximum-pool-size:
-    Para I/O bound (acceso a BD): numCores * 2 a numCores * 4
-    Un servidor con 4 cores: 8 a 16 conexiones es razonable.
-    20 da margen para picos.
+EXPLICACION DE PARAMETROS:
+-------------------------
 
-REFERENCIAS:
+minimum-idle: Conexiones "calientes" esperando
+- Muy bajo: retrasos al necesitar conexiones
+- Muy alto: desperdicio de recursos
+
+maximum-pool-size: Limite absoluto
+- Muy bajo: cuellos de botella
+- Muy alto: sobrecarga la BD
+- Regla: ~ conexiones = cores * 2 + discos
+
+max-lifetime: Refresca conexiones periodicamente
+- Evita problemas con firewalls que cierran conexiones idle
+- Debe ser menor que timeout del servidor BD
+
+leak-detection-threshold: Alerta si una conexion no se devuelve
+- Ayuda a detectar bugs (olvidar cerrar conexion)
+- Solo warning en log, no cierra conexion
+
+DOCUMENTACION:
 - HikariCP: https://github.com/brettwooldridge/HikariCP
 
 
 ================================================================================
-19. TESTING
+18. TESTING
 ================================================================================
 
-TESTS UNITARIOS (Service Layer):
+TIPOS DE TESTS:
+--------------
+
+1. Tests Unitarios - Prueban una clase aislada
+   - Mock de dependencias
+   - Rapidos (~ms)
+   - Muchos (80% de tests)
+
+2. Tests de Integracion - Prueban varias capas
+   - Base de datos real o H2
+   - Mas lentos (~s)
+   - Menos
+
+3. Tests End-to-End - Prueban todo el flujo
+   - Peticiones HTTP reales
+   - Los mas lentos
+   - Pocos
+
+FRAMEWORKS USADOS:
+-----------------
+
+- JUnit 5: Framework base de testing
+- Mockito: Crear mocks de dependencias
+- Spring Boot Test: @SpringBootTest, TestRestTemplate
+- AssertJ: Assertions fluidas
+
+EJEMPLO TEST UNITARIO:
+---------------------
 
 @ExtendWith(MockitoExtension.class)
 class ProductServiceTest {
@@ -1591,121 +2053,137 @@ class ProductServiceTest {
     @Mock
     private ProductRepository productRepository;
 
-    @Mock
-    private UserRepository userRepository;
-
     @InjectMocks
     private ProductService productService;
 
     @Test
-    void createProduct_withValidRequest_shouldSaveAndReturnResponse() {
-        // Given
-        ProductRequest request = ProductRequest.builder()
-            .name("Test Product")
-            .currentPrice(new BigDecimal("29.99"))
-            .build();
+    @DisplayName("Debe lanzar excepcion si producto no existe")
+    void getProduct_shouldThrow_whenNotFound() {
+        // Arrange
+        when(productRepository.findById(1L)).thenReturn(Optional.empty());
 
-        User user = User.builder().id(1L).username("testuser").build();
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        // When
-        ProductResponse result = productService.createProduct(request, 1L);
-
-        // Then
-        assertThat(result.getName()).isEqualTo("Test Product");
-        verify(productRepository).save(any(Product.class));
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, 
+            () -> productService.getProduct(1L, 1L));
     }
 }
 
-TESTS DE INTEGRACION (Controller Layer):
+EJEMPLO TEST DE INTEGRACION:
+---------------------------
 
 @SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class ProductControllerIntegrationTest {
+@ActiveProfiles("dev")
+class AsyncConfigTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    @Qualifier("taskExecutor")
+    private ThreadPoolTaskExecutor taskExecutor;
 
     @Test
-    void createProduct_withValidToken_shouldReturn201() throws Exception {
-        String token = generateTestToken();
-
-        mockMvc.perform(post("/api/products")
-                .header("Authorization", "Bearer " + token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                    { "name": "Test", "currentPrice": 9.99 }
-                    """))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.success").value(true));
+    void taskExecutor_shouldHaveCorrectConfig() {
+        assertThat(taskExecutor.getCorePoolSize()).isEqualTo(5);
+        assertThat(taskExecutor.getMaxPoolSize()).isEqualTo(10);
     }
 }
 
-TESTS DE REPOSITORIO (con H2 en memoria):
+ANOTACIONES DE TEST:
+-------------------
 
-@DataJpaTest
-@ActiveProfiles("test")
-class ProductRepositoryTest {
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Test
-    void findByUserIdAndActiveTrue_shouldReturnOnlyActiveProducts() {
-        // Setup: insertar productos activos e inactivos
-        // Then: verificar que solo se devuelven los activos
-    }
-}
+@Test                    - Marca metodo como test
+@DisplayName("...")      - Nombre legible del test
+@BeforeEach              - Ejecutar antes de cada test
+@AfterEach               - Ejecutar despues de cada test
+@BeforeAll               - Ejecutar una vez antes de todos
+@Disabled                - Desactivar test temporalmente
+@ParameterizedTest       - Test con multiples datos
 
 DOCUMENTACION:
-- JUnit 5: https://junit.org/junit5/
+- JUnit 5: https://junit.org/junit5/docs/current/user-guide/
 - Mockito: https://site.mockito.org/
-- Spring Test: https://docs.spring.io/spring-framework/reference/testing.html
+- Spring Boot Testing: https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing
 
 
 ================================================================================
-20. REFERENCIAS Y DOCUMENTACION OFICIAL
+19. REFERENCIAS Y DOCUMENTACION OFICIAL
 ================================================================================
 
-SPRING:
--------
-- Spring Boot:     https://spring.io/projects/spring-boot
-- Spring Security: https://spring.io/projects/spring-security
-- Spring Data JPA: https://spring.io/projects/spring-data-jpa
-- Spring Cache:    https://docs.spring.io/spring-framework/reference/integration/cache.html
-- Spring Async:    https://spring.io/guides/gs/async-method/
+DOCUMENTACION OFICIAL:
+---------------------
 
-JAVA:
------
-- Java 17 LTS:         https://openjdk.org/projects/jdk/17/
-- CompletableFuture:   https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html
-- Jakarta Validation:  https://jakarta.ee/specifications/bean-validation/
+Spring Framework:
+- Pagina principal: https://spring.io/
+- Documentacion: https://docs.spring.io/spring-framework/reference/
+- Guides: https://spring.io/guides
 
-BASE DE DATOS:
---------------
-- PostgreSQL:    https://www.postgresql.org/docs/
-- Hibernate:     https://hibernate.org/orm/documentation/
-- HikariCP:      https://github.com/brettwooldridge/HikariCP
+Spring Boot:
+- Reference: https://docs.spring.io/spring-boot/docs/current/reference/html/
+- API Docs: https://docs.spring.io/spring-boot/docs/current/api/
 
-LIBRERIAS:
-----------
-- Lombok:       https://projectlombok.org/
-- jjwt:         https://github.com/jwtk/jjwt
-- Quartz:       http://www.quartz-scheduler.org/documentation/
-- SpringDoc:    https://springdoc.org/
-- Jsoup:        https://jsoup.org/
+Spring Security:
+- Reference: https://docs.spring.io/spring-security/reference/
+- Oauth2: https://docs.spring.io/spring-security/reference/servlet/oauth2/index.html
 
-APIS EXTERNAS:
---------------
-- Keepa API:    https://keepa.com/#!discuss/t/keepa-api/99
-- JWT:          https://jwt.io/introduction
+Spring Data JPA:
+- Reference: https://docs.spring.io/spring-data/jpa/reference/
 
-ARQUITECTURA:
--------------
-- Layered Architecture: https://www.oreilly.com/library/view/software-architecture-patterns/9781491971437/
-- REST Best Practices:  https://restfulapi.net/
+Java:
+- API Javadoc: https://docs.oracle.com/en/java/javase/17/docs/api/
+- Tutorials: https://dev.java/learn/
+- Concurrency: https://docs.oracle.com/javase/tutorial/essential/concurrency/
+
+Hibernate:
+- User Guide: https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html
+- Javadoc: https://docs.jboss.org/hibernate/orm/current/javadocs/
+
+LIBRERIAS EXTERNAS:
+------------------
+
+Lombok:
+- Features: https://projectlombok.org/features/all
+- Annotations: https://projectlombok.org/api/
+
+JWT (jjwt):
+- GitHub: https://github.com/jwtk/jjwt
+- README: https://github.com/jwtk/jjwt#readme
+
+Quartz:
+- Documentation: https://www.quartz-scheduler.org/documentation/
+- Tutorial: https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/
+
+HikariCP:
+- GitHub: https://github.com/brettwooldridge/HikariCP
+- Configuration: https://github.com/brettwooldridge/HikariCP#configuration-knobs-baby
+
+Keepa API:
+- Documentation: https://keepa.com/#!discuss/t/using-the-keepa-api/47
+
+PATRONES Y ARQUITECTURA:
+-----------------------
+
+Clean Architecture:
+- Blog Uncle Bob: https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html
+
+SOLID Principles:
+- https://www.digitalocean.com/community/conceptual-articles/s-o-l-i-d-the-first-five-principles-of-object-oriented-design
+
+Design Patterns:
+- Refactoring Guru: https://refactoring.guru/design-patterns
+
+REST Best Practices:
+- https://restfulapi.net/
+- https://www.vinaysahni.com/best-practices-for-a-pragmatic-restful-api
+
+TUTORIALES RECOMENDADOS:
+-----------------------
+
+Baeldung (Spring/Java):
+- https://www.baeldung.com/
+
+Java Concurrency:
+- https://jenkov.com/tutorials/java-concurrency/index.html
+
+Spring Security JWT:
+- https://www.bezkoder.com/spring-boot-jwt-authentication/
 
 ================================================================================
                               FIN DEL DOCUMENTO

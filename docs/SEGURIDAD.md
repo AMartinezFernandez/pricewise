@@ -1,7 +1,7 @@
 # Informe de Seguridad - PriceWise Backend
 
-**Fecha:** 2026-02-16
-**Version:** 1.1
+**Fecha:** 2026-03-09
+**Version:** 1.2
 
 ---
 
@@ -10,8 +10,10 @@
 | Categoria           | Estado    | Nivel |
 |---------------------|-----------|-------|
 | Autenticacion       | Seguro    | Alto  |
+| Google OAuth2       | Seguro    | Alto  |
 | Autorizacion        | Seguro    | Alto  |
 | Almacenamiento      | Seguro    | Alto  |
+| Cifrado API Keys    | Seguro    | Alto  |
 | Comunicaciones      | Seguro    | Alto  |
 | Codigo fuente       | Seguro    | Alto  |
 | Permisos de API     | Adecuados | Alto  |
@@ -63,6 +65,27 @@ public void validateSecretKey() {
 - Devuelve HTTP 401 Unauthorized con mensaje descriptivo
 - Distingue expirado (401 + mensaje especifico) de token invalido (401 generico)
 - **Android**: `AuthInterceptor` detecta 401, limpia token cacheado y notifica `SessionManager` via `SharedFlow`. `NavGraph` recoge el evento y navega automaticamente a Login.
+
+### Google OAuth2
+- **Estado:** Seguro
+- Flujo: el cliente Android obtiene un `idToken` de Google Sign-In y lo envia a `POST /api/auth/google`
+- `GoogleTokenService` valida el token contra Google API (`https://oauth2.googleapis.com/tokeninfo`)
+- Se verifica: firma, audience (client ID), expiracion y email verificado
+- Si el usuario ya existe: se genera JWT directamente
+- Si es nuevo: se devuelve estado `needs_company` con `tempToken` temporal para completar registro
+- El `tempToken` tiene expiracion corta y solo sirve para `/google/complete-new-company` o `/google/complete-join`
+- Campo `auth_provider` en tabla `users` distingue `LOCAL` vs `GOOGLE` (migracion V4)
+- Usuarios Google no tienen contrasena almacenada (campo password = cadena aleatoria hasheada con BCrypt)
+
+### Cifrado de API Keys (Keepa)
+- **Estado:** Seguro
+- Las API keys de terceros (Keepa) se almacenan cifradas con AES-256 en tabla `company_api_keys`
+- `CompanyApiKeyService` gestiona cifrado/descifrado usando clave derivada de variable de entorno
+- Cada empresa tiene su propia API key (aislamiento por `company_id`)
+- La key nunca se expone en texto plano en respuestas API (se devuelve `maskedKey` con asteriscos)
+- Constraint UNIQUE `(company_id, provider)` impide duplicados por proveedor
+- Las keys se pueden activar/desactivar sin eliminarlas (campo `enabled`)
+- Solo `COMPANY_ADMIN` y `ADMIN` pueden gestionar API keys
 
 ---
 
@@ -219,6 +242,8 @@ cors:
 | GET  /api/analytics/**                 | COMPANY_ADMIN/EMPLOYEE/ADMIN | Metricas de empresa      |
 | GET  /api/competitors/amazon/**        | Autenticado    | Consultas Keepa autenticadas               |
 | *    /api/alert-rules/**               | Autenticado    | CRUD reglas de alerta por empresa          |
+| *    /api/users/**                     | COMPANY_ADMIN/ADMIN | Gestion usuarios de la empresa        |
+| *    /api/api-keys/**                  | COMPANY_ADMIN/ADMIN | CRUD API keys cifradas por empresa     |
 | GET  /api/admin/**                     | ADMIN          | Gestion global de la plataforma            |
 
 ### Notas sobre Actuator
@@ -401,6 +426,9 @@ cors:
 - Paginacion validada con `@Min(0)` en page y `@Min(1) @Max(100)` en size en ProductController y AnalyticsController
 - Permiso `ACCESS_NETWORK_STATE` declarado en AndroidManifest para NetworkObserver (evita SecurityException)
 - AdminController optimizado: usa count queries en vez de `findAll().stream()` (evita cargar entidades completas en memoria)
+- Google OAuth2: validacion de idToken via Google API con verificacion de audience, firma y expiracion
+- API keys cifradas con AES-256 en BD (nunca expuestas en texto plano en respuestas)
+- Guardia de auto-eliminacion en UserService: usuario no puede eliminarse a si mismo (check temprano antes de consultar BD)
 
 ---
 
