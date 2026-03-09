@@ -289,7 +289,7 @@ class ProductViewModel @Inject constructor(
                 description = description.ifBlank { null },
                 monitoringEnabled = monitoringEnabled
             )
-            when (repository.updateProduct(id, request)) {
+            when (val result = repository.updateProduct(id, request)) {
                 is Result.Success -> _formState.value = ProductFormUiState(success = true)
                 is Result.Error -> _formState.value = ProductFormUiState(error = result.message)
             }
