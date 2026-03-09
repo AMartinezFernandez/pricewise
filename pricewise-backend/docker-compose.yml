@@ -46,7 +46,6 @@ services:
   #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pricewise_db
   #     SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres}
   #     JWT_SECRET: ${JWT_SECRET}
-  #     KEEPA_API_KEY: ${KEEPA_API_KEY:-}
   #   ports:
   #     - "9090:9090"
 

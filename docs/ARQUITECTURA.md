@@ -1139,10 +1139,11 @@ CONFIGURACION:
 
 @ConfigurationProperties(prefix = "keepa")
 public class KeepaConfig {
-    private String apiKey;           // Desde variable de entorno KEEPA_API_KEY
     private String defaultLocale;    // "ES" por defecto
-    private int priceHistoryDays;    // 90 dias por defecto
+    private int historyDays;         // 90 dias por defecto
+    private int rateLimit;           // 10 requests/min por defecto
 }
+// Nota: Las API keys se gestionan por empresa en tabla company_api_keys (cifrado AES-256)
 
 LLAMADA A KEEPA:
 
@@ -1508,7 +1509,8 @@ VARIABLES DE ENTORNO REQUERIDAS:
 | DB_USERNAME               | Usuario de PostgreSQL                | postgres                                           |
 | DB_PASSWORD               | Contrasena PostgreSQL                | mi_password_segura                                 |
 | SPRING_PROFILES_ACTIVE    | Perfil activo                        | dev o prod                                         |
-| KEEPA_API_KEY             | API key de keepa.com                 | xxxxxxxxxxxxxxxxxxx                                |
+
+> Nota: Las API keys de Keepa se gestionan por empresa desde Ajustes > Integracion Keepa (no via variable de entorno).
 
 CONFIGURACION BASICA (application.yml):
 
@@ -1539,9 +1541,10 @@ jwt:
   expiration: 86400000  # 24 horas
 
 keepa:
-  api-key: ${KEEPA_API_KEY}
   default-locale: ES
-  price-history-days: 90
+  history-days: 90
+  rate-limit: 10
+# Las API keys de Keepa se gestionan por empresa en tabla company_api_keys
 
 REFERENCIAS:
 - Spring Profiles: https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.profiles

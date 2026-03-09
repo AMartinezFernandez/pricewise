@@ -153,7 +153,7 @@ private String password;
 - Username de BD via variable `DB_USERNAME`
 - Credenciales de BD via variable `DB_PASSWORD`
 - JWT secret via variable `JWT_SECRET`
-- API key de Keepa via variable `KEEPA_API_KEY`
+- API keys de Keepa gestionadas por empresa (cifradas AES-256 en tabla `company_api_keys`, configurables desde Ajustes)
 - El `.env.example` no contiene valores reales, solo ejemplos
 - El `.gitignore` excluye `.env` del control de versiones
 - Ninguna credencial esta hardcodeada en `application.yml`
