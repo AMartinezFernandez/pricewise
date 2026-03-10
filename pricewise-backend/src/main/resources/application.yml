@@ -165,6 +165,11 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
 
+# Encryption key sin fallback en producción — obligatorio configurar API_KEYS_ENCRYPTION_KEY
+pricewise:
+  api-keys:
+    encryption-key: ${API_KEYS_ENCRYPTION_KEY}
+
 # CORS restrictivo en producción
 cors:
   allow-all: false
