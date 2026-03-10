@@ -44,6 +44,7 @@ public class AnalyticsDTOs {
         private BigDecimal priceDifferencePercent;
         private String priority;
         private String reason;
+        private String status;
         private LocalDateTime createdAt;
 
         public static RecommendationSummary fromEntity(PriceRecommendation r) {
@@ -58,6 +59,7 @@ public class AnalyticsDTOs {
                     .priceDifferencePercent(r.getPriceDifferencePercent())
                     .priority(r.getPriority().name())
                     .reason(r.getReason())
+                    .status(r.getStatus().name())
                     .createdAt(r.getCreatedAt())
                     .build();
         }
