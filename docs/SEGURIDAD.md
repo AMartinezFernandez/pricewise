@@ -440,3 +440,12 @@ codigo, SQL injection, fuga de datos entre usuarios) estan cubiertas.
 
 Las acciones pendientes son de prioridad media-baja y no representan vulnerabilidades
 explotables de forma trivial en el estado actual del sistema.
+
+---
+
+## Documentacion Relacionada
+
+- [ARQUITECTURA.md](ARQUITECTURA.md) — Guia completa de arquitectura y justificaciones tecnicas
+- [README.md](README.md) — Endpoints REST, instalacion y configuracion
+- [FLYWAY.md](FLYWAY.md) — Migraciones de base de datos (esquema de seguridad en V1, V5, V8)
+- [CRONOGRAMA.md](CRONOGRAMA.md) — Timeline de desarrollo por fases

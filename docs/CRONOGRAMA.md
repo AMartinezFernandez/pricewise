@@ -530,6 +530,73 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 ---
 
+## Fase 27: Edicion de Productos y Recomendaciones (2026-03-04)
+
+### Android
+- OK Pantalla de edicion de producto (EditProductScreen) con formulario pre-rellenado
+- OK ProductDetailViewModel y ProductFormViewModel separados
+- OK Navegacion: detalle → editar → guardar → volver a detalle
+- OK RecommendationsScreen con lista de recomendaciones por producto
+
+### Backend
+- OK Endpoint PUT /api/products/{id} con deteccion de cambio de precio
+- OK PriceHistory INCREASE/DECREASE registrado automaticamente al actualizar precio
+
+---
+
+## Fase 28: Google OAuth2 y API Keys por Empresa (2026-03-07 - 2026-03-09)
+
+### Backend — Google OAuth2
+- OK GoogleTokenService con validacion de ID tokens de Google
+- OK 3 endpoints: /api/auth/google, /api/auth/google/complete-new-company, /api/auth/google/complete-join
+- OK Campo authProvider (LOCAL/GOOGLE) en entidad User
+- OK Password aleatoria BCrypt para usuarios Google (no usable para login local)
+
+### Backend — API Keys por Empresa
+- OK Entidad CompanyApiKey con cifrado AES-256-GCM (ApiKeyEncryptionService)
+- OK Migracion V8: tabla company_api_keys con UNIQUE(company_id, provider)
+- OK CRUD completo: guardar, listar (enmascaradas), toggle, eliminar
+- OK KeepaService lee API key desde CompanyApiKeyService en vez de config global
+
+### Android
+- OK Google Sign-In con Credential Manager
+- OK Pantalla de configuracion de empresa (nueva empresa o unirse con codigo)
+- OK Pantalla de ajustes con gestion de API key Keepa (guardar, ver enmascarada, toggle)
+- OK Selector de moneda y tema oscuro en ajustes
+
+---
+
+## Fase 29: Reorganizacion de Documentacion (2026-03-09)
+
+- OK Migracion de coleccion Postman a formato YAML (archivos individuales por request)
+- OK Documentos movidos de subdirectorios a `docs/` raiz
+- OK Eliminacion de archivo duplicado arquitectura_1.md (fusionado en ARQUITECTURA.md)
+- OK FLYWAY.md actualizado con migraciones V7 y V8
+- OK README.md actualizado: Google OAuth, API Keys, usuarios, analytics, productos monitorizados
+- OK SEGURIDAD.md v1.2: Google OAuth2, cifrado API keys AES-256
+
+---
+
+## Fase 30: Revision de Arquitectura (2026-03-10)
+
+### Correcciones Criticas
+- OK Filtro `active=true` faltante en queries de categorias y marcas (soft-delete leak)
+
+### Optimizaciones (N+1)
+- OK AdminService: JOIN FETCH en findAllWithUsers/findByIdWithUsers
+- OK PriceMonitorJob: JOIN FETCH company en findMonitoredProductsWithCompany
+
+### Refactorizacion SRP
+- OK ProductViewModel dividido en SearchViewModel, ProductDetailViewModel, ProductFormViewModel
+- OK GoogleAuthService extraido de AuthService (3 metodos Google OAuth + helper)
+- OK ProductResponse inmutable con factory method fromEntity(Product, CompetitorPrice)
+
+### Testing
+- OK 34 nuevos tests: AlertRuleServiceTest (12), CompanyApiKeyServiceTest (12), ApiKeyEncryptionServiceTest (10)
+- OK Total backend: 204 tests, 0 fallos
+
+---
+
 ## Futuro (Diferido)
 
 ### Funcionalidades
@@ -555,16 +622,16 @@ controller/AdminController.java        # [MOD] POST /api/admin/companies
 
 | Metrica                  | Valor               |
 |--------------------------|---------------------|
-| Entidades JPA            | 9                   |
-| Repositorios             | 9                   |
-| Servicios                | 8                   |
-| Controladores            | 7                   |
-| DTOs                     | ~28                 |
-| Endpoints REST           | ~47                 |
-| APIs externas            | 1 (Keepa)           |
-| Tests unitarios          | 189+                |
-| Bugs resueltos           | 37+                 |
+| Entidades JPA            | 10                  |
+| Repositorios             | 10                  |
+| Servicios                | 11                  |
+| Controladores            | 8                   |
+| DTOs                     | ~32                 |
+| Endpoints REST           | ~55                 |
+| APIs externas            | 1 (Keepa) + Google OAuth2 |
+| Tests backend            | 204                 |
+| Bugs resueltos           | 39+                 |
 | Roles de usuario         | 3                   |
-| Migraciones Flyway       | 5                   |
+| Migraciones Flyway       | 8                   |
 | Cache                    | En memoria (ConcurrentHashMap) |
 | Version BD (DDL)         | validate            |

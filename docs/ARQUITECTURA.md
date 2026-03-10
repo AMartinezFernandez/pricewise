@@ -2186,5 +2186,16 @@ Spring Security JWT:
 - https://www.bezkoder.com/spring-boot-jwt-authentication/
 
 ================================================================================
+20. DOCUMENTACION RELACIONADA
+================================================================================
+
+- [README.md](README.md) — Endpoints REST, instalacion y configuracion
+- [SEGURIDAD.md](SEGURIDAD.md) — Informe de seguridad (JWT, OAuth2, cifrado AES-256)
+- [FLYWAY.md](FLYWAY.md) — Migraciones de base de datos V1-V8
+- [CRONOGRAMA.md](CRONOGRAMA.md) — Timeline de desarrollo por fases
+- [BUGS_Y_SOLUCIONES.md](BUGS_Y_SOLUCIONES.md) — Registro de incidencias resueltas
+- [MEJORAS_FUTURAS.md](MEJORAS_FUTURAS.md) — Servicios retirados del MVP y plan de reintegracion
+
+================================================================================
                               FIN DEL DOCUMENTO
 ================================================================================

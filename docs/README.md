@@ -306,6 +306,16 @@ mvn test                     Ejecutar tests
 psql -U postgres -d pricewise_db         Conectar a PostgreSQL
 
 
+DOCUMENTACION RELACIONADA
+
+- [ARQUITECTURA.md](ARQUITECTURA.md) — Guia completa de arquitectura y justificaciones tecnicas
+- [SEGURIDAD.md](SEGURIDAD.md) — Informe de seguridad (JWT, OAuth2, cifrado AES-256, RBAC)
+- [FLYWAY.md](FLYWAY.md) — Migraciones de base de datos V1-V8
+- [CRONOGRAMA.md](CRONOGRAMA.md) — Timeline de desarrollo (30 fases)
+- [BUGS_Y_SOLUCIONES.md](BUGS_Y_SOLUCIONES.md) — Registro de incidencias resueltas
+- [MEJORAS_FUTURAS.md](MEJORAS_FUTURAS.md) — Servicios retirados del MVP y plan de reintegracion
+
+
 AUTOR
 
 Alvaro Martinez

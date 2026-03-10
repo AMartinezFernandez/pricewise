@@ -55,3 +55,9 @@ Flyway Community Edition no soporta rollback automatico. Para revertir:
 | V6 | Campo target_price (DECIMAL 10,2) en alert_rules | 2026-03-08 |
 | V7 | user_id nullable en alerts (ON DELETE SET NULL para conservar alertas al borrar usuarios) | 2026-03-08 |
 | V8 | Tabla company_api_keys (API keys cifradas AES-256 por empresa, unique company+provider) | 2026-03-09 |
+
+## Documentacion Relacionada
+
+- [ARQUITECTURA.md](ARQUITECTURA.md) — Guia de arquitectura (seccion 6: Entidades JPA y Persistencia)
+- [SEGURIDAD.md](SEGURIDAD.md) — Seguridad de BD (cifrado, constraints, transacciones)
+- [CRONOGRAMA.md](CRONOGRAMA.md) — Fase 17 (integracion Flyway) y fases posteriores
