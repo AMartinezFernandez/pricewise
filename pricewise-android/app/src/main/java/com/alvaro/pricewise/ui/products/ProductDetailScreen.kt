@@ -26,9 +26,9 @@ fun ProductDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToHistory: (Long) -> Unit = {},
     onNavigateToEdit: (Long) -> Unit = {},
-    viewModel: ProductViewModel = hiltViewModel()
+    viewModel: ProductDetailViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.detailState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showSyncDetails by remember { mutableStateOf(false) }
 
@@ -364,7 +364,7 @@ fun ProductDetailScreen(
                                                         showSyncDetails = false
                                                         // Limpiar syncResult para que al recargar use los datos
                                                         // persistidos del backend (amazonPrice en ProductResponse)
-                                                        viewModel.clearDetailSyncResult()
+                                                        viewModel.clearSyncResult()
                                                         viewModel.loadProduct(productId)
                                                     },
                                                     modifier = Modifier.fillMaxWidth()

@@ -21,7 +21,7 @@ import com.alvaro.pricewise.ui.theme.PwDarkNavy
 fun CreateProductScreen(
     onProductCreated: () -> Unit,
     onNavigateBack: () -> Unit,
-    viewModel: ProductViewModel = hiltViewModel(),
+    viewModel: ProductFormViewModel = hiltViewModel(),
     initialName: String = "",
     initialAsin: String = "",
     initialPrice: String = "",
@@ -29,7 +29,7 @@ fun CreateProductScreen(
     initialBrand: String = "",
     initialDescription: String = ""
 ) {
-    val uiState by viewModel.formState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     var name by remember { mutableStateOf(initialName) }
     var asin by remember { mutableStateOf(initialAsin) }
