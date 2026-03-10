@@ -1,5 +1,6 @@
 package com.alvaro.pricewise.dto.product;
 
+import com.alvaro.pricewise.entity.CompetitorPrice;
 import com.alvaro.pricewise.entity.Product;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -161,6 +162,37 @@ public class ProductDTOs {
                     .createdAt(product.getCreatedAt())
                     .updatedAt(product.getUpdatedAt())
                     .build();
+        }
+
+        public static ProductResponse fromEntity(Product product, CompetitorPrice competitorPrice) {
+            ProductResponseBuilder builder = ProductResponse.builder()
+                    .id(product.getId())
+                    .name(product.getName())
+                    .description(product.getDescription())
+                    .sku(product.getSku())
+                    .asin(product.getAsin())
+                    .ean(product.getEan())
+                    .currentPrice(product.getCurrentPrice())
+                    .costPrice(product.getCostPrice())
+                    .minMargin(product.getMinMargin())
+                    .margin(product.getMargin())
+                    .category(product.getCategory())
+                    .brand(product.getBrand())
+                    .imageUrl(product.getImageUrl())
+                    .active(product.getActive())
+                    .monitoringEnabled(product.getMonitoringEnabled())
+                    .stockQuantity(product.getStockQuantity())
+                    .createdByUsername(product.getCreatedBy() != null ? product.getCreatedBy().getUsername() : null)
+                    .createdAt(product.getCreatedAt())
+                    .updatedAt(product.getUpdatedAt());
+
+            if (competitorPrice != null) {
+                builder.amazonPrice(competitorPrice.getPrice())
+                        .amazonProductTitle(competitorPrice.getCompetitorProductTitle())
+                        .amazonPriceUpdatedAt(competitorPrice.getScrapedAt());
+            }
+
+            return builder.build();
         }
     }
 

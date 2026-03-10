@@ -52,6 +52,9 @@ class AuthControllerTest {
     private AuthService authService;
 
     @MockBean
+    private com.alvaro.pricewise.service.GoogleAuthService googleAuthService;
+
+    @MockBean
     private JwtService jwtService;
 
     @MockBean
