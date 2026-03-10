@@ -15,7 +15,6 @@ import org.mockito.Mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.alvaro.pricewise.dto.auth.AuthDTOs.*;
@@ -23,24 +22,21 @@ import com.alvaro.pricewise.entity.Company;
 import com.alvaro.pricewise.entity.User;
 import com.alvaro.pricewise.exception.BadRequestException;
 import com.alvaro.pricewise.repository.CompanyRepository;
-import com.alvaro.pricewise.repository.ProductRepository;
 import com.alvaro.pricewise.repository.UserRepository;
 import com.alvaro.pricewise.security.JwtService;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AuthService Google OAuth2 Tests")
-class AuthServiceGoogleTest {
+@DisplayName("GoogleAuthService Tests")
+class GoogleAuthServiceTest {
 
     @Mock private UserRepository userRepository;
     @Mock private CompanyRepository companyRepository;
-    @Mock private ProductRepository productRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtService jwtService;
-    @Mock private AuthenticationManager authenticationManager;
     @Mock private GoogleTokenService googleTokenService;
 
-    private AuthService authService;
+    private GoogleAuthService googleAuthService;
     private Company testCompany;
 
     private GoogleIdToken.Payload createPayload(String email, String name) {
@@ -53,8 +49,8 @@ class AuthServiceGoogleTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, companyRepository, productRepository,
-                passwordEncoder, jwtService, authenticationManager, googleTokenService);
+        googleAuthService = new GoogleAuthService(userRepository, companyRepository,
+                passwordEncoder, jwtService, googleTokenService);
 
         testCompany = Company.builder()
                 .id(1L)
@@ -87,7 +83,7 @@ class AuthServiceGoogleTest {
             when(userRepository.findByEmail("user@google.com")).thenReturn(Optional.of(existingUser));
             when(jwtService.generateToken(any())).thenReturn("jwt-token");
 
-            GoogleLoginResponse response = authService.googleLogin(
+            GoogleLoginResponse response = googleAuthService.googleLogin(
                     GoogleLoginRequest.builder().idToken("valid-token").build());
 
             assertThat(response.getStatus()).isEqualTo("AUTHENTICATED");
@@ -103,7 +99,7 @@ class AuthServiceGoogleTest {
             when(googleTokenService.verify("valid-token")).thenReturn(p);
             when(userRepository.findByEmail("new@google.com")).thenReturn(Optional.empty());
 
-            GoogleLoginResponse response = authService.googleLogin(
+            GoogleLoginResponse response = googleAuthService.googleLogin(
                     GoogleLoginRequest.builder().idToken("valid-token").build());
 
             assertThat(response.getStatus()).isEqualTo("NEEDS_SETUP");
@@ -143,7 +139,7 @@ class AuthServiceGoogleTest {
                     .businessType("retail")
                     .build();
 
-            AuthResponse response = authService.googleCompleteNewCompany(request);
+            AuthResponse response = googleAuthService.googleCompleteNewCompany(request);
 
             assertThat(response.getToken()).isEqualTo("jwt-token");
             assertThat(response.getRole()).isEqualTo("COMPANY_ADMIN");
@@ -164,7 +160,7 @@ class AuthServiceGoogleTest {
                     .companyName("Mi Empresa")
                     .build();
 
-            assertThatThrownBy(() -> authService.googleCompleteNewCompany(request))
+            assertThatThrownBy(() -> googleAuthService.googleCompleteNewCompany(request))
                     .isInstanceOf(BadRequestException.class)
                     .hasMessageContaining("email ya esta registrado");
         }
@@ -195,7 +191,7 @@ class AuthServiceGoogleTest {
                     .companyCode("abcd1234")
                     .build();
 
-            AuthResponse response = authService.googleCompleteJoin(request);
+            AuthResponse response = googleAuthService.googleCompleteJoin(request);
 
             assertThat(response.getToken()).isEqualTo("jwt-token");
             assertThat(response.getRole()).isEqualTo("EMPLOYEE");
@@ -215,7 +211,7 @@ class AuthServiceGoogleTest {
                     .companyCode("INVALID1")
                     .build();
 
-            assertThatThrownBy(() -> authService.googleCompleteJoin(request))
+            assertThatThrownBy(() -> googleAuthService.googleCompleteJoin(request))
                     .isInstanceOf(BadRequestException.class)
                     .hasMessageContaining("empresa no valido");
         }

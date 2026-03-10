@@ -14,6 +14,7 @@ import com.alvaro.pricewise.dto.auth.AuthDTOs.*;
 import com.alvaro.pricewise.dto.common.ApiResponse;
 import com.alvaro.pricewise.security.UserPrincipal;
 import com.alvaro.pricewise.service.AuthService;
+import com.alvaro.pricewise.service.GoogleAuthService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 
     private final AuthService authService;
+    private final GoogleAuthService googleAuthService;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
@@ -73,7 +75,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<GoogleLoginResponse>> googleLogin(
             @Valid @RequestBody GoogleLoginRequest request
     ) {
-        GoogleLoginResponse response = authService.googleLogin(request);
+        GoogleLoginResponse response = googleAuthService.googleLogin(request);
         String message = "AUTHENTICATED".equals(response.getStatus())
                 ? "Login con Google exitoso"
                 : "Usuario nuevo, requiere configuracion de empresa";
@@ -84,7 +86,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponse>> googleCompleteNewCompany(
             @Valid @RequestBody GoogleCompleteNewCompanyRequest request
     ) {
-        AuthResponse response = authService.googleCompleteNewCompany(request);
+        AuthResponse response = googleAuthService.googleCompleteNewCompany(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Empresa y usuario creados exitosamente"));
@@ -94,7 +96,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponse>> googleCompleteJoin(
             @Valid @RequestBody GoogleCompleteJoinRequest request
     ) {
-        AuthResponse response = authService.googleCompleteJoin(request);
+        AuthResponse response = googleAuthService.googleCompleteJoin(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Usuario creado y unido a la empresa exitosamente"));
