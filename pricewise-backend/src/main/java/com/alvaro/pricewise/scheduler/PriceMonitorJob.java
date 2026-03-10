@@ -67,7 +67,7 @@ public class PriceMonitorJob implements Job {
         Page<Product> productPage;
 
         do {
-            productPage = productRepository.findByMonitoringEnabledTrueAndActiveTrue(
+            productPage = productRepository.findMonitoredProductsWithCompany(
                     PageRequest.of(page, PAGE_SIZE)
             );
 

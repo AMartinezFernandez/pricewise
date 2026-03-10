@@ -22,15 +22,16 @@ fun EditProductScreen(
     productId: Long,
     onProductUpdated: () -> Unit,
     onNavigateBack: () -> Unit,
-    viewModel: ProductViewModel = hiltViewModel()
+    detailViewModel: ProductDetailViewModel = hiltViewModel(),
+    formViewModel: ProductFormViewModel = hiltViewModel()
 ) {
-    val detailState by viewModel.detailState.collectAsState()
-    val formState by viewModel.formState.collectAsState()
+    val detailState by detailViewModel.uiState.collectAsState()
+    val formState by formViewModel.uiState.collectAsState()
 
     // Cargar producto al abrir
     LaunchedEffect(productId) {
-        viewModel.resetFormState()
-        viewModel.loadProduct(productId)
+        formViewModel.resetFormState()
+        detailViewModel.loadProduct(productId)
     }
 
     // Inicializar campos cuando carga el producto
@@ -62,7 +63,7 @@ fun EditProductScreen(
     // Navegar al guardar con éxito
     LaunchedEffect(formState.success) {
         if (formState.success) {
-            viewModel.resetFormState()
+            formViewModel.resetFormState()
             onProductUpdated()
         }
     }
@@ -235,7 +236,7 @@ fun EditProductScreen(
 
                         Button(
                             onClick = {
-                                viewModel.updateProduct(
+                                formViewModel.updateProduct(
                                     id = productId,
                                     name = name,
                                     asin = asin,

@@ -27,7 +27,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Buscar por SKU + empresa solo entre activos (para validar duplicados ignorando soft-deleted)
     Optional<Product> findBySkuAndCompanyIdAndActiveTrue(String sku, Long companyId);
 
-    // Productos con monitoreo activo (paginado, para PriceMonitorJob)
+    // Productos con monitoreo activo (paginado, para PriceMonitorJob — con JOIN FETCH company para evitar N+1)
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.company WHERE p.monitoringEnabled = true AND p.active = true",
+           countQuery = "SELECT COUNT(p) FROM Product p WHERE p.monitoringEnabled = true AND p.active = true")
+    Page<Product> findMonitoredProductsWithCompany(Pageable pageable);
+
+    // Productos con monitoreo activo (sin fetch, para queries simples)
     Page<Product> findByMonitoringEnabledTrueAndActiveTrue(Pageable pageable);
 
     // Productos monitorizados por empresa (paginado, para TrackingScreen)
@@ -56,12 +61,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     long countByCompanyIdAndActiveTrue(Long companyId);
     long countByCompanyIdAndMonitoringEnabledTrueAndActiveTrue(Long companyId);
 
-    // Obtener categorias unicas de la empresa
-    @Query("SELECT DISTINCT p.category FROM Product p WHERE p.company.id = :companyId AND p.category IS NOT NULL")
+    // Obtener categorias unicas de la empresa (solo productos activos)
+    @Query("SELECT DISTINCT p.category FROM Product p WHERE p.company.id = :companyId AND p.category IS NOT NULL AND p.active = true")
     List<String> findDistinctCategoriesByCompanyId(@Param("companyId") Long companyId);
 
-    // Obtener marcas unicas de la empresa
-    @Query("SELECT DISTINCT p.brand FROM Product p WHERE p.company.id = :companyId AND p.brand IS NOT NULL")
+    // Obtener marcas unicas de la empresa (solo productos activos)
+    @Query("SELECT DISTINCT p.brand FROM Product p WHERE p.company.id = :companyId AND p.brand IS NOT NULL AND p.active = true")
     List<String> findDistinctBrandsByCompanyId(@Param("companyId") Long companyId);
 
     // Conteo de productos activos agrupados por empresa (evita N+1)

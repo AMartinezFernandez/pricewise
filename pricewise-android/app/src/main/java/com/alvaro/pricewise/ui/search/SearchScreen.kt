@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.alvaro.pricewise.ui.theme.PwDarkNavy
 import com.alvaro.pricewise.ui.products.ProductCard
-import com.alvaro.pricewise.ui.products.ProductViewModel
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -25,26 +24,23 @@ import kotlinx.coroutines.delay
 fun SearchScreen(
     onProductClick: (Long) -> Unit,
     onAddProduct: (com.alvaro.pricewise.data.model.ProductResponse) -> Unit,
-    viewModel: ProductViewModel = hiltViewModel()
+    viewModel: SearchViewModel = hiltViewModel()
 ) {
     var query by remember { mutableStateOf("") }
-    val uiState by viewModel.listState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
 
-    // Limpiar resultados temporales al salir de la pantalla de búsqueda
     DisposableEffect(Unit) {
         onDispose {
-            viewModel.clearSearchResults()
+            viewModel.clearResults()
         }
     }
 
-    // Debounce: esperar 500ms tras dejar de escribir antes de buscar
     LaunchedEffect(query) {
         if (query.isBlank()) {
-            viewModel.clearSearchResults()
+            viewModel.clearResults()
             return@LaunchedEffect
         }
-        // Si parece ASIN completo (10 chars alfanuméricos), buscar inmediatamente
         val upper = query.trim().uppercase()
         if (upper.length == 10 && upper.matches(Regex("^[A-Z0-9]{10}$"))) {
             viewModel.search(query)
