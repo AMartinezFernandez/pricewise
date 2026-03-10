@@ -103,17 +103,12 @@ public class ProductService {
     public ProductResponse getProduct(@org.springframework.lang.NonNull Long companyId, @org.springframework.lang.NonNull Long productId) {
         Product product = productRepository.findByCompanyIdAndIdWithCreatedBy(companyId, productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
-        ProductResponse response = ProductResponse.fromEntity(product);
 
-        // Enriquecer con el último precio de Amazon persistido
-        competitorPriceRepository.findTopByProductIdOrderByScrapedAtDesc(productId)
-                .ifPresent(cp -> {
-                    response.setAmazonPrice(cp.getPrice());
-                    response.setAmazonProductTitle(cp.getCompetitorProductTitle());
-                    response.setAmazonPriceUpdatedAt(cp.getScrapedAt());
-                });
+        CompetitorPrice latestAmazonPrice = competitorPriceRepository
+                .findTopByProductIdOrderByScrapedAtDesc(productId)
+                .orElse(null);
 
-        return response;
+        return ProductResponse.fromEntity(product, latestAmazonPrice);
     }
 
     @Transactional(readOnly = true)
