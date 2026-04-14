@@ -2,6 +2,7 @@ package com.alvaro.pricewise.service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.domain.Page;
@@ -129,8 +130,7 @@ public class ProductService {
         return PageResponse.from(page, content);
     }
 
-    @Transactional(readOnly = true)
-    public PageResponse<ProductListResponse> searchProducts(
+    public CompletableFuture<PageResponse<ProductListResponse>> searchProducts(
             @org.springframework.lang.NonNull Long companyId,
             String name,
             String category,
@@ -139,9 +139,7 @@ public class ProductService {
     ) {
         String searchTerm = name != null ? name.trim() : null;
         Page<Product> page = productRepository.searchProducts(companyId, searchTerm, category, brand, pageable);
-        
-        // Si no hay resultados y la búsqueda parece un ASIN y no es un producto propio, intentar buscar en Keepa
-        // (La búsqueda local ya incluye ASIN en el repositorio modificado)
+
         if (page.isEmpty() && searchTerm != null && searchTerm.matches(ASIN_PATTERN)) {
             log.info("Búsqueda de producto vacía, intentando buscar ASIN en Keepa: {}", searchTerm);
             return searchInKeepa(searchTerm, companyId, pageable);
@@ -150,61 +148,54 @@ public class ProductService {
         List<ProductListResponse> content = page.getContent().stream()
                 .map(ProductListResponse::fromEntity)
                 .toList();
-        return PageResponse.from(page, content);
+        return CompletableFuture.completedFuture(PageResponse.from(page, content));
     }
 
-    private PageResponse<ProductListResponse> searchInKeepa(String asin, Long companyId, Pageable pageable) {
-        if (!keepaService.isAvailable(companyId)) {
-            log.warn("Se intentó buscar en Keepa pero el servicio no está disponible (API Key no configurada)");
-            return PageResponse.<ProductListResponse>builder()
-                    .content(List.of())
-                    .totalElements(0)
-                    .totalPages(0)
-                    .build();
-        }
-
-        try {
-            Product tempProduct = KeepaProductFactory.createTemporaryProduct(asin);
-
-            return keepaService.fetchPriceByAsin(asin, tempProduct, companyId)
-                    .thenApply(optPrice -> optPrice.map(price -> {
-                        ProductListResponse response = ProductListResponse.builder()
-                                .id(-1L)
-                                .name(price.getCompetitorProductTitle())
-                                .sku(asin)
-                                .asin(asin)
-                                .currentPrice(price.getPrice())
-                                .category("Amazon Import")
-                                .brand("Amazon")
-                                .monitoringEnabled(false)
-                                .build();
-                        
-                        return PageResponse.<ProductListResponse>builder()
-                                .content(List.of(response))
-                                .pageNumber(0)
-                                .pageSize(pageable.getPageSize())
-                                .totalElements(1)
-                                .totalPages(1)
-                                .first(true)
-                                .last(true)
-                                .build();
-                    }).orElseGet(() -> PageResponse.<ProductListResponse>builder()
-                            .content(List.of())
-                            .totalElements(0)
-                            .totalPages(0)
-                            .build()))
-                    .get(10, TimeUnit.SECONDS);
-
-        } catch (java.util.concurrent.TimeoutException e) {
-            log.warn("Timeout buscando ASIN {} en Keepa (10s)", asin);
-        } catch (Exception e) {
-            log.error("Error buscando ASIN {} en Keepa: {}", asin, e.getMessage());
-        }
-        return PageResponse.<ProductListResponse>builder()
+    private CompletableFuture<PageResponse<ProductListResponse>> searchInKeepa(String asin, Long companyId, Pageable pageable) {
+        PageResponse<ProductListResponse> emptyResponse = PageResponse.<ProductListResponse>builder()
                 .content(List.of())
                 .totalElements(0)
                 .totalPages(0)
                 .build();
+
+        if (!keepaService.isAvailable(companyId)) {
+            log.warn("Se intentó buscar en Keepa pero el servicio no está disponible (API Key no configurada)");
+            return CompletableFuture.completedFuture(emptyResponse);
+        }
+
+        Product tempProduct = KeepaProductFactory.createTemporaryProduct(asin);
+
+        return keepaService.fetchPriceByAsin(asin, tempProduct, companyId)
+                .orTimeout(10, TimeUnit.SECONDS)
+                .thenApply(optPrice -> optPrice.map(price -> {
+                    ProductListResponse response = ProductListResponse.builder()
+                            .id(-1L)
+                            .name(price.getCompetitorProductTitle())
+                            .sku(asin)
+                            .asin(asin)
+                            .currentPrice(price.getPrice())
+                            .category("Amazon Import")
+                            .brand("Amazon")
+                            .monitoringEnabled(false)
+                            .build();
+                    return PageResponse.<ProductListResponse>builder()
+                            .content(List.of(response))
+                            .pageNumber(0)
+                            .pageSize(pageable.getPageSize())
+                            .totalElements(1)
+                            .totalPages(1)
+                            .first(true)
+                            .last(true)
+                            .build();
+                }).orElse(emptyResponse))
+                .exceptionally(ex -> {
+                    if (ex.getCause() instanceof java.util.concurrent.TimeoutException) {
+                        log.warn("Timeout buscando ASIN {} en Keepa (10s)", asin);
+                    } else {
+                        log.error("Error buscando ASIN {} en Keepa: {}", asin, ex.getMessage());
+                    }
+                    return emptyResponse;
+                });
     }
 
     @Transactional

@@ -23,12 +23,15 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.test.web.servlet.MvcResult;
 
 @WebMvcTest(ProductController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -267,9 +270,11 @@ class ProductControllerTest {
                     .build();
 
             when(productService.searchProducts(eq(1L), eq("iPhone"), any(), any(), any()))
-                    .thenReturn(pageResponse);
+                    .thenReturn(CompletableFuture.completedFuture(pageResponse));
 
-            mockMvc.perform(get(BASE_URL + "/search").param("name", "iPhone"))
+            MvcResult asyncResult = mockMvc.perform(get(BASE_URL + "/search").param("name", "iPhone"))
+                    .andReturn();
+            mockMvc.perform(asyncDispatch(asyncResult))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.content[0].name").value("iPhone 15"));
         }
@@ -283,9 +288,11 @@ class ProductControllerTest {
                     .build();
 
             when(productService.searchProducts(eq(1L), any(), any(), any(), any()))
-                    .thenReturn(pageResponse);
+                    .thenReturn(CompletableFuture.completedFuture(pageResponse));
 
-            mockMvc.perform(get(BASE_URL + "/search"))
+            MvcResult asyncResult = mockMvc.perform(get(BASE_URL + "/search"))
+                    .andReturn();
+            mockMvc.perform(asyncDispatch(asyncResult))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.totalElements").value(0));
         }

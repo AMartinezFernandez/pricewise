@@ -67,7 +67,7 @@ class ProductServiceSearchTest {
                 .thenReturn(page);
 
         // Act
-        PageResponse<ProductListResponse> response = productService.searchProducts(companyId, searchText, null, null, pageable);
+        PageResponse<ProductListResponse> response = productService.searchProducts(companyId, searchText, null, null, pageable).join();
 
         // Assert
         assertEquals(1, response.getTotalElements());
@@ -89,7 +89,7 @@ class ProductServiceSearchTest {
                 .thenReturn(page);
 
         // Act
-        PageResponse<ProductListResponse> response = productService.searchProducts(companyId, asin, null, null, pageable);
+        PageResponse<ProductListResponse> response = productService.searchProducts(companyId, asin, null, null, pageable).join();
 
         // Assert
         assertEquals(1, response.getTotalElements());
@@ -118,7 +118,7 @@ class ProductServiceSearchTest {
                 .thenReturn(CompletableFuture.completedFuture(Optional.of(price)));
 
         // Act
-        PageResponse<ProductListResponse> response = productService.searchProducts(companyId, asin, null, null, pageable);
+        PageResponse<ProductListResponse> response = productService.searchProducts(companyId, asin, null, null, pageable).join();
 
         // Assert
         assertEquals(1, response.getTotalElements());
@@ -145,7 +145,7 @@ class ProductServiceSearchTest {
                 .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         // Act
-        PageResponse<ProductListResponse> response = productService.searchProducts(companyId, asin, null, null, pageable);
+        PageResponse<ProductListResponse> response = productService.searchProducts(companyId, asin, null, null, pageable).join();
 
         // Assert
         assertEquals(0, response.getTotalElements());

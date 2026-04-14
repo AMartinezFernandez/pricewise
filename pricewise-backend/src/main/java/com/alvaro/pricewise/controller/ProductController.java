@@ -2,6 +2,7 @@ package com.alvaro.pricewise.controller;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -101,7 +102,7 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<PageResponse<ProductListResponse>>> searchProducts(
+    public CompletableFuture<ResponseEntity<ApiResponse<PageResponse<ProductListResponse>>>> searchProducts(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String category,
@@ -110,10 +111,8 @@ public class ProductController {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
-        PageResponse<ProductListResponse> response = productService.searchProducts(
-                userPrincipal.requireCompanyId(), name, category, brand, pageable
-        );
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return productService.searchProducts(userPrincipal.requireCompanyId(), name, category, brand, pageable)
+                .thenApply(response -> ResponseEntity.ok(ApiResponse.success(response)));
     }
 
     @PutMapping("/{id}")
