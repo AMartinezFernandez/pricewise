@@ -115,6 +115,18 @@ public class Product {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    /**
+     * Mantiene sku sincronizado con asin antes de cada escritura en DB.
+     * sku es un campo legacy — asin es el identificador canónico.
+     */
+    @PrePersist
+    @PreUpdate
+    private void syncSkuFromAsin() {
+        if (asin != null) {
+            this.sku = asin;
+        }
+    }
+
     // Método helper para calcular margen
     public BigDecimal getMargin() {
         if (costPrice == null || costPrice.compareTo(BigDecimal.ZERO) == 0) {

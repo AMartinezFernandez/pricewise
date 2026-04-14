@@ -7,9 +7,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.alvaro.pricewise.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -23,7 +23,8 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 @Singleton
 class TokenRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    @ApplicationScope private val appScope: CoroutineScope
 ) {
     companion object {
         private val TOKEN_KEY = stringPreferencesKey("jwt_token")
@@ -41,7 +42,7 @@ class TokenRepository @Inject constructor(
     private val hydrationLatch = CountDownLatch(1)
 
     init {
-        CoroutineScope(Dispatchers.IO).launch {
+        appScope.launch {
             cachedToken = context.dataStore.data.first()[TOKEN_KEY]
             hydrationLatch.countDown()
         }
@@ -63,7 +64,7 @@ class TokenRepository @Inject constructor(
     /** Limpia el token en memoria y en DataStore (no-suspend, seguro desde interceptors) */
     fun clearCachedToken() {
         cachedToken = null
-        CoroutineScope(Dispatchers.IO).launch {
+        appScope.launch {
             context.dataStore.edit { prefs -> prefs.remove(TOKEN_KEY) }
         }
     }
