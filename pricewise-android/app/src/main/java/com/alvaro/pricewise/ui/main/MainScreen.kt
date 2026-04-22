@@ -33,7 +33,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.compose.foundation.layout.Column
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -47,8 +49,13 @@ class MainViewModel @Inject constructor(
     networkObserver: NetworkObserver
 ) : ViewModel() {
 
+    // Debounce 1.5s solo al pasar a "offline" para evitar banner falso
+    // durante el arranque, cuando ConnectivityManager emite "sin validar"
+    // antes de confirmar internet.
+    @OptIn(FlowPreview::class)
     val isOffline = networkObserver.isConnected
         .map { connected -> !connected }
+        .debounce { offline -> if (offline) 1500L else 0L }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 }
 
