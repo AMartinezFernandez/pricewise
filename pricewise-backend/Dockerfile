@@ -26,12 +26,12 @@ USER pricewise
 # Copiar JAR desde stage de build
 COPY --from=build /app/target/*.jar app.jar
 
-# Exponer puerto
+# Exponer puerto (valor por defecto; Railway inyecta PORT dinámico)
 EXPOSE 9090
 
-# Health check
+# Health check usa la variable PORT (fallback 9090)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:9090/api/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider "http://localhost:${PORT:-9090}/actuator/health" || exit 1
 
 # Ejecutar con JVM optimizada para contenedores
 ENTRYPOINT ["java", \

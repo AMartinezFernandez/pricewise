@@ -42,8 +42,9 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:prod}
 
 # Configuración del servidor
+# PORT es inyectado por Railway/Render/Heroku. Fallback 9090 para local.
 server:
-  port: 9090
+  port: ${PORT:9090}
   error:
     include-message: always
     include-binding-errors: always
@@ -170,11 +171,10 @@ pricewise:
   api-keys:
     encryption-key: ${API_KEYS_ENCRYPTION_KEY}
 
-# CORS restrictivo en producción
+# CORS restrictivo en producción — configurable via env var CORS_ORIGINS (coma-separado)
 cors:
   allow-all: false
-  # IMPORTANTE: Actualizar con dominios reales de producción
-  allowed-origins: https://tudominio.com,https://app.tudominio.com
+  allowed-origins: ${CORS_ORIGINS:https://placeholder.invalid}
 
 logging:
   level:
