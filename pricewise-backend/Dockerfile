@@ -29,14 +29,12 @@ COPY --from=build /app/target/*.jar app.jar
 # Exponer puerto (valor por defecto; Railway inyecta PORT dinámico)
 EXPOSE 9090
 
-# Health check usa la variable PORT (fallback 9090)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider "http://localhost:${PORT:-9090}/actuator/health" || exit 1
-
 # Ejecutar con JVM optimizada para contenedores
+# MaxRAMPercentage 50% deja margen para metaspace, threads y OS en contenedores pequeños
 ENTRYPOINT ["java", \
   "-XX:+UseContainerSupport", \
-  "-XX:MaxRAMPercentage=75.0", \
-  "-XX:InitialRAMPercentage=50.0", \
+  "-XX:MaxRAMPercentage=50.0", \
+  "-XX:InitialRAMPercentage=25.0", \
+  "-XX:+ExitOnOutOfMemoryError", \
   "-Djava.security.egd=file:/dev/./urandom", \
   "-jar", "app.jar"]
