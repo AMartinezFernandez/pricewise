@@ -1,9 +1,19 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+}
+
+// Carga de keystore.properties para firma release (fuera del repo)
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        load(keystorePropertiesFile.inputStream())
+    }
 }
 
 android {
@@ -29,6 +39,18 @@ android {
             "\"${googleClientId ?: ""}\"")
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = keystoreProperties.getProperty("storeFile")
+            if (!storeFilePath.isNullOrBlank()) {
+                storeFile = file(storeFilePath)
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             // Emulador: 10.0.2.2 es localhost desde el emulador de Android
@@ -41,8 +63,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // TODO: Reemplazar con la URL real de producción (HTTPS)
-            buildConfigField("String", "BASE_URL", "\"https://api.pricewise.example.com/\"")
+            buildConfigField("String", "BASE_URL", "\"https://backend-production-5a519.up.railway.app/\"")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
