@@ -6,29 +6,5 @@ build/
 *.iml
 .env
 .vscode/
-backend.log
-
-# --- Documentos personales / internos (no entregables públicos) ---
-# Bitácora de bugs y notas de desarrollo
-docs/BUGS_Y_SOLUCIONES.md
-# Versiones obsoletas de la memoria
-docs/MEMORIA_TFC.md
-docs/MEMORIA_TFC.docx
-# Memoria oficial del TFC: se entrega al centro, no se publica en GitHub
-docs/MEMORIA_TFC_corregida.*
-docs/INFORME_AVANCE_TFC.md
-docs/PriceWise_Informe_Avance.docx
-docs/defensa*.docx
-docs/CATALOGO_TESTS.md
-# Scripts auxiliares personales
-docs/generar_docx.py
-# OpenAPI stale
+*.log
 index.json
-# Scripts internos de limpieza/dev
-pricewise-backend/scripts/
-
-# --- Recursos sueltos en raíz (no entregables) ---
-IMG_*.jpeg
-IMG_*.jpg
-*.HEIC
-paleta_colores_app.png
