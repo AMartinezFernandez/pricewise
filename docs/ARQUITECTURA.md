@@ -5,28 +5,30 @@
 
 INDICE
 ------
-0. GLOSARIO DE TERMINOS
-1. INTRODUCCION Y VISION GENERAL
-2. ESTRUCTURA DEL PROYECTO
-3. PATRON DE ARQUITECTURA - CAPAS
-4. SPRING BOOT Y SUS ANOTACIONES
-5. GESTION DE DEPENDENCIAS (INYECCION)
-6. ENTIDADES JPA Y PERSISTENCIA
-7. REPOSITORIOS Y SPRING DATA JPA
-8. SERVICIOS Y LOGICA DE NEGOCIO
-9. CONTROLADORES REST
-10. SEGURIDAD Y AUTENTICACION JWT
-11. PROGRAMACION ASINCRONA Y MULTIHILO
-12. MANEJO DE EXCEPCIONES
-13. VALIDACIONES
-14. CACHE Y RENDIMIENTO
-15. TAREAS PROGRAMADAS CON QUARTZ
-16. CONFIGURACION Y PERFILES
-17. POOL DE CONEXIONES
-18. TESTING
-19. REFERENCIAS Y DOCUMENTACION OFICIAL
+- [0. Glosario de términos técnicos](#seccion-0)
+- [1. Introducción y visión general](#seccion-1)
+- [2. Estructura del proyecto](#seccion-2)
+- [3. Patrón de arquitectura — capas](#seccion-3)
+- [4. Spring Boot y sus anotaciones](#seccion-4)
+- [5. Gestión de dependencias (inyección)](#seccion-5)
+- [6. Entidades JPA y persistencia](#seccion-6)
+- [7. Repositorios y Spring Data JPA](#seccion-7)
+- [8. Servicios y lógica de negocio](#seccion-8)
+- [9. Controladores REST](#seccion-9)
+- [10. Seguridad y autenticación JWT](#seccion-10)
+- [11. Programación asíncrona y multihilo](#seccion-11)
+- [12. Manejo de excepciones](#seccion-12)
+- [13. Validaciones](#seccion-13)
+- [14. Caché y rendimiento](#seccion-14)
+- [15. Tareas programadas con Quartz](#seccion-15)
+- [16. Configuración y perfiles](#seccion-16)
+- [17. Pool de conexiones](#seccion-17)
+- [18. Testing](#seccion-18)
+- [19. Referencias y documentación oficial](#seccion-19)
+- [20. Documentación relacionada](#seccion-20)
 
 
+<a id="seccion-0"></a>
 ================================================================================
 0. GLOSARIO DE TERMINOS TECNICOS
 ================================================================================
@@ -489,6 +491,7 @@ VARIABLE DE ENTORNO
 YAML / YML
     Formato de texto para configuracion, legible para humanos.
     Alternativa a JSON, usa indentacion en lugar de llaves.
+<a id="seccion-1"></a>
 ================================================================================
 1. INTRODUCCION Y VISION GENERAL
 ================================================================================
@@ -523,6 +526,7 @@ REFERENCIAS:
 - Documentacion oficial: https://docs.spring.io/spring-boot/docs/current/reference/html/
 
 
+<a id="seccion-2"></a>
 ================================================================================
 2. ESTRUCTURA DEL PROYECTO
 ================================================================================
@@ -562,6 +566,7 @@ DOCUMENTACION:
 - Guia de estructura: https://docs.spring.io/spring-boot/docs/current/reference/html/using.html#using.structuring-your-code
 
 
+<a id="seccion-3"></a>
 ================================================================================
 3. PATRON DE ARQUITECTURA - CAPAS
 ================================================================================
@@ -618,6 +623,7 @@ REFERENCIAS:
 - Spring MVC: https://docs.spring.io/spring-framework/reference/web/webmvc.html
 
 
+<a id="seccion-4"></a>
 ================================================================================
 4. SPRING BOOT Y SUS ANOTACIONES
 ================================================================================
@@ -684,6 +690,7 @@ DOCUMENTACION OFICIAL:
 - Anotaciones: https://docs.spring.io/spring-framework/reference/core/beans/classpath-scanning.html
 
 
+<a id="seccion-5"></a>
 ================================================================================
 5. GESTION DE DEPENDENCIAS (INYECCION)
 ================================================================================
@@ -762,6 +769,7 @@ DOCUMENTACION:
 - Lombok: https://projectlombok.org/features/constructor
 
 
+<a id="seccion-6"></a>
 ================================================================================
 6. ENTIDADES JPA Y PERSISTENCIA
 ================================================================================
@@ -891,6 +899,7 @@ DOCUMENTACION:
 - Spring Data JPA: https://docs.spring.io/spring-data/jpa/reference/
 
 
+<a id="seccion-7"></a>
 ================================================================================
 7. REPOSITORIOS Y SPRING DATA JPA
 ================================================================================
@@ -983,6 +992,7 @@ DOCUMENTACION:
 - Query Methods: https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html
 
 
+<a id="seccion-8"></a>
 ================================================================================
 8. SERVICIOS Y LOGICA DE NEGOCIO
 ================================================================================
@@ -1096,6 +1106,7 @@ DOCUMENTACION:
 - Transacciones: https://docs.spring.io/spring-framework/reference/data-access/transaction.html
 
 
+<a id="seccion-9"></a>
 ================================================================================
 9. CONTROLADORES REST
 ================================================================================
@@ -1218,6 +1229,7 @@ DOCUMENTACION:
 - REST con Spring: https://spring.io/guides/tutorials/rest
 
 
+<a id="seccion-10"></a>
 ================================================================================
 10. SEGURIDAD Y AUTENTICACION JWT
 ================================================================================
@@ -1367,6 +1379,7 @@ DOCUMENTACION:
 - JJWT Library: https://github.com/jwtk/jjwt
 
 
+<a id="seccion-11"></a>
 ================================================================================
 11. PROGRAMACION ASINCRONA Y MULTIHILO
 ================================================================================
@@ -1538,6 +1551,7 @@ DOCUMENTACION:
 - Thread Safety: https://jenkov.com/tutorials/java-concurrency/thread-safety.html
 
 
+<a id="seccion-12"></a>
 ================================================================================
 12. MANEJO DE EXCEPCIONES
 ================================================================================
@@ -1656,6 +1670,7 @@ DOCUMENTACION:
 - HTTP Status Codes: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
 
 
+<a id="seccion-13"></a>
 ================================================================================
 13. VALIDACIONES
 ================================================================================
@@ -1745,6 +1760,7 @@ DOCUMENTACION:
 - Hibernate Validator: https://hibernate.org/validator/documentation/
 
 
+<a id="seccion-14"></a>
 ================================================================================
 14. CACHE Y RENDIMIENTO
 ================================================================================
@@ -1811,6 +1827,7 @@ DOCUMENTACION:
 - Spring Cache: https://docs.spring.io/spring-framework/reference/integration/cache.html
 
 
+<a id="seccion-15"></a>
 ================================================================================
 15. TAREAS PROGRAMADAS CON QUARTZ
 ================================================================================
@@ -1883,6 +1900,7 @@ DOCUMENTACION:
 - Spring Quartz: https://docs.spring.io/spring-boot/docs/current/reference/html/io.html#io.quartz
 
 
+<a id="seccion-16"></a>
 ================================================================================
 16. CONFIGURACION Y PERFILES
 ================================================================================
@@ -1955,6 +1973,7 @@ DOCUMENTACION:
 - External Configuration: https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.external-config
 
 
+<a id="seccion-17"></a>
 ================================================================================
 17. POOL DE CONEXIONES
 ================================================================================
@@ -2014,6 +2033,7 @@ DOCUMENTACION:
 - HikariCP: https://github.com/brettwooldridge/HikariCP
 
 
+<a id="seccion-18"></a>
 ================================================================================
 18. TESTING
 ================================================================================
@@ -2103,6 +2123,7 @@ DOCUMENTACION:
 - Spring Boot Testing: https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing
 
 
+<a id="seccion-19"></a>
 ================================================================================
 19. REFERENCIAS Y DOCUMENTACION OFICIAL
 ================================================================================
@@ -2185,6 +2206,7 @@ Java Concurrency:
 Spring Security JWT:
 - https://www.bezkoder.com/spring-boot-jwt-authentication/
 
+<a id="seccion-20"></a>
 ================================================================================
 20. DOCUMENTACION RELACIONADA
 ================================================================================
