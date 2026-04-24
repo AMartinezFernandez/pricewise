@@ -15,7 +15,7 @@ description: >-
   autorización configurada.
 
 
-  ⚠️ **NOTA**: No necesitas copiar y pegar el token manualmente.
+  **Nota**: no necesitas copiar y pegar el token manualmente.
 variables:
   baseUrl: http://localhost:9090
   token: ""
