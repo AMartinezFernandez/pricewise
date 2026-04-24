@@ -51,4 +51,4 @@ La colección Postman completa está en [`postman/`](postman/).
 
 ## Licencia
 
-Proyecto académico con fines educativos. Todos los derechos reservados por el autor salvo que se indique lo contrario.
+Publicado bajo [Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/). Uso no comercial con atribución al autor. Texto completo en [`LICENSE`](LICENSE).
