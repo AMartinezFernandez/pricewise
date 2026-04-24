@@ -50,7 +50,7 @@ Para apuntar al backend desplegado, edita `baseUrl` en la pestaña **Variables**
 
 ## Flujo de uso
 
-1. **Ejecuta `Autenticación / Login`** con las credenciales del tribunal.
+1. **Ejecuta `Autenticación / Login`** con las credenciales facilitadas.
 2. Un script de test guarda el JWT en la variable `token` de la colección.
 3. El resto de peticiones ya llevan `Authorization: Bearer {{token}}` configurado a nivel de colección. No hay que copiar el token manualmente.
 
