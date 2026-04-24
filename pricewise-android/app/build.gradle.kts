@@ -25,7 +25,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Google OAuth Web Client ID (from Google Cloud Console)
@@ -82,6 +82,13 @@ android {
         buildConfig = true
     }
 
+    // Patrón de nombre del APK: PriceWise-v<versionName>-<buildType>.apk
+    applicationVariants.all {
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl)
+                .outputFileName = "PriceWise-v$versionName-$name.apk"
+        }
+    }
 }
 
 dependencies {
