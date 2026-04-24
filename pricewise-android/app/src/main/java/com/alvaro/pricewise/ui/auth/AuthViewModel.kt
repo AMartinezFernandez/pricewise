@@ -160,6 +160,10 @@ class AuthViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(googleIdToken = idToken)
     }
 
+    fun setError(message: String) {
+        _uiState.value = _uiState.value.copy(error = message, isLoading = false)
+    }
+
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }

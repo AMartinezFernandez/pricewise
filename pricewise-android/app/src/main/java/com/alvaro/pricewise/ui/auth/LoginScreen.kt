@@ -212,6 +212,10 @@ fun LoginScreen(
         // Google Sign-In button
         OutlinedButton(
             onClick = {
+                if (BuildConfig.GOOGLE_WEB_CLIENT_ID.isBlank()) {
+                    viewModel.setError("Inicio con Google no disponible en esta build.")
+                    return@OutlinedButton
+                }
                 scope.launch {
                     try {
                         val credentialManager = CredentialManager.create(context)
@@ -227,11 +231,15 @@ fun LoginScreen(
                             .createFrom(result.credential.data)
                         viewModel.handleGoogleSignIn(googleIdTokenCredential.idToken)
                     } catch (_: GetCredentialCancellationException) {
-                        // User cancelled — do nothing
+                        // Usuario canceló el diálogo de Google — silencioso a propósito
                     } catch (_: NoCredentialException) {
-                        // No hay credenciales de Google guardadas en el dispositivo
+                        viewModel.setError("No hay cuentas de Google en este dispositivo.")
                     } catch (e: Exception) {
                         Log.e("LoginScreen", "Google Sign-In error", e)
+                        viewModel.setError(
+                            "No se ha podido iniciar sesión con Google: " +
+                                    (e.localizedMessage ?: "error desconocido")
+                        )
                     }
                 }
             },
