@@ -30,7 +30,12 @@ android {
 
         // Google OAuth Web Client ID (from Google Cloud Console)
         // Configurar en local.properties: GOOGLE_WEB_CLIENT_ID=tu-client-id.apps.googleusercontent.com
-        val googleClientId = project.findProperty("GOOGLE_WEB_CLIENT_ID")?.toString()
+        val localProps = Properties().apply {
+            val f = rootProject.file("local.properties")
+            if (f.exists()) load(f.inputStream())
+        }
+        val googleClientId = localProps.getProperty("GOOGLE_WEB_CLIENT_ID")
+            ?: project.findProperty("GOOGLE_WEB_CLIENT_ID")?.toString()
         if (googleClientId.isNullOrBlank() || googleClientId == "placeholder") {
             logger.warn("AVISO: GOOGLE_WEB_CLIENT_ID no configurado. Google Sign-In no funcionará.")
             logger.warn("       Añade GOOGLE_WEB_CLIENT_ID=xxx a local.properties")
