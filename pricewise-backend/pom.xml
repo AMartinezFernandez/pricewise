@@ -21,6 +21,7 @@
     <properties>
         <java.version>17</java.version>
         <jjwt.version>0.12.3</jjwt.version>
+        <jacoco.version>0.8.12</jacoco.version>
     </properties>
     
     <!-- Repositorio de Keepa para API de Amazon -->
@@ -219,6 +220,34 @@
                         <format>JSON</format>
                     </formats>
                     <outputDirectory>${project.build.directory}/owasp-reports</outputDirectory>
+                </configuration>
+            </plugin>
+            <!-- JaCoCo - Cobertura de tests -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <excludes>
+                        <exclude>com/alvaro/pricewise/dto/**</exclude>
+                        <exclude>com/alvaro/pricewise/entity/**</exclude>
+                        <exclude>com/alvaro/pricewise/PriceWiseApplication.class</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
