@@ -58,7 +58,7 @@ Si recibes `401 Unauthorized`, el token ha caducado — repite el paso 1.
 
 ## Credenciales
 
-Las credenciales de demostración se facilitan bajo demanda al tribunal. Consulta la descripción del [release v1.0.0](https://github.com/AMartinezFernandez/pricewise/releases/tag/v1.0.0).
+Credenciales de demostración disponibles bajo demanda. Consulta la descripción del [release v1.0.0](https://github.com/AMartinezFernandez/pricewise/releases/tag/v1.0.0).
 
 ## Referencia completa de endpoints
 
