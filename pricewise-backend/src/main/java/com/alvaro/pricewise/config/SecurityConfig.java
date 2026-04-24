@@ -51,6 +51,7 @@ public class SecurityConfig {
     private boolean allowAllOrigins;
 
     private static final String[] PUBLIC_URLS = {
+            "/",
             "/api/auth/register",
             "/api/auth/login",
             "/api/auth/google",
