@@ -43,11 +43,7 @@ Flyway Community Edition no soporta rollback automático. Para revertir:
    ALTER TABLE products DROP COLUMN IF EXISTS new_column;
    ```
 
-2. En caso de emergencia, revertir manualmente en la BD y limpiar el historial:
-
-   ```sql
-   DELETE FROM flyway_schema_history WHERE version = '2';
-   ```
+2. En caso de emergencia (esquema corrupto): restaurar el último backup de la BD o, si no se dispone de él, ejecutar manualmente las sentencias inversas y crear inmediatamente una nueva migración `Vn` que las recoja. **No editar `flyway_schema_history` a mano**: rompe la integridad del historial y deja la BD en estado inconsistente con el resto de entornos.
 
 ## Migraciones existentes
 
@@ -55,7 +51,7 @@ Flyway Community Edition no soporta rollback automático. Para revertir:
 |---------|-------------|-------|
 | V1 | Esquema inicial (baseline) — todas las tablas, constraints e índices | 2026-02-22 |
 | V2 | Índices compuestos para rendimiento de queries frecuentes | 2026-02-22 |
-| V3 | Tabla `audit_logs` (retirada del MVP, la migración se mantiene) | 2026-02-22 |
+| V3 | Tabla `audit_logs` (creada por compatibilidad histórica; `AuditService` retirado del MVP — ver `MEJORAS_FUTURAS.md` § 1) | 2026-02-22 |
 | V4 | Campo `auth_provider` en tabla `users` (soporte Google OAuth) | 2026-02-22 |
 | V5 | Tabla `alert_rules` con `company_id`, `product_id`, `alert_type`, `threshold`, `enabled` | 2026-02-22 |
 | V6 | Campo `target_price` (`DECIMAL(10,2)`) en `alert_rules` | 2026-03-08 |

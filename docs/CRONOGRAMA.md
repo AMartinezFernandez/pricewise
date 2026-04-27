@@ -185,8 +185,8 @@ docker-compose.yml                      # PostgreSQL 14 en contenedor
 - RETIRADO Endpoints para pausar, reanudar y ejecutar manualmente
 
 ### Correcciones
-- Bug #18: Circuit breaker manual: aborta el job tras 5 errores consecutivos
-- Bug #21: Pool de conexiones aumentado a 20 y transacciones divididas por producto
+- Bug #18: Errores por producto se capturan con `CompletableFuture.exceptionally()` y no abortan el lote
+- Bug #21: Pool de conexiones HikariCP aumentado a 20 para soportar el lote de 50 productos en paralelo
 
 ---
 

@@ -1542,7 +1542,8 @@ Por que volatile:
 Por que double-checked locking:
 - Evita sincronización en cada acceso (costoso)
 - Solo sincroniza durante inicialización
-- Patrón estandar para singleton lazy
+- Seguro a partir de Java 5 gracias a las garantías de `volatile` en la JMM (en Java 1.4 y anteriores el patrón era inseguro por reordenación de instrucciones)
+- Alternativas más modernas: lazy holder con `static class Holder` o `AtomicReference`. Se eligió DCL por simplicidad y porque la inicialización ocurre una sola vez en arranque
 
 DOCUMENTACIÓN:
 - @Async: https://docs.spring.io/spring-framework/reference/integration/scheduling.html#scheduling-annotation-support-async
@@ -1609,7 +1610,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException ex) {
         String message = "Error de integridad de datos";
-        if (ex.getMostSpecificCause().getMessage().toLowerCase().contains("duplicate")) {
+        String cause = Optional.ofNullable(ex.getMostSpecificCause())
+            .map(Throwable::getMessage)
+            .map(String::toLowerCase)
+            .orElse("");
+        if (cause.contains("duplicate")) {
             message = "Ya existe un registro con esos datos";
         }
         return ResponseEntity

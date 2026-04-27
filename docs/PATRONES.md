@@ -166,7 +166,7 @@ Los flujos de productos están deliberadamente repartidos en tres ViewModels par
 ### Reglas de pantalla
 
 - `SearchScreen` limpia sus resultados con `DisposableEffect.onDispose` para evitar que productos temporales (`id = -1L`) aparezcan en otras pantallas.
-- `ProductListScreen` filtra defensivamente `it.id != -1L`.
+- `TrackingScreen` filtra defensivamente `it.id != -1L` como cinturón de seguridad por si algún resultado temporal escapa.
 - Tras crear un producto desde búsqueda, navegar a la tab Tracking (no hacer `popBackStack` a Search).
 - `TrackingScreen` consume `GET /api/products/monitored`, no `GET /api/products`.
 
