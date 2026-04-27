@@ -14,7 +14,7 @@ postman/
 │       ├── Productos/                     # CRUD y monitorización
 │       ├── Competidores (Keepa)/          # Sincronización con Amazon
 │       ├── API Keys/                      # Gestión de API keys de Keepa por empresa
-│       ├── Scheduler (Admin)/             # Jobs Quartz
+│       ├── Scheduler (Admin) [DEPRECATED]/ # Endpoints retirados del MVP (ver nota abajo)
 │       └── Admin/                         # Gestión de usuarios y estadísticas
 └── globals/
     └── workspace.globals.yaml             # Variables globales (vacío)
@@ -59,6 +59,12 @@ Si recibes `401 Unauthorized`, el token ha caducado — repite el paso 1.
 ## Credenciales
 
 Credenciales de demostración disponibles bajo demanda. Consulta la descripción del [release v1.0.0](https://github.com/AMartinezFernandez/pricewise/releases/tag/v1.0.0).
+
+## Endpoints deprecados
+
+La carpeta `Scheduler (Admin) [DEPRECATED]/` contiene cuatro peticiones (`Estado`, `Ejecutar Job Ahora`, `Pausar`, `Reanudar`) que apuntan a `/api/admin/scheduler/*`. Estos endpoints **ya no existen** en el backend porque el `SchedulerController` se retiró del MVP. Las peticiones devolverán **404**.
+
+Se conservan en la colección como referencia histórica. Los jobs de Quartz (`PriceMonitorJob`) siguen ejecutándose automáticamente cada 6 horas en segundo plano. Para más contexto consulta [`../docs/MEJORAS_FUTURAS.md`](../docs/MEJORAS_FUTURAS.md) § 6.
 
 ## Referencia completa de endpoints
 

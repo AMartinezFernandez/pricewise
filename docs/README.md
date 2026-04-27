@@ -361,6 +361,7 @@ psql -U postgres -d pricewise_db      # Conectar a PostgreSQL
 
 - [`ARQUITECTURA.md`](ARQUITECTURA.md) — Guía completa de arquitectura y justificaciones técnicas.
 - [`SEGURIDAD.md`](SEGURIDAD.md) — Informe de seguridad (JWT, OAuth2, cifrado AES-256, RBAC).
+- [`PATRONES.md`](PATRONES.md) — Patrones internos y reglas críticas para evitar regresiones (multi-tenancy, soft-delete, separación de ViewModels Android, etc.).
 - [`FLYWAY.md`](FLYWAY.md) — Migraciones de base de datos V1-V8.
 - [`CRONOGRAMA.md`](CRONOGRAMA.md) — Cronograma de desarrollo (30 fases).
 - [`MEJORAS_FUTURAS.md`](MEJORAS_FUTURAS.md) — Servicios retirados del MVP y plan de reintegración.

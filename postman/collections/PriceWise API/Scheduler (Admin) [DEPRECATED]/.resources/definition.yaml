@@ -1,0 +1,12 @@
+$kind: collection
+order: 6000
+description: |
+  [DEPRECATED] Endpoints retirados del MVP.
+
+  El SchedulerController fue eliminado del backend; estas peticiones
+  devolverán 404. Se conservan en la colección únicamente como
+  referencia histórica.
+
+  Los jobs de Quartz siguen ejecutándose automáticamente en segundo
+  plano (PriceMonitorJob cada 6h). Si en el futuro se reintegra el
+  SchedulerController, ver docs/MEJORAS_FUTURAS.md § 6.

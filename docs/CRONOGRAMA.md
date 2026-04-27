@@ -167,6 +167,11 @@ docker-compose.yml                      # PostgreSQL 14 en contenedor
 
 ## Fase 8: Scheduler Quartz (2026-02-05)
 
+> **Nota:** El `PriceMonitorJob` sigue activo y se ejecuta cada 6 horas en
+> segundo plano. El `SchedulerController` y los endpoints `/api/admin/scheduler/*`
+> se retiraron del MVP para reducir superficie de ataque administrativa.
+> Ver `MEJORAS_FUTURAS.md` § 6 para reintegración.
+
 ### PriceMonitorJob
 - OK Cron expression: cada 6 horas (`0 0 */6 * * ?`)
 - OK Filtra productos con monitoringEnabled = true y SKU formato ASIN (B0...)
@@ -176,8 +181,8 @@ docker-compose.yml                      # PostgreSQL 14 en contenedor
 
 ### SchedulerConfig
 - OK JobDetail y Trigger configurados como Spring Beans
-- OK Exposición de estado del scheduler vía `/api/admin/scheduler/*`
-- OK Endpoints para pausar, reanudar y ejecutar manualmente
+- RETIRADO Exposición de estado del scheduler vía `/api/admin/scheduler/*`
+- RETIRADO Endpoints para pausar, reanudar y ejecutar manualmente
 
 ### Correcciones
 - Bug #18: Circuit breaker manual: aborta el job tras 5 errores consecutivos

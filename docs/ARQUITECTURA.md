@@ -611,7 +611,7 @@ POR QUE SEPARAR EN CAPAS:
    Ejemplo: Testar ProductService sin base de datos real
 
 3. REUSABILIDAD: Servicios pueden ser usados por múltiples controllers
-   Ejemplo: ProductService usado por ProductController y SchedulerController
+   Ejemplo: ProductService usado por ProductController y CompetitorController
 
 4. SEPARACION DE RESPONSABILIDADES (SoC):
    - Controller: "Como llegue la petición"
