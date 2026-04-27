@@ -225,29 +225,32 @@ cors:
 
 ### Mapa de Acceso por Endpoint
 
-| Endpoint                               | Acceso         | Notas                                      |
-|----------------------------------------|----------------|--------------------------------------------|
-| POST /api/admin/companies              | ADMIN          | Crea empresa + COMPANY_ADMIN + código auto |
-| POST /api/auth/register                | Público        | Requiere `companyCode` para unirse a empresa|
-| POST /api/auth/login                   | Público        | Devuelve JWT con companyId y userId         |
-| GET  /api/health                       | Público        | No expone datos sensibles                  |
-| GET  /api/competitors/status           | Público        | Solo boolean de disponibilidad             |
-| GET  /actuator/**                      | Público        | Métricas básicas de Spring                 |
-| GET  /api/auth/profile                 | Autenticado    | Datos del usuario + empresa                |
-| POST /api/auth/create-employee         | COMPANY_ADMIN/ADMIN | Crea empleado en la empresa del admin |
-| POST /api/products                     | Autenticado    | Crea producto para su empresa              |
-| GET  /api/products/**                  | Autenticado    | Solo productos de su empresa               |
-| GET  /api/analytics/**                 | COMPANY_ADMIN/EMPLOYEE/ADMIN | Métricas de empresa      |
-| GET  /api/competitors/amazon/**        | Autenticado    | Consultas Keepa autenticadas               |
-| *    /api/alert-rules/**               | Autenticado    | CRUD reglas de alerta por empresa          |
-| *    /api/users/**                     | COMPANY_ADMIN/ADMIN | Gestión usuarios de la empresa        |
-| *    /api/api-keys/**                  | COMPANY_ADMIN/ADMIN | CRUD API keys cifradas por empresa     |
-| GET  /api/admin/**                     | ADMIN          | Gestión global de la plataforma            |
+| Endpoint                                       | Acceso         | Notas                                      |
+|------------------------------------------------|----------------|--------------------------------------------|
+| GET  /                                         | Público        | Bienvenida del API (RootController)        |
+| POST /api/admin/companies                      | ADMIN          | Crea empresa + COMPANY_ADMIN + código auto |
+| POST /api/auth/register                        | Público        | Requiere `companyCode` para unirse a empresa|
+| POST /api/auth/login                           | Público        | Devuelve JWT con companyId y userId         |
+| POST /api/auth/google                          | Público        | Login Google: devuelve JWT o `needs_company`|
+| POST /api/auth/google/complete-new-company     | Público        | Completa registro Google + crea empresa     |
+| POST /api/auth/google/complete-join            | Público        | Completa registro Google + une a empresa    |
+| GET  /api/health                               | Público        | No expone datos sensibles                  |
+| GET  /actuator/health                          | Público        | Health check de Spring Actuator             |
+| GET  /actuator/info                            | Público        | Información básica del build                |
+| GET  /api/competitors/status                   | EMPLOYEE/COMPANY_ADMIN/ADMIN | Estado Keepa de la empresa (companyId del JWT) |
+| GET  /api/auth/profile                         | Autenticado    | Datos del usuario + empresa                |
+| POST /api/auth/create-employee                 | COMPANY_ADMIN/ADMIN | Crea empleado en la empresa del admin |
+| POST /api/products                             | Autenticado    | Crea producto para su empresa              |
+| GET  /api/products/**                          | Autenticado    | Solo productos de su empresa               |
+| GET  /api/analytics/**                         | COMPANY_ADMIN/EMPLOYEE/ADMIN | Métricas de empresa      |
+| GET  /api/competitors/amazon/**                | Autenticado    | Consultas Keepa autenticadas               |
+| *    /api/alert-rules/**                       | Autenticado    | CRUD reglas de alerta por empresa          |
+| *    /api/users/**                             | COMPANY_ADMIN/ADMIN | Gestión usuarios de la empresa        |
+| *    /api/api-keys/**                          | COMPANY_ADMIN/ADMIN | CRUD API keys cifradas por empresa     |
+| GET  /api/admin/**                             | ADMIN          | Gestión global de la plataforma            |
 
 ### Notas sobre Actuator
-El endpoint `/actuator/**` esta público actualmente. En producción se recomienda:
-- Restringir a `ADMIN` o a una red interna
-- Deshabilitar endpoints sensibles (`/actuator/env`, `/actuator/beans`)
+Solo `/actuator/health` y `/actuator/info` están en `SecurityConfig.PUBLIC_URLS` (no se usa wildcard). Además, `management.endpoints.web.exposure.include` limita los actuators expuestos a `health, info`. Si en el futuro se exponen otros actuators, sustituir esa configuración por una lista explícita y restringir el acceso a `ADMIN` o a red interna (especialmente para endpoints sensibles como `/actuator/env` o `/actuator/beans`).
 
 ---
 
