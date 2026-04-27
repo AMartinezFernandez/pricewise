@@ -331,7 +331,7 @@ Campos validados en `RegisterRequest`:
 
 | Dependencia         | Versión  | Notas                                   |
 |---------------------|----------|-----------------------------------------|
-| Spring Boot         | 3.2.1    | LTS activa, parches de seguridad al dia |
+| Spring Boot         | 3.3.0    | LTS activa, parches de seguridad al dia |
 | Spring Security     | 6.x      | Incluido en Spring Boot BOM             |
 | jjwt                | 0.12.3   | Versión actual, sin CVEs conocidos      |
 | PostgreSQL Driver   | 42.x     | Incluido en Spring Boot BOM             |

@@ -11,7 +11,7 @@ Existe una aplicación Android acompañante construida con Jetpack Compose, cuya
 ## Tecnologías
 
 - Java 17
-- Spring Boot 3.2.1
+- Spring Boot 3.3.0
 - Spring Security 6.x
 - Spring Data JPA 3.x
 - PostgreSQL 14+

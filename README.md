@@ -10,7 +10,7 @@ El repositorio contiene dos aplicaciones independientes que se comunican por una
 
 | Módulo | Descripción | Tecnología principal |
 |---|---|---|
-| [`pricewise-backend/`](pricewise-backend/) | API REST, autenticación, persistencia, jobs y análisis de precios | Spring Boot 3.2, Java 17, PostgreSQL 14, Flyway, Quartz |
+| [`pricewise-backend/`](pricewise-backend/) | API REST, autenticación, persistencia, jobs y análisis de precios | Spring Boot 3.3, Java 17, PostgreSQL 15, Flyway, Quartz |
 | [`pricewise-android/`](pricewise-android/) | Aplicación móvil que consume la API | Kotlin, Jetpack Compose, Hilt, Retrofit, Moshi, DataStore |
 
 El backend está desplegado en Railway (plan Pro) con PostgreSQL gestionado. La aplicación móvil se distribuye como APK firmado en [GitHub Releases](https://github.com/AMartinezFernandez/pricewise/releases).
