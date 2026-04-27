@@ -133,7 +133,16 @@ Servicios y configuraciones eliminados para simplificar la entrega del MVP. Todo
 **Para reintegrar:**
 1. Añadir dependencias `spring-boot-starter-cache` y `spring-boot-starter-data-redis`.
 2. Recrear `RedisCacheConfig` con TTLs por caché.
-3. Configurar Redis en `application.yml` (host, port, password).
+3. Configurar Redis en `application.yml` con las propiedades de Spring Boot 3.x:
+
+   ```yaml
+   spring:
+     data:
+       redis:
+         host: ${REDIS_HOST:localhost}
+         port: ${REDIS_PORT:6379}
+         password: ${REDIS_PASSWORD:}
+   ```
 4. Volver a añadir `@Cacheable` / `@CacheEvict` en `ProductService`.
 5. Considerar caché para `KeepaService` (rate limiting natural).
 

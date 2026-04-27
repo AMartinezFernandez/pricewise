@@ -4,6 +4,8 @@
 
 Este documento registra cronológicamente todas las fases de desarrollo de PriceWise Backend.
 
+> **Convención**: las líneas con prefijo `OK` corresponden a tareas completadas y aplicadas en la versión final. `RETIRADO` señala tareas que llegaron a implementarse pero se sacaron del MVP (ver `MEJORAS_FUTURAS.md`).
+
 ---
 
 ## Fase 1: Configuración Inicial (2026-01-25)
@@ -22,7 +24,7 @@ src/main/
 ├── config/SecurityConfig.java          # Cadena de filtros Spring Security (esqueleto)
 ├── config/OpenApiConfig.java           # Configuración Swagger
 └── resources/application.yml          # Configuración de servidor, BD, JWT
-docker-compose.yml                      # PostgreSQL 14 en contenedor
+docker-compose.yml                      # PostgreSQL 15 en contenedor
 .env.example                            # Variables de entorno de ejemplo
 ```
 

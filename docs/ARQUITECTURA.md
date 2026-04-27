@@ -63,7 +63,7 @@ BUG
 
 CALLBACK
     Función que se pasa como argumento a otra función para 
-    ser ejecutada despues de que algo ocurra.
+    ser ejecutada después de que algo ocurra.
 
 CLASSPATH
     Lista de ubicaciones donde Java busca clases y recursos.
@@ -93,7 +93,7 @@ FRAMEWORK
     Spring Boot es un framework.
 
 INMUTABLE
-    Objeto que no puede ser modificado despues de crearse.
+    Objeto que no puede ser modificado después de crearse.
     Son seguros en entornos multihilo.
     Ejemplo: String en Java es inmutable.
 
@@ -125,7 +125,7 @@ REFACTORIZAR
     Mejorar la estructura del código sin cambiar su comportamiento.
 
 RUNTIME
-    Momento en que el programa esta ejecutandose
+    Momento en que el programa esta ejecutándose
     (opuesto a compile-time).
 
 SCOPE (Ambito)
@@ -179,7 +179,7 @@ IoC (Inversión of Control)
     en lugar del programador. Spring decide cuando crear beans.
 
 JPA (Java Persistence API)
-    Especificación estandar de Java para ORM.
+    Especificación estándar de Java para ORM.
     Define como mapear objetos Java a tablas de BD.
     Hibernate es la implementación más usada.
 
@@ -279,7 +279,7 @@ AUTORIZACIÓN
 
 BCRYPT
     Algoritmo de hash diseñado para contraseñas.
-    Lento a proposito para dificultar ataques.
+    Lento a propósito para dificultar ataques.
     Incluye salt automáticamente.
 
 CLAIM
@@ -345,7 +345,7 @@ CONDICION DE CARRERA (Race Condition)
     simultaneamente con resultado impredecible.
 
 CONCURRENCIA
-    Multiples tareas ejecutandose en periodos superpuestos.
+    Múltiples tareas ejecutándose en periodos superpuestos.
     No necesariamente al mismo tiempo.
 
 DEADLOCK
@@ -358,10 +358,10 @@ EXECUTOR
 
 HILO (Thread)
     Unidad de ejecución independiente dentro de un proceso.
-    Multiples hilos pueden ejecutarse en paralelo.
+    Múltiples hilos pueden ejecutarse en paralelo.
 
 PARALELISMO
-    Multiples tareas ejecutandose literalmente al mismo tiempo
+    Múltiples tareas ejecutándose literalmente al mismo tiempo
     en diferentes nucleos del procesador.
 
 POOL (de hilos)
@@ -453,7 +453,7 @@ PATH VARIABLE
     GET /api/products/{id} -> id es path variable.
 
 QUERY PARAMETER
-    Parametro en la URL despues de "?".
+    Parámetro en la URL después de "?".
     GET /api/products?page=1&size=20
 
 REQUEST (Petición)
@@ -774,7 +774,7 @@ DOCUMENTACIÓN:
 6. ENTIDADES JPA Y PERSISTENCIA
 ================================================================================
 
-JPA (Java Persistence API) es el estandar de Java para ORM (Object-Relational Mapping).
+JPA (Java Persistence API) es el estándar de Java para ORM (Object-Relational Mapping).
 Hibernate es la implementación más usada de JPA.
 
 ANOTACIONES JPA PRINCIPALES
@@ -1173,7 +1173,7 @@ ANOTACIONES DE PARAMETROS
 @PathVariable - Variable en la URL
   GET /api/products/{id} -> @PathVariable Long id
 
-@RequestParam - Parametro de query string
+@RequestParam - Parámetro de query string
   GET /api/products?name=foo -> @RequestParam String name
 
 @RequestBody - Cuerpo de la petición (JSON)
@@ -1340,7 +1340,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
 
 HASH DE CONTRASEÑAS:
 -------------------
-Usamos BCrypt, el estandar de la industria.
+Usamos BCrypt, el estándar de la industria.
 
 @Bean
 public PasswordEncoder passwordEncoder() {
@@ -1371,6 +1371,27 @@ private String password;
 - (?=.*[A-Z]) - Al menos una mayuscula
 - (?=.*\\d)   - Al menos un digito
 - .+$         - Uno o más caracteres
+
+MULTI-TENANCY EN EL JWT:
+-----------------------
+El sistema aisla los datos por empresa (multi-tenancy) y para no consultar
+la base de datos en cada petición almacenamos el companyId como claim
+personalizado dentro del propio JWT, junto al userId y al rol:
+
+JwtService.generateToken(userPrincipal):
+  claims.put("userId", userPrincipal.getId());
+  claims.put("companyId", userPrincipal.getCompanyId());
+  claims.put("role", userPrincipal.getRole());
+
+Al validar el token, JwtAuthenticationFilter reconstruye el UserPrincipal
+con esos claims y lo deja en el SecurityContext. En cada servicio se obtiene
+con userPrincipal.requireCompanyId() y se incluye como filtro en cualquier
+query: findByCompanyIdAndActiveTrue(...). Sin ese filtro, una consulta
+podría devolver datos de otra empresa.
+
+Los usuarios con rol ADMIN no tienen empresa asociada (companyId=null);
+requireCompanyId() lanza BadRequestException si se invoca en un contexto
+que sí necesita empresa, lo que evita filtraciones accidentales.
 
 DOCUMENTACIÓN:
 - Spring Security: https://docs.spring.io/spring-security/reference/
@@ -1875,7 +1896,7 @@ public Trigger priceMonitorTrigger(JobDetail jobDetail) {
         .withSchedule(SimpleScheduleBuilder.simpleSchedule()
             .withIntervalInHours(6)
             .repeatForever())
-        .startAt(Date.from(Instant.now().plusSeconds(60)))  // 1 min despues
+        .startAt(Date.from(Instant.now().plusSeconds(60)))  // 1 min después
         .build();
 }
 
@@ -2117,7 +2138,7 @@ ANOTACIONES DE TEST:
 @Test                    - Marca método como test
 @DisplayName("...")      - Nombre legible del test
 @BeforeEach              - Ejecutar antes de cada test
-@AfterEach               - Ejecutar despues de cada test
+@AfterEach               - Ejecutar después de cada test
 @BeforeAll               - Ejecutar una vez antes de todos
 @Disabled                - Desactivar test temporalmente
 @ParameterizedTest       - Test con múltiples datos
