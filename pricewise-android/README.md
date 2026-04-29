@@ -1,15 +1,15 @@
 # PriceWise Android
 
-Aplicación móvil que consume la API de PriceWise. Desarrollada con Jetpack Compose, inyección de dependencias con Hilt y arquitectura MVVM.
+App móvil que consume la API de PriceWise. Jetpack Compose, Hilt y arquitectura MVVM.
 
 ## Requisitos
 
-- Android Studio Koala o superior.
-- JDK 17.
-- Android SDK 36 (compileSdk), build-tools 36.0.0.
-- `minSdk = 26`, `targetSdk = 35`.
+1. Android Studio Koala o superior.
+2. JDK 17.
+3. Android SDK 36 (`compileSdk`), build-tools 36.0.0.
+4. `minSdk = 26`, `targetSdk = 35`.
 
-Versiones principales (ver [`gradle/libs.versions.toml`](gradle/libs.versions.toml)):
+Versiones principales en `gradle/libs.versions.toml`:
 
 - AGP 8.13.2, Kotlin 2.0.20, KSP 2.0.20-1.0.24.
 - Compose BOM 2026.02.00, Navigation Compose 2.9.7.
@@ -17,21 +17,21 @@ Versiones principales (ver [`gradle/libs.versions.toml`](gradle/libs.versions.to
 
 ## Configuración inicial
 
-Antes del primer build debes crear dos archivos locales fuera de Git:
+Antes del primer build hay que crear dos archivos locales fuera de Git.
 
-### 1. `local.properties`
+### local.properties
 
-Añade el Client ID de Google Sign-In (se obtiene en Google Cloud Console):
+Client ID de Google Sign-In obtenido en Google Cloud Console:
 
 ```properties
 GOOGLE_WEB_CLIENT_ID=xxxxxxxxxxxx.apps.googleusercontent.com
 ```
 
-Si lo omites, la app compila pero el botón «Entrar con Google» queda inoperativo.
+Si se omite, la app compila pero el botón «Entrar con Google» queda inoperativo.
 
-### 2. `keystore.properties` (solo para build release)
+### keystore.properties
 
-En la raíz del módulo (mismo nivel que `settings.gradle.kts`):
+Solo necesario para build release. En la raíz del módulo, mismo nivel que `settings.gradle.kts`:
 
 ```properties
 storeFile=/ruta/absoluta/al/pricewise-release.jks
@@ -40,28 +40,28 @@ keyAlias=pricewise
 keyPassword=...
 ```
 
-Si el archivo no existe, Gradle salta la firma y el APK release se genera sin `signingConfig` (sirve para probar el proceso, no para distribución).
+Si no existe, Gradle salta la firma y el APK release se genera sin `signingConfig`. Sirve para probar el proceso, no para distribución.
 
 ## Compilar y ejecutar
 
 ```bash
-# APK de desarrollo (BASE_URL → http://10.0.2.2:9090, emulador apunta al backend local)
+# APK debug, BASE_URL apunta a http://10.0.2.2:9090 (backend local desde el emulador)
 ./gradlew assembleDebug
 
-# APK release firmado (BASE_URL → backend desplegado en Railway)
+# APK release firmado, BASE_URL apunta al backend de Railway
 ./gradlew assembleRelease
 ```
 
-El APK resultante queda en `app/build/outputs/apk/{debug,release}/`.
+El APK queda en `app/build/outputs/apk/{debug,release}/`.
 
-Para instalar en un dispositivo o emulador conectado:
+Instalación en dispositivo o emulador conectado:
 
 ```bash
 adb install app/build/outputs/apk/debug/app-debug.apk
 adb shell monkey -p com.alvaro.pricewise -c android.intent.category.LAUNCHER 1
 ```
 
-Si reinstalas un release sobre una versión debug previa, primero desinstala:
+Si se reinstala un release sobre una versión debug previa, primero desinstalar:
 
 ```bash
 adb uninstall com.alvaro.pricewise
@@ -70,32 +70,32 @@ adb uninstall com.alvaro.pricewise
 ## Tests
 
 ```bash
-./gradlew test          # tests unitarios (SearchViewModel, Result, etc.)
-./gradlew lintDebug     # análisis estático Android Lint
+./gradlew test
+./gradlew lintDebug
 ```
 
 ## Estructura de paquetes
 
 ```
 com.alvaro.pricewise
-├── data/               # modelos API, Retrofit, repositorios, DataStore
-├── di/                 # módulos Hilt (AppModule, NetworkModule, …)
-├── ui/                 # pantallas Compose organizadas por feature
-│   ├── auth/           # login, registro, Google Sign-In
-│   ├── products/       # listado, detalle, edición
-│   ├── search/         # búsqueda por ASIN
-│   ├── tracking/       # productos monitorizados
-│   ├── alerts/         # reglas de alerta e histórico
-│   ├── dashboard/      # métricas del usuario
-│   ├── admin/          # panel solo para rol ADMIN
-│   └── settings/       # perfil, tema, logout
-├── util/               # NetworkObserver, SessionManager, helpers
+├── data/               modelos API, Retrofit, repositorios, DataStore
+├── di/                 módulos Hilt
+├── ui/                 pantallas Compose por feature
+│   ├── auth/           login, registro, Google Sign-In
+│   ├── products/       listado, detalle, edición
+│   ├── search/         búsqueda por ASIN
+│   ├── tracking/       productos monitorizados
+│   ├── alerts/         reglas de alerta e histórico
+│   ├── dashboard/      métricas del usuario
+│   ├── admin/          panel solo ADMIN
+│   └── settings/       perfil, tema, logout
+├── util/               NetworkObserver, SessionManager, helpers
 ├── MainActivity.kt
-└── PriceWiseApp.kt     # Application con @HiltAndroidApp
+└── PriceWiseApp.kt     Application con @HiltAndroidApp
 ```
 
 ## Documentación relacionada
 
-- [`../README.md`](../README.md) — visión general del proyecto.
-- [`../docs/ARQUITECTURA.md`](../docs/ARQUITECTURA.md) — capas y patrones del backend y la app.
-- [`../docs/SEGURIDAD.md`](../docs/SEGURIDAD.md) — autenticación y rehidratación de token en el cliente.
+1. `../README.md`, visión general del proyecto.
+2. `../docs/ARQUITECTURA.md`, capas y patrones del backend y la app.
+3. `../docs/SEGURIDAD.md`, autenticación y rehidratación de token.

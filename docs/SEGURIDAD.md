@@ -1,45 +1,21 @@
-# Informe de Seguridad - PriceWise Backend
+# Informe de seguridad del backend PriceWise
 
-**Fecha:** 2026-03-09
-**Versión:** 1.2
-
----
-
-## Resumen Ejecutivo
-
-| Categoría           | Estado    | Nivel |
-|---------------------|-----------|-------|
-| Autenticación       | Seguro    | Alto  |
-| Google OAuth2       | Seguro    | Alto  |
-| Autorización        | Seguro    | Alto  |
-| Almacenamiento      | Seguro    | Alto  |
-| Cifrado API Keys    | Seguro    | Alto  |
-| Comunicaciones      | Seguro    | Alto  |
-| Codigo fuente       | Seguro    | Alto  |
-| Permisos de API     | Adecuados | Alto  |
-| Logging             | Seguro    | Alto  |
-| Validación          | Seguro    | Alto  |
-
----
+Fecha: 2026-03-09. Versión: 1.2.
 
 ## 1. Autenticación
 
-### JWT (JSON Web Token) con HMAC-SHA256
-- **Estado:** Seguro
-- Algoritmo: HS256 (HMAC con SHA-256)
-- Expiración: 24 horas (86.400.000 ms)
-- El token incluye: userId, username, email, roles, iat, exp
-- Validación en cada petición: firma, formato y expiración
+### JWT con HMAC-SHA256
 
-### Gestión del Secreto JWT
-- **Estado:** Seguro
-- El secreto se carga desde la variable de entorno `JWT_SECRET`
-- Mínimo 32 caracteres exigido en validación al arrancar
-- Si no esta configurado en producción: la aplicación falla al iniciar con error fatal
-- En desarrollo sin configurar: arranca con warning visible en logs
+1. Algoritmo HS256 (HMAC con SHA-256).
+2. Expiración 24 horas (86.400.000 ms).
+3. Claims: `userId`, `username`, `email`, `roles`, `iat`, `exp`.
+4. En cada petición se valida firma, formato y expiración.
+
+### Gestión del secreto JWT
+
+El secreto se carga desde la variable de entorno `JWT_SECRET`. Mínimo 32 caracteres, validado al arrancar. En producción, si no está configurado, la aplicación falla. En desarrollo arranca con warning.
 
 ```java
-// JwtService.java - validación al arrancar
 @PostConstruct
 public void validateSecretKey() {
     if (secret.equals("default-secret-change-in-production")) {
@@ -54,108 +30,88 @@ public void validateSecretKey() {
 }
 ```
 
-### Tokens Stateless
-- **Estado:** Seguro
-- `SessionCreationPolicy.STATELESS`: el servidor no guarda sesiones
-- Permite escalar horizontalmente sin estado compartido entre instancias
-- Sin CSRF necesario (los tokens JWT no son vulnerables a CSRF en APIs REST puras)
+### Sesión stateless
 
-### Respuesta ante Token Expirado
-- **Estado:** Seguro
-- Devuelve HTTP 401 Unauthorized con mensaje descriptivo
-- Distingue expirado (401 + mensaje específico) de token inválido (401 genérico)
-- **Android**: `AuthInterceptor` detecta 401, limpia token cacheado y notifica `SessionManager` vía `SharedFlow`. `NavGraph` recoge el evento y navega automáticamente a Login.
+`SessionCreationPolicy.STATELESS`: el servidor no guarda sesiones, lo que permite escalar horizontalmente sin estado compartido. Sin CSRF necesario, los JWT en header `Authorization` no son vulnerables a CSRF en APIs REST puras.
+
+### Token expirado
+
+Devuelve 401 con mensaje descriptivo. Distingue token expirado (401 con mensaje específico) de token inválido (401 genérico). El cliente Android lo detecta vía `AuthInterceptor`, limpia el token cacheado y notifica a `SessionManager`. `NavGraph` recoge el evento y redirige a Login.
 
 ### Google OAuth2
-- **Estado:** Seguro
-- Flujo: el cliente Android obtiene un `idToken` de Google Sign-In y lo envía a `POST /api/auth/google`
-- `GoogleTokenService` valida el token contra Google API (`https://oauth2.googleapis.com/tokeninfo`)
-- Se verifica: firma, audience (client ID), expiración y email verificado
-- Si el usuario ya existe: se genera JWT directamente
-- Si es nuevo: se devuelve estado `needs_company` con `tempToken` temporal para completar registro
-- El `tempToken` tiene expiración corta y solo sirve para `/google/complete-new-company` o `/google/complete-join`
-- Campo `auth_provider` en tabla `users` distingue `LOCAL` vs `GOOGLE` (migración V4)
-- Usuarios Google no tienen contraseña almacenada (campo password = cadena aleatoria hasheada con BCrypt)
 
-### Cifrado de API Keys (Keepa)
-- **Estado:** Seguro
-- Las API keys de terceros (Keepa) se almacenan cifradas con AES-256 en tabla `company_api_keys`
-- `CompanyApiKeyService` gestiona cifrado/descifrado usando clave derivada de variable de entorno
-- Cada empresa tiene su propia API key (aislamiento por `company_id`)
-- La key nunca se expone en texto plano en respuestas API (se devuelve `maskedKey` con asteriscos)
-- Constraint UNIQUE `(company_id, provider)` impide duplicados por proveedor
-- Las keys se pueden activar/desactivar sin eliminarlas (campo `enabled`)
-- Solo `COMPANY_ADMIN` y `ADMIN` pueden gestionar API keys
+1. El cliente Android obtiene un `idToken` de Google Sign-In y lo envía a `POST /api/auth/google`.
+2. `GoogleTokenService` valida el token contra `https://oauth2.googleapis.com/tokeninfo`. Verifica firma, audience (client ID), expiración y email verificado.
+3. Si el usuario ya existe, se emite el JWT. Si es nuevo, se devuelve `needs_company` con un `tempToken` corto que solo sirve para `/google/complete-new-company` o `/google/complete-join`.
+4. El campo `auth_provider` en `users` distingue `LOCAL` y `GOOGLE` (migración V4).
+5. Los usuarios de Google no almacenan contraseña real, solo una cadena aleatoria hasheada con BCrypt.
 
----
+### Cifrado de API keys (Keepa)
+
+1. Las API keys de Keepa se almacenan cifradas con AES-256 en `company_api_keys`.
+2. `CompanyApiKeyService` cifra y descifra con clave derivada de variable de entorno.
+3. Cada empresa tiene su propia key, aislada por `company_id`.
+4. La key nunca se expone en texto plano. La respuesta devuelve `maskedKey` con asteriscos.
+5. Constraint UNIQUE `(company_id, provider)` impide duplicados por proveedor.
+6. Las keys se pueden activar o desactivar sin eliminarlas (campo `enabled`).
+7. Solo `COMPANY_ADMIN` y `ADMIN` pueden gestionar API keys.
 
 ## 2. Autorización
 
-### Control de Acceso por Roles (Multi-Tenancy)
-- **Estado:** Seguro
-- Tres roles disponibles:
+### Roles y multi-tenancy
 
-| Rol | Descripción | Acceso |
-|-----|-------------|--------|
-| `ADMIN` | Super-admin de la plataforma | Control total: todos los usuarios, empresas, datos |
-| `COMPANY_ADMIN` | Admin de una empresa | Gestiona productos, empleados y datos de su empresa |
-| `EMPLOYEE` | Empleado de una empresa | Lectura y operaciones básicas dentro de su empresa |
+1. `ADMIN`: super-admin de la plataforma. Control total sobre usuarios, empresas y datos.
+2. `COMPANY_ADMIN`: administrador de una empresa. Gestiona productos, empleados y datos de su empresa.
+3. `EMPLOYEE`: empleado de una empresa. Lectura y operaciones básicas dentro de su empresa.
 
-- Aplicado con `@PreAuthorize` a nivel de controlador y método
-- El aislamiento de datos se garantiza mediante `companyId` en el JWT
+Aplicado con `@PreAuthorize` a nivel de controlador y método. El aislamiento de datos se garantiza con el `companyId` del JWT.
 
 ```java
-// AdminController: solo ADMIN de plataforma
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController { ... }
 
-// AnalyticsController: COMPANY_ADMIN, EMPLOYEE y ADMIN
 @PreAuthorize("hasAnyRole('COMPANY_ADMIN', 'EMPLOYEE', 'ADMIN')")
 public class AnalyticsController { ... }
 
-// Crear empleados: solo COMPANY_ADMIN y ADMIN
 @PreAuthorize("hasAnyRole('COMPANY_ADMIN', 'ADMIN')")
 public ResponseEntity<?> createEmployee(...) { ... }
 ```
 
-### Aislamiento de Datos por Empresa
-- **Estado:** Seguro
-- Cada usuario pertenece a una `Company` vía foreign key
-- Todos los endpoints (productos, alertas, recomendaciones) filtran por `companyId`, no por `userId`
-- El `companyId` se extrae del JWT en cada petición vía `UserPrincipal`
-- Si un usuario intenta acceder a datos de otra empresa recibe 404
-- Las alertas se consultan vía `product.company.id` en JPQL para garantizar aislamiento
+### Aislamiento por empresa
+
+1. Cada usuario pertenece a una `Company` por foreign key.
+2. Productos, alertas y recomendaciones filtran por `companyId`, no por `userId`.
+3. El `companyId` se extrae del JWT en cada petición vía `UserPrincipal`.
+4. Acceder a datos de otra empresa devuelve 404.
+5. Alertas se consultan con `product.company.id` en JPQL para garantizar aislamiento.
 
 ```java
-// ProductService.java — aislamiento por empresa
-ProductResponse response = productService.getProduct(
-    userPrincipal.getCompanyId(), id);
+ProductResponse response = productService.getProduct(userPrincipal.getCompanyId(), id);
 
-// AlertRepository.java — alertas aisladas por empresa
 @Query("SELECT a FROM Alert a WHERE a.product.company.id = :companyId")
 Page<Alert> findByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
 ```
 
-### Gestión de Empleados
-- COMPANY_ADMIN puede crear empleados para su propia empresa vía `POST /api/auth/create-employee`
-- Los empleados se asignan automáticamente a la empresa del admin que los crea
-- Solo COMPANY_ADMIN y ADMIN pueden crear empleados
+### Gestión de empleados
 
-### Protección de Acciones Admin
-- Los admins no pueden desactivar su propia cuenta (Bug #16 resuelto)
-- Los admins no pueden eliminar su propio usuario
-- El rol ADMIN solo se puede asignar desde otro ADMIN
+1. `COMPANY_ADMIN` puede crear empleados de su empresa vía `POST /api/auth/create-employee`.
+2. Los empleados se asignan automáticamente a la empresa del admin que los crea.
+3. Solo `COMPANY_ADMIN` y `ADMIN` pueden crear empleados.
 
----
+### Acciones admin protegidas
 
-## 3. Almacenamiento de Datos
+1. Un admin no puede desactivar su propia cuenta.
+2. Un admin no puede eliminar su propio usuario.
+3. El rol `ADMIN` solo lo puede asignar otro `ADMIN`.
+
+## 3. Almacenamiento de datos
 
 ### Contraseñas
-- **Estado:** Seguro
-- Algoritmo: BCrypt con salt automático
-- Las contraseñas no se almacenan en texto plano en ningún momento
-- No se loguan en debug (Bug #19 resuelto)
-- El campo `password` en `User` tiene `@JsonIgnore` para prevenir serialización
+
+1. BCrypt con salt automático.
+2. Nunca en texto plano.
+3. No se loguan en debug.
+4. El campo `password` en `User` lleva `@JsonIgnore` para evitar serialización.
 
 ```java
 @JsonIgnore
@@ -163,44 +119,43 @@ Page<Alert> findByCompanyId(@Param("companyId") Long companyId, Pageable pageabl
 private String password;
 ```
 
-### Base de Datos PostgreSQL
-- **Estado:** Seguro
-- Sin uso de `rawQuery()` ni `execSQL()`: prevención de SQL Injection por diseño
-- Todas las queries usan parámetros nombrados vía Spring Data JPA
-- Constraints de unicidad en BD además de validación en código
-- La tabla `companies` centraliza datos de empresa con plan y tipo de negocio
+### PostgreSQL
 
-### Variables de Entorno
-- **Estado:** Seguro
-- URL de BD vía variable `DB_URL`
-- Username de BD vía variable `DB_USERNAME`
-- Credenciales de BD vía variable `DB_PASSWORD`
-- JWT secret vía variable `JWT_SECRET`
-- API keys de Keepa gestionadas por empresa (cifradas AES-256 en tabla `company_api_keys`, configurables desde Ajustes)
-- El `.env.example` no contiene valores reales, solo ejemplos
-- El `.gitignore` excluye `.env` del control de versiones
-- Ninguna credencial esta hardcodeada en `application.yml`
+1. Sin `rawQuery()` ni `execSQL()`. Prevención de SQL injection por diseño.
+2. Todas las queries usan parámetros nombrados vía Spring Data JPA.
+3. Constraints de unicidad en BD además de validación en código.
+4. La tabla `companies` centraliza datos de empresa con plan y tipo de negocio.
 
----
+### Variables de entorno
 
-## 4. Comunicaciones de Red
+1. `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`.
+2. `JWT_SECRET`.
+3. API keys de Keepa cifradas en `company_api_keys`, configurables desde Ajustes.
+4. `.env.example` solo con valores de ejemplo, no reales.
+5. `.gitignore` excluye `.env`.
+6. Ninguna credencial está hardcodeada en `application.yml`.
 
-### HTTPS Exclusivo
-- **Estado:** Seguro
-- API Keepa: `https://api.keepa.com/`
-- No hay llamadas a URLs `http://` en el código
-- La aplicación no configura `usesCleartextTraffic`
+## 4. Comunicaciones de red
+
+### HTTPS
+
+1. API de Keepa: `https://api.keepa.com/`.
+2. No hay llamadas a URLs `http://`.
+3. La aplicación no configura `usesCleartextTraffic`.
 
 ### CORS
-- **Estado:** Seguro según entorno
 
 En desarrollo (`SPRING_PROFILES_ACTIVE=dev`):
+
 ```yaml
 cors:
-  allow-all: true  # Acepta cualquier origen, credentials deshabilitado
+  allow-all: true
 ```
 
+Acepta cualquier origen, `allowCredentials` deshabilitado.
+
 En producción (`SPRING_PROFILES_ACTIVE=prod`):
+
 ```yaml
 cors:
   allow-all: false
@@ -209,144 +164,122 @@ cors:
     - https://www.miapp.com
 ```
 
-- En desarrollo: `allowCredentials: false` con `allowedOriginPatterns: *` (seguro)
-- En producción: `allowCredentials: true` solo con origenes específicos
-- Headers permitidos restringidos: `Authorization`, `Content-Type`, `Accept`, `Origin`, `X-Requested-With`
+`allowCredentials: true` solo con orígenes específicos. Headers permitidos: `Authorization`, `Content-Type`, `Accept`, `Origin`, `X-Requested-With`.
 
 ### CSRF
-- **Estado:** Adecuado
-- CSRF deshabilitado explícitamente en `SecurityConfig`
-- Es la práctica correcta para APIs REST stateless autenticadas con JWT
-- Los tokens JWT en header `Authorization` no son vulnerables a CSRF
 
----
+Deshabilitado explícitamente en `SecurityConfig`. Es la práctica correcta para APIs REST stateless con JWT en header.
 
-## 5. Endpoints y Control de Acceso
+## 5. Endpoints y control de acceso
 
-### Mapa de Acceso por Endpoint
+Mapa de acceso por endpoint:
 
-| Endpoint                                       | Acceso         | Notas                                      |
-|------------------------------------------------|----------------|--------------------------------------------|
-| GET  /                                         | Público        | Bienvenida del API (RootController)        |
-| POST /api/admin/companies                      | ADMIN          | Crea empresa + COMPANY_ADMIN + código auto |
-| POST /api/auth/register                        | Público        | Requiere `companyCode` para unirse a empresa|
-| POST /api/auth/login                           | Público        | Devuelve JWT con companyId y userId         |
-| POST /api/auth/google                          | Público        | Login Google: devuelve JWT o `needs_company`|
-| POST /api/auth/google/complete-new-company     | Público        | Completa registro Google + crea empresa     |
-| POST /api/auth/google/complete-join            | Público        | Completa registro Google + une a empresa    |
-| GET  /api/health                               | Público        | No expone datos sensibles                  |
-| GET  /actuator/health                          | Público        | Health check de Spring Actuator             |
-| GET  /actuator/info                            | Público        | Información básica del build                |
-| GET  /api/competitors/status                   | EMPLOYEE/COMPANY_ADMIN/ADMIN | Estado Keepa de la empresa (companyId del JWT) |
-| GET  /api/auth/profile                         | Autenticado    | Datos del usuario + empresa                |
-| POST /api/auth/create-employee                 | COMPANY_ADMIN/ADMIN | Crea empleado en la empresa del admin |
-| POST /api/products                             | Autenticado    | Crea producto para su empresa              |
-| GET  /api/products/**                          | Autenticado    | Solo productos de su empresa               |
-| GET  /api/analytics/**                         | COMPANY_ADMIN/EMPLOYEE/ADMIN | Métricas de empresa      |
-| GET  /api/competitors/amazon/**                | Autenticado    | Consultas Keepa autenticadas               |
-| *    /api/alert-rules/**                       | Autenticado    | CRUD reglas de alerta por empresa          |
-| *    /api/users/**                             | COMPANY_ADMIN/ADMIN | Gestión usuarios de la empresa        |
-| *    /api/api-keys/**                          | COMPANY_ADMIN/ADMIN | CRUD API keys cifradas por empresa     |
-| GET  /api/admin/**                             | ADMIN          | Gestión global de la plataforma            |
+1. `GET /`: público, bienvenida del API.
+2. `POST /api/admin/companies`: ADMIN. Crea empresa, COMPANY_ADMIN y código auto.
+3. `POST /api/auth/register`: público. Requiere `companyCode` para unirse a una empresa.
+4. `POST /api/auth/login`: público. Devuelve JWT con `companyId` y `userId`.
+5. `POST /api/auth/google`: público. Devuelve JWT o `needs_company`.
+6. `POST /api/auth/google/complete-new-company`: público. Completa registro Google y crea empresa.
+7. `POST /api/auth/google/complete-join`: público. Completa registro Google y une a empresa.
+8. `GET /api/health`: público, no expone datos sensibles.
+9. `GET /actuator/health`: público.
+10. `GET /actuator/info`: público.
+11. `GET /api/competitors/status`: EMPLOYEE, COMPANY_ADMIN, ADMIN. Estado Keepa según `companyId` del JWT.
+12. `GET /api/auth/profile`: autenticado. Datos del usuario y su empresa.
+13. `POST /api/auth/create-employee`: COMPANY_ADMIN, ADMIN.
+14. `POST /api/products`: autenticado. Crea producto en la empresa del usuario.
+15. `GET /api/products/**`: autenticado. Solo productos de la empresa.
+16. `GET /api/analytics/**`: COMPANY_ADMIN, EMPLOYEE, ADMIN.
+17. `GET /api/competitors/amazon/**`: autenticado.
+18. `* /api/alert-rules/**`: autenticado. CRUD de reglas por empresa.
+19. `* /api/users/**`: COMPANY_ADMIN, ADMIN.
+20. `* /api/api-keys/**`: COMPANY_ADMIN, ADMIN. CRUD de API keys cifradas.
+21. `GET /api/admin/**`: ADMIN. Gestión global.
 
 ### Notas sobre Actuator
-Solo `/actuator/health` y `/actuator/info` están en `SecurityConfig.PUBLIC_URLS` (no se usa wildcard). Además, `management.endpoints.web.exposure.include` limita los actuators expuestos a `health, info`. Si en el futuro se exponen otros actuators, sustituir esa configuración por una lista explícita y restringir el acceso a `ADMIN` o a red interna (especialmente para endpoints sensibles como `/actuator/env` o `/actuator/beans`).
 
----
+Solo `/actuator/health` y `/actuator/info` están en `SecurityConfig.PUBLIC_URLS`, sin wildcard. `management.endpoints.web.exposure.include` limita los actuators expuestos a `health, info`. Si se exponen más, sustituir por lista explícita y restringir a `ADMIN` o red interna, sobre todo en `/actuator/env` o `/actuator/beans`.
 
-## 6. Logging y Depuración
+## 6. Logging
 
-### HTTP Logging Condicional
-- **Estado:** Seguro
-- En producción: sin logging del cuerpo de peticiones/respuestas HTTP
-- En desarrollo: logging detallado solo en consola local
+### HTTP
+
+1. En producción no se loguea cuerpo de peticiones ni respuestas.
+2. En desarrollo, logging detallado solo en consola local.
 
 ```java
-// AppModule / OkHttpClient builder
 HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
 interceptor.setLevel(isProduction()
     ? HttpLoggingInterceptor.Level.NONE
     : HttpLoggingInterceptor.Level.BODY);
 ```
 
-### SQL Logging
-- **Estado:** Seguro
-- `show-sql: false` en producción
-- En desarrollo `show-sql: true` solo muestra queries, no valores de parámetros
-  (configurable con `logging.level.org.hibernate.type: WARN`)
+### SQL
 
-### Datos Sensibles en Logs
-- **Estado:** Seguro
-- Contraseñas no se loguan (campo `@JsonIgnore`)
-- API keys no se loguan en nivel INFO o superior
-- Excepciones loguan el mensaje pero no el stack trace completo en producción
+1. `show-sql: false` en producción.
+2. En desarrollo, `show-sql: true` solo muestra la query, no los parámetros (configurable con `logging.level.org.hibernate.type: WARN`).
 
----
+### Datos sensibles
 
-## 7. Validación de Entradas
+1. Las contraseñas no se loguan (`@JsonIgnore`).
+2. Las API keys no se loguan en INFO o superior.
+3. Las excepciones loguan el mensaje, no el stack trace completo en producción.
 
-### Bean Validation (Jakarta)
-- **Estado:** Seguro
-- Todos los DTOs de entrada tienen validaciones `@Valid` activadas en los controladores
-- Los errores de validación devuelven 400 con detalle por campo
+## 7. Validación de entradas
+
+Bean Validation (Jakarta) aplicada con `@Valid` en los controladores. Errores de validación devuelven 400 con detalle por campo.
 
 Campos validados en `ProductRequest`:
-- `name`: @NotBlank, @Size(max = 200)
-- `currentPrice`: @NotNull, @DecimalMin("0.01"), @Digits(integer=10, fraction=2)
-- `costPrice`: @DecimalMin("0.00") si se envía
-- `sku`: @Size(max = 50) si se envía
+
+1. `name`: `@NotBlank`, `@Size(max = 200)`.
+2. `currentPrice`: `@NotNull`, `@DecimalMin("0.01")`, `@Digits(integer = 10, fraction = 2)`.
+3. `costPrice`: `@DecimalMin("0.00")` si se envía.
+4. `sku`: `@Size(max = 50)` si se envía.
 
 Campos validados en `RegisterRequest`:
-- `email`: @NotBlank, @Email
-- `username`: @NotBlank, @Size(min=3, max=50)
-- `password`: @NotBlank, @Size(min=6)
 
-### Validaciones de Negocio
-- Unicidad de email y username al registrar
-- Unicidad de SKU por usuario (no global)
-- Propiedad de recursos antes de cualquier modificación
-- El Admin no puede autodesactivarse
+1. `email`: `@NotBlank`, `@Email`.
+2. `username`: `@NotBlank`, `@Size(min = 3, max = 50)`.
+3. `password`: `@NotBlank`, `@Size(min = 6)`.
 
----
+Validaciones de negocio:
 
-## 8. Integridad de Datos
+1. Unicidad de email y username al registrar.
+2. Unicidad de SKU por empresa, no global.
+3. Verificación de propiedad de recursos antes de modificarlos.
+4. El admin no puede autodesactivarse.
+
+## 8. Integridad de datos
 
 ### Transacciones
-- **Estado:** Seguro
-- Los métodos de servicio que modifican múltiples entidades usan `@Transactional`
-- Si una parte falla, toda la operación se revierte automáticamente
-- Ejemplo: crear producto + registrar PriceHistory es una sola transacción
 
-### Concurrencia en Keepa
-- **Estado:** Seguro
-- `Semaphore(3)`: máximo 3 peticiones concurrentes a Keepa
-- Inicialización de Amazon Competitor en `@PostConstruct` (hilo único)
-- Double-checked locking para casos edge en inicialización
+1. Métodos de servicio que tocan varias entidades usan `@Transactional`.
+2. Si una parte falla, toda la operación se revierte.
+3. Crear producto y registrar `PriceHistory` van en una sola transacción.
 
----
+### Concurrencia con Keepa
 
-## 9. Dependencias y Vulnerabilidades
+1. `Semaphore(3)`: máximo 3 peticiones concurrentes.
+2. Inicialización del competidor Amazon en `@PostConstruct` (hilo único).
+3. Double-checked locking para casos edge en la inicialización.
 
-### Dependencias Principales
+## 9. Dependencias
 
-| Dependencia         | Versión  | Notas                                   |
-|---------------------|----------|-----------------------------------------|
-| Spring Boot         | 3.3.0    | LTS activa, parches de seguridad al dia |
-| Spring Security     | 6.x      | Incluido en Spring Boot BOM             |
-| jjwt                | 0.12.3   | Versión actual, sin CVEs conocidos      |
-| PostgreSQL Driver   | 42.x     | Incluido en Spring Boot BOM             |
-| Lombok              | 1.18.40  | Solo compile time, sin runtime exposure |
-| Jsoup               | 1.17.2   | Versión actual                          |
+Versiones principales:
 
-### Recomendación
-Ejecutar `mvn dependency:check` o integrar OWASP Dependency Check en el pipeline
-para detectar CVEs en dependencias transitivas.
+1. Spring Boot 3.3.0 (LTS, parches de seguridad al día).
+2. Spring Security 6.x (incluido en el BOM de Spring Boot).
+3. jjwt 0.12.3 (sin CVEs conocidos).
+4. PostgreSQL Driver 42.x (incluido en el BOM).
+5. Lombok 1.18.40 (solo compile time).
+6. Jsoup 1.17.2.
 
----
+Recomendación: ejecutar `mvn dependency:check` o integrar OWASP Dependency Check en el pipeline para detectar CVEs en dependencias transitivas.
 
-## 10. Configuración del Servidor
+## 10. Configuración de servidor
 
-### application.yml en Producción
+`application.yml` en producción:
+
 ```yaml
 server:
   port: 9090
@@ -354,11 +287,11 @@ server:
 spring:
   jpa:
     hibernate:
-      ddl-auto: validate  # Solo verifica, no modifica esquema
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
-        default_batch_fetch_size: 16  # Previene N+1 en relaciones LAZY
+        default_batch_fetch_size: 16
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/pricewise}
@@ -373,80 +306,57 @@ cors:
     - https://tudominio.com
 ```
 
-### Docker
-- La imagen no incluye ficheros `.env`
-- Las variables de entorno se pasan en tiempo de ejecución (`--env-file .env`)
-- El usuario del contenedor no debe ser root (pendiente configurar en Dockerfile)
+Docker:
 
----
+1. La imagen no incluye `.env`.
+2. Las variables se inyectan en runtime con `--env-file .env`.
+3. El usuario del contenedor no debería ser root (pendiente en Dockerfile).
 
-## Acciones Recomendadas
+## Pendientes
 
-### Pendientes (Prioridad Media)
+Prioridad media:
 
-1. **Certificate Pinning para Keepa API**
-   Implementar `CertificatePinner` de OkHttp para prevenir ataques man-in-the-middle
-   contra la conexión con Keepa.
+1. Certificate pinning con `CertificatePinner` de OkHttp para la conexión con Keepa.
+2. Restringir `/actuator/**` en producción a ADMIN o red interna.
+3. Audit log: registrar en tabla aparte todas las operaciones de admin (quién, qué, cuándo).
+4. OWASP Dependency Check integrado en el build.
 
-2. **Restricción de Actuator en Producción**
-   Mover `/actuator/**` a solo `ADMIN` o a red interna.
+Prioridad baja:
 
-3. **Audit Log**
-   Registrar en tabla separada todas las operaciones ADMIN (quien, que, cuando).
+1. Root detection en cliente móvil.
+2. 2FA para cuentas ADMIN.
+3. Rotación de `JWT_SECRET` con periodo de gracia para tokens existentes.
 
-4. **OWASP Dependency Check**
-   Integrar en el build de Maven para detectar CVEs automáticamente en cada PR.
+## Completadas
 
-### Pendientes (Prioridad Baja)
+1. `JWT_SECRET` validado al arrancar con error fatal en producción.
+2. BCrypt con salt automático para contraseñas.
+3. CORS por perfil, restrictivo en producción.
+4. CORS: `allowCredentials` deshabilitado con wildcard origins.
+5. CORS: headers permitidos restringidos a whitelist explícita.
+6. CSRF deshabilitado para API REST stateless.
+7. Verificación de propiedad de recursos en capa de servicio.
+8. Soft-delete sin exponer datos borrados en queries.
+9. Admin no puede desactivarse a sí mismo.
+10. Token expirado devuelve 401 claro, no 403.
+11. Logs de BD sin parámetros sensibles en producción.
+12. Variables de entorno para todos los secretos (incluidos `DB_URL` y `DB_USERNAME`).
+13. Rate limiting en `/api/auth/login` y `/api/auth/register` (10 intentos por minuto y por IP).
+14. Dependencia de Keepa fijada a versión concreta (2.04) en lugar de LATEST.
+15. Multi-tenancy: alertas filtran por `companyId` vía JPQL en lugar de `userId`.
+16. Prevención N+1: `default_batch_fetch_size: 16` y JOIN FETCH en consultas críticas.
+17. Login optimizado: eliminada query redundante a `userRepository.findByEmail()`, datos extraídos de `UserPrincipal`.
+18. `UserPrincipal` enriquecido con `companyName`, `role` y `displayUsername`.
+19. JWT sin valor por defecto en perfil prod (`${JWT_SECRET}` sin fallback).
+20. Paginación validada con `@Min(0)` en page y `@Min(1) @Max(100)` en size en `ProductController` y `AnalyticsController`.
+21. `ACCESS_NETWORK_STATE` declarado en `AndroidManifest` para `NetworkObserver`.
+22. `AdminController` optimizado con count queries en lugar de `findAll().stream()`.
+23. Google OAuth2: validación de `idToken` con verificación de audience, firma y expiración.
+24. API keys cifradas con AES-256, nunca expuestas en texto plano.
+25. Guardia de auto-eliminación en `UserService`: el usuario no puede eliminarse a sí mismo.
 
-1. **Root Detection** si se desarrolla cliente móvil
-2. **2FA para cuentas ADMIN**
-3. **Rotación de JWT_SECRET** con periodo de gracia para tokens existentes
+## Documentación relacionada
 
-### Completadas
-
-- JWT_SECRET validado al arrancar con error fatal en producción
-- BCrypt para contraseñas con salt automático
-- CORS configurado por perfil (restrictivo en producción)
-- CORS: `allowCredentials` deshabilitado con wildcard origins (fix seguridad)
-- CORS: headers permitidos restringidos a whitelist explícita
-- CSRF deshabilitado correctamente para API REST stateless
-- Verificación de propiedad de recursos en capa de servicio
-- Soft delete sin exponer datos borrados en queries
-- Admin no puede desactivarse a sí mismo
-- Token expirado devuelve 401 claro (no 403 genérico)
-- Logs de BD sin parámetros sensibles en producción
-- Variables de entorno para todos los secretos (incluidos DB_URL y DB_USERNAME)
-- Rate limiting en `/api/auth/login` y `/api/auth/register` (10 intentos/minuto por IP)
-- Dependencia Keepa fijada a versión concreta (2.04) en lugar de LATEST
-- Multi-tenancy: alertas corregidas para filtrar por `companyId` vía JPQL en lugar de `userId`
-- Prevención N+1: `default_batch_fetch_size: 16` + JOIN FETCH en consultas críticas
-- Login optimizado: eliminada query redundante a `userRepository.findByEmail()`, datos extraídos de `UserPrincipal`
-- `UserPrincipal` enriquecido con `companyName`, `role` y `displayUsername` para evitar re-queries
-- JWT sin valor por defecto en perfil prod (`${JWT_SECRET}` sin fallback — app falla al arrancar si no esta configurado)
-- Paginación validada con `@Min(0)` en page y `@Min(1) @Max(100)` en size en ProductController y AnalyticsController
-- Permiso `ACCESS_NETWORK_STATE` declarado en AndroidManifest para NetworkObserver (evita SecurityException)
-- AdminController optimizado: usa count queries en vez de `findAll().stream()` (evita cargar entidades completas en memoria)
-- Google OAuth2: validación de idToken vía Google API con verificación de audience, firma y expiración
-- API keys cifradas con AES-256 en BD (nunca expuestas en texto plano en respuestas)
-- Guardia de auto-eliminación en UserService: usuario no puede eliminarse a sí mismo (check temprano antes de consultar BD)
-
----
-
-## Conclusión
-
-El proyecto tiene una base de seguridad sólida apropiada para un entorno de producción
-inicial. Las vulnerabilidades de mayor riesgo (contraseñas en texto plano, secrets en
-código, SQL injection, fuga de datos entre usuarios) estan cubiertas.
-
-Las acciones pendientes son de prioridad media-baja y no representan vulnerabilidades
-explotables de forma trivial en el estado actual del sistema.
-
----
-
-## Documentación Relacionada
-
-- [ARQUITECTURA.md](ARQUITECTURA.md) — Guía completa de arquitectura y justificaciones técnicas
-- [README.md](README.md) — Endpoints REST, instalación y configuración
-- [FLYWAY.md](FLYWAY.md) — Migraciones de base de datos (esquema de seguridad en V1, V5, V8)
-- [CRONOGRAMA.md](CRONOGRAMA.md) — Timeline de desarrollo por fases
+1. `ARQUITECTURA.md`: arquitectura y justificaciones técnicas.
+2. `README.md`: endpoints REST, instalación y configuración.
+3. `FLYWAY.md`: migraciones de BD, esquema de seguridad en V1, V5 y V8.
