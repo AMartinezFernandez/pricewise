@@ -1,6 +1,6 @@
-# Colección Postman — PriceWise API
+# Colección Postman de la API de PriceWise
 
-Colección completa del API REST del backend, sincronizada en disco como YAML (formato [Postman CLI / Git integration](https://learning.postman.com/docs/collections/using-git-with-postman/)) para poder versionarla con el resto del proyecto.
+Colección completa del API REST del backend, sincronizada en disco como YAML para versionarla con el resto del proyecto. Formato compatible con la integración de Git en Postman.
 
 ## Contenido
 
@@ -8,64 +8,62 @@ Colección completa del API REST del backend, sincronizada en disco como YAML (f
 postman/
 ├── collections/
 │   └── PriceWise API/
-│       ├── .resources/definition.yaml     # Configuración de la colección
-│       ├── Autenticación/                 # Login, registro, perfil
-│       ├── Health/                        # Health check
-│       ├── Productos/                     # CRUD y monitorización
-│       ├── Competidores (Keepa)/          # Sincronización con Amazon
-│       ├── API Keys/                      # Gestión de API keys de Keepa por empresa
-│       ├── Scheduler (Admin) [DEPRECATED]/ # Endpoints retirados del MVP (ver nota abajo)
-│       └── Admin/                         # Gestión de usuarios y estadísticas
+│       ├── .resources/definition.yaml
+│       ├── Autenticación/
+│       ├── Health/
+│       ├── Productos/
+│       ├── Competidores (Keepa)/
+│       ├── API Keys/
+│       ├── Scheduler (Admin) [DEPRECATED]/
+│       └── Admin/
 └── globals/
-    └── workspace.globals.yaml             # Variables globales (vacío)
+    └── workspace.globals.yaml
 ```
 
 Cada subcarpeta agrupa las peticiones de un módulo. Cada archivo `*.request.yaml` es una petición HTTP.
 
-## Cómo importar la colección
+## Importar la colección
 
-### Opción A — Postman Desktop (recomendado)
+Opción A, Postman Desktop:
 
-1. Abre Postman.
-2. `File → Import` (o `Cmd/Ctrl + O`).
-3. Arrastra la carpeta completa `postman/collections/PriceWise API/` sobre el diálogo.
-4. Postman detecta el formato YAML y reconstruye la colección con todas sus subcarpetas.
+1. Abrir Postman.
+2. `File` → `Import` (o `Cmd/Ctrl + O`).
+3. Arrastrar la carpeta `postman/collections/PriceWise API/` al diálogo.
+4. Postman reconstruye la colección con todas sus subcarpetas.
 
-### Opción B — Postman CLI
+Opción B, Postman CLI:
 
 ```bash
 postman collection import postman/collections/PriceWise\ API/
 ```
 
-## Configuración previa
+## Variables
 
-La colección define dos variables en `.resources/definition.yaml`:
+Definidas en `.resources/definition.yaml`:
 
-| Variable   | Valor por defecto        | Uso                                               |
-|------------|--------------------------|---------------------------------------------------|
-| `baseUrl`  | `http://localhost:9090`  | URL del backend. Cámbiala si usas Railway o otro. |
-| `token`    | `""`                     | JWT que se rellena automáticamente en el login.   |
+1. `baseUrl`, valor por defecto `http://localhost:9090`. URL del backend, cambiarla si se apunta a Railway u otro entorno.
+2. `token`, vacío por defecto. JWT que se rellena automáticamente tras el login.
 
-Para apuntar al backend desplegado, edita `baseUrl` en la pestaña **Variables** de la colección dentro de Postman.
+Para apuntar al backend desplegado, editar `baseUrl` en la pestaña Variables de la colección.
 
 ## Flujo de uso
 
-1. **Ejecuta `Autenticación / Login`** con las credenciales facilitadas.
-2. Un script de test guarda el JWT en la variable `token` de la colección.
-3. El resto de peticiones ya llevan `Authorization: Bearer {{token}}` configurado a nivel de colección. No hay que copiar el token manualmente.
+1. Ejecutar `Autenticación / Login` con las credenciales facilitadas.
+2. Un script de test guarda el JWT en la variable `token`.
+3. El resto de peticiones llevan `Authorization: Bearer {{token}}` configurado a nivel de colección.
 
-Si recibes `401 Unauthorized`, el token ha caducado — repite el paso 1.
+Si llega `401 Unauthorized`, el token ha caducado: repetir el paso 1.
 
 ## Credenciales
 
-Credenciales de demostración disponibles bajo demanda. Consulta la descripción del [release v1.0.0](https://github.com/AMartinezFernandez/pricewise/releases/tag/v1.0.0).
+Credenciales de demostración disponibles bajo demanda. Ver la descripción del release v1.0.0 en GitHub.
 
 ## Endpoints deprecados
 
-La carpeta `Scheduler (Admin) [DEPRECATED]/` contiene cuatro peticiones (`Estado`, `Ejecutar Job Ahora`, `Pausar`, `Reanudar`) que apuntan a `/api/admin/scheduler/*`. Estos endpoints **ya no existen** en el backend porque el `SchedulerController` se retiró del MVP. Las peticiones devolverán **404**.
+La carpeta `Scheduler (Admin) [DEPRECATED]/` contiene cuatro peticiones (`Estado`, `Ejecutar Job Ahora`, `Pausar`, `Reanudar`) que apuntan a `/api/admin/scheduler/*`. Esos endpoints ya no existen porque `SchedulerController` se retiró del MVP. Devuelven 404.
 
-Se conservan en la colección como referencia histórica. Los jobs de Quartz (`PriceMonitorJob`) siguen ejecutándose automáticamente cada 6 horas en segundo plano. Para más contexto consulta [`../docs/MEJORAS_FUTURAS.md`](../docs/MEJORAS_FUTURAS.md) § 6.
+Se mantienen como referencia histórica. Los jobs de Quartz (`PriceMonitorJob`) siguen ejecutándose automáticamente cada 6 horas. Más contexto en `../docs/MEJORAS_FUTURAS.md` apartado 6.
 
-## Referencia completa de endpoints
+## Referencia de endpoints
 
-Consulta [`../docs/README.md`](../docs/README.md) para la descripción detallada de cada endpoint, parámetros, roles requeridos y ejemplos de respuesta.
+Ver `../docs/README.md` para parámetros, roles requeridos y ejemplos de respuesta.

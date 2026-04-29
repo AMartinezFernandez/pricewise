@@ -1,65 +1,56 @@
 # Migraciones de base de datos con Flyway
 
-## Configuración
+Flyway se ejecuta automáticamente al iniciar la aplicación.
 
-Flyway está integrado en el proyecto y se ejecuta automáticamente al iniciar la aplicación.
+## Perfiles
 
-### Perfiles
+- `dev` y `prod`: Flyway habilitado, `ddl-auto: validate` (Hibernate solo valida, no modifica el esquema).
+- `test`: Flyway deshabilitado, `ddl-auto: create-drop` con H2 en memoria.
 
-- **dev / prod**: Flyway habilitado, `ddl-auto: validate` (Hibernate solo valida, no modifica el esquema).
-- **test**: Flyway deshabilitado, `ddl-auto: create-drop` (H2 en memoria).
+## Base de datos existente
 
-### Base de datos existente
-
-La configuración `baseline-on-migrate: true` con `baseline-version: 0` permite que Flyway se integre en bases de datos que ya tienen tablas. Al ejecutarse por primera vez, Flyway:
+Con `baseline-on-migrate: true` y `baseline-version: 0`, en la primera ejecución Flyway:
 
 1. Detecta que las tablas ya existen.
 2. Crea la tabla `flyway_schema_history`.
-3. Marca V1 como baseline (no la ejecuta).
-4. Ejecuta normalmente las migraciones posteriores (V2, V3…).
+3. Marca V1 como baseline sin ejecutarla.
+4. Ejecuta a partir de V2 con normalidad.
 
-### Base de datos nueva
+En una base de datos vacía, Flyway ejecuta `V1__baseline.sql` y crea todo el esquema.
 
-En una base de datos vacía, Flyway ejecuta `V1__baseline.sql` creando todo el esquema desde cero.
+## Añadir una migración
 
-## Cómo añadir una nueva migración
-
-1. Crear archivo en `src/main/resources/db/migration/`.
-2. Nombrar siguiendo la convención: `V{número}__{descripción}.sql`.
-   - Ejemplo: `V2__add_composite_indexes.sql`.
-3. Escribir SQL puro de PostgreSQL.
-4. Usar `IF NOT EXISTS` / `IF EXISTS` cuando sea posible.
-5. **Nunca modificar** una migración ya ejecutada.
+1. Crear el archivo en `src/main/resources/db/migration/`.
+2. Nombrar como `V{número}__{descripción}.sql`, por ejemplo `V2__add_composite_indexes.sql`.
+3. Escribir SQL de PostgreSQL.
+4. Usar `IF NOT EXISTS` o `IF EXISTS` cuando aplique.
+5. Nunca modificar una migración ya ejecutada.
 
 ## Rollback
 
-Flyway Community Edition no soporta rollback automático. Para revertir:
+Flyway Community no soporta rollback automático. Para revertir:
 
-1. Crear una nueva migración que deshaga los cambios:
+1. Crear una migración nueva que deshaga los cambios:
 
    ```sql
-   -- V3__revert_v2_changes.sql
    DROP INDEX IF EXISTS idx_new_index;
    ALTER TABLE products DROP COLUMN IF EXISTS new_column;
    ```
 
-2. En caso de emergencia (esquema corrupto): restaurar el último backup de la BD o, si no se dispone de él, ejecutar manualmente las sentencias inversas y crear inmediatamente una nueva migración `Vn` que las recoja. **No editar `flyway_schema_history` a mano**: rompe la integridad del historial y deja la BD en estado inconsistente con el resto de entornos.
+2. Ante un esquema corrupto, restaurar el último backup. Si no hay backup, ejecutar las sentencias inversas a mano y crear de inmediato una migración `Vn` que las recoja. No editar `flyway_schema_history` manualmente: rompe la integridad del historial.
 
 ## Migraciones existentes
 
-| Versión | Descripción | Fecha |
-|---------|-------------|-------|
-| V1 | Esquema inicial (baseline) — todas las tablas, constraints e índices | 2026-02-22 |
-| V2 | Índices compuestos para rendimiento de queries frecuentes | 2026-02-22 |
-| V3 | Tabla `audit_logs` (creada por compatibilidad histórica; `AuditService` retirado del MVP — ver `MEJORAS_FUTURAS.md` § 1) | 2026-02-22 |
-| V4 | Campo `auth_provider` en tabla `users` (soporte Google OAuth) | 2026-02-22 |
-| V5 | Tabla `alert_rules` con `company_id`, `product_id`, `alert_type`, `threshold`, `enabled` | 2026-02-22 |
-| V6 | Campo `target_price` (`DECIMAL(10,2)`) en `alert_rules` | 2026-03-08 |
-| V7 | `user_id` nullable en `alerts` (`ON DELETE SET NULL` para conservar alertas al borrar usuarios) | 2026-03-08 |
-| V8 | Tabla `company_api_keys` (API keys cifradas AES-256 por empresa, índice único por `company + provider`) | 2026-03-09 |
+1. **V1** (2026-02-22): esquema inicial baseline. Todas las tablas, constraints e índices.
+2. **V2** (2026-02-22): índices compuestos para queries frecuentes.
+3. **V3** (2026-02-22): tabla `audit_logs`. Compatibilidad histórica, `AuditService` fuera del MVP.
+4. **V4** (2026-02-22): campo `auth_provider` en `users` para Google OAuth.
+5. **V5** (2026-02-22): tabla `alert_rules` con `company_id`, `product_id`, `alert_type`, `threshold`, `enabled`.
+6. **V6** (2026-03-08): campo `target_price` (`DECIMAL(10,2)`) en `alert_rules`.
+7. **V7** (2026-03-08): `user_id` nullable en `alerts`, `ON DELETE SET NULL` para conservar alertas al borrar usuarios.
+8. **V8** (2026-03-09): tabla `company_api_keys`. Claves cifradas AES-256 por empresa, índice único por `company + provider`.
 
 ## Documentación relacionada
 
-- [`ARQUITECTURA.md`](ARQUITECTURA.md) — Guía de arquitectura (sección 6: Entidades JPA y persistencia).
-- [`SEGURIDAD.md`](SEGURIDAD.md) — Seguridad de BD (cifrado, constraints, transacciones).
-- [`CRONOGRAMA.md`](CRONOGRAMA.md) — Fase 17 (integración de Flyway) y fases posteriores.
+- `ARQUITECTURA.md`, sección 6 sobre entidades JPA y persistencia.
+- `SEGURIDAD.md`, cifrado de BD, constraints y transacciones.

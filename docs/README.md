@@ -1,31 +1,29 @@
-# PriceWise — API Backend
+# PriceWise, API backend
 
 Sistema de comparación y monitorización de precios para PYMEs.
 
-## Descripción
+API REST en Spring Boot que permite a las PYMEs gestionar su catálogo y monitorizar precios en Amazon. Incluye autenticación JWT, roles `ADMIN`, `COMPANY_ADMIN` y `EMPLOYEE`, integración con la API de Keepa, reglas de alerta configurables con precio objetivo y análisis automático de precios mediante jobs de Quartz.
 
-PriceWise es una API REST desarrollada con Spring Boot que permite a las PYMEs gestionar su catálogo y monitorizar precios de la competencia en Amazon. Incluye autenticación JWT, sistema de roles ADMIN / COMPANY_ADMIN / EMPLOYEE, integración con Keepa API, reglas de alerta configurables con precio objetivo y análisis automático de precios mediante jobs Quartz.
-
-Existe una aplicación Android acompañante construida con Jetpack Compose, cuya documentación está en [`../pricewise-android/README.md`](../pricewise-android/README.md).
+Existe una app Android acompañante en Jetpack Compose: ver `../pricewise-android/README.md`.
 
 ## Tecnologías
 
-- Java 17
-- Spring Boot 3.3.0
-- Spring Security 6.x
-- Spring Data JPA 3.x
-- PostgreSQL 14+
-- JWT (jjwt 0.12.3)
-- Quartz Scheduler
-- Keepa API
-- Lombok
-- SpringDoc OpenAPI 2.3.0
+1. Java 17.
+2. Spring Boot 3.3.0.
+3. Spring Security 6.x.
+4. Spring Data JPA 3.x.
+5. PostgreSQL 14 o superior.
+6. JWT (jjwt 0.12.3).
+7. Quartz Scheduler.
+8. Keepa API.
+9. Lombok.
+10. SpringDoc OpenAPI 2.3.0.
 
 ## Requisitos
 
-- Java 17 o superior.
-- PostgreSQL 14 o superior.
-- Maven 3.8+.
+1. Java 17 o superior.
+2. PostgreSQL 14 o superior.
+3. Maven 3.8 o superior.
 
 ## Instalación
 
@@ -44,13 +42,13 @@ CREATE DATABASE pricewise_db;
 \q
 ```
 
-### 3. Configurar variables de entorno
+### 3. Variables de entorno
 
 ```bash
 cp .env.example .env
 ```
 
-Edita el archivo `.env` con tus valores:
+Editar `.env` con tus valores:
 
 ```env
 JWT_SECRET=tu_clave_secreta_aqui
@@ -60,7 +58,7 @@ DB_PASSWORD=tu_password_de_bd
 SPRING_PROFILES_ACTIVE=dev
 ```
 
-> Las API keys de Keepa se configuran por empresa desde la app (Ajustes → Integración Keepa).
+Las API keys de Keepa se configuran por empresa desde la app, en Ajustes e Integración Keepa.
 
 Para generar un `JWT_SECRET` seguro:
 
@@ -68,47 +66,45 @@ Para generar un `JWT_SECRET` seguro:
 openssl rand -base64 32
 ```
 
-### 4. Ejecutar la aplicación
+### 4. Ejecutar
 
 ```bash
 mvn spring-boot:run
 ```
 
-O compilar y ejecutar:
+O empaquetar y ejecutar:
 
 ```bash
 mvn clean package
 java -jar target/pricewise-1.0.0-SNAPSHOT.jar
 ```
 
-La aplicación estará disponible en: `http://localhost:9090`.
+Disponible en `http://localhost:9090`.
 
-## URLs importantes
+## URLs útiles
 
-| URL | Descripción |
-|---|---|
-| `http://localhost:9090/api/health` | Estado del servidor |
-| `http://localhost:9090/swagger-ui.html` | Documentación interactiva |
-| `http://localhost:9090/api-docs` | OpenAPI JSON |
+1. `http://localhost:9090/api/health`: estado del servidor.
+2. `http://localhost:9090/swagger-ui.html`: documentación interactiva.
+3. `http://localhost:9090/api-docs`: OpenAPI JSON.
 
 ## Autenticación
 
-La API soporta dos métodos de autenticación: JWT clásico y Google OAuth2.
+La API soporta JWT clásico y Google OAuth2.
 
 ### Flujo clásico
 
-1. El usuario obtiene un código de invitación de su empresa.
+1. El usuario obtiene el código de invitación de su empresa.
 2. `POST /api/auth/register` con credenciales y código.
-3. `POST /api/auth/login` para obtener token.
-4. Incluir en headers: `Authorization: Bearer <token>`.
+3. `POST /api/auth/login` para obtener el token.
+4. Incluir en cada petición: `Authorization: Bearer <token>`.
 
 ### Flujo Google OAuth2
 
 1. `POST /api/auth/google` con el `idToken` de Google Sign-In.
-2. Si el usuario ya existe: devuelve JWT directamente.
-3. Si es nuevo: devuelve estado `needs_company` con dos opciones:
-   - `POST /api/auth/google/complete-new-company` para crear empresa nueva.
-   - `POST /api/auth/google/complete-join` con `companyCode` para unirse a empresa existente.
+2. Si el usuario existe, devuelve JWT.
+3. Si es nuevo, devuelve `needs_company` con dos opciones:
+   1. `POST /api/auth/google/complete-new-company` para crear empresa nueva.
+   2. `POST /api/auth/google/complete-join` con `companyCode` para unirse a una existente.
 
 El token expira en 24 horas.
 
@@ -124,38 +120,36 @@ Content-Type: application/json
 }
 ```
 
-## Roles y permisos
+## Roles
 
-| Rol | Descripción |
-|---|---|
-| `ADMIN` | Super-administrador: crea empresas y gestiona la plataforma. |
-| `COMPANY_ADMIN` | Administrador de empresa: gestiona sus empleados y productos. |
-| `EMPLOYEE` | Empleado: gestiona productos de su empresa. |
+1. `ADMIN`: super-administrador. Crea empresas y gestiona la plataforma.
+2. `COMPANY_ADMIN`: administrador de empresa. Gestiona empleados y productos de su empresa.
+3. `EMPLOYEE`: empleado. Gestiona productos de su empresa.
 
-### Rutas públicas (sin autenticación)
+### Rutas públicas
 
-- `POST /api/auth/register` (requiere `companyCode`).
-- `POST /api/auth/login`.
-- `POST /api/auth/google`.
-- `POST /api/auth/google/complete-new-company`.
-- `POST /api/auth/google/complete-join`.
-- `GET /api/health`.
-- `GET /actuator/health`, `GET /actuator/info`.
+1. `POST /api/auth/register` (requiere `companyCode`).
+2. `POST /api/auth/login`.
+3. `POST /api/auth/google`.
+4. `POST /api/auth/google/complete-new-company`.
+5. `POST /api/auth/google/complete-join`.
+6. `GET /api/health`.
+7. `GET /actuator/health`, `GET /actuator/info`.
 
-### Rutas protegidas (requieren token)
+### Rutas protegidas
 
-- `/api/products/*` — todos los roles.
-- `/api/auth/profile` — todos los roles.
-- `/api/auth/change-password` — todos los roles.
-- `/api/auth/create-employee` — `COMPANY_ADMIN` / `ADMIN`.
-- `/api/users/*` — `COMPANY_ADMIN` / `ADMIN`.
-- `/api/api-keys/*` — `COMPANY_ADMIN` / `ADMIN`.
-- `/api/analytics/*` — todos los roles.
-- `/api/alert-rules/*` — todos los roles.
-- `/api/competitors/*` — todos los roles (incluye `status`, que devuelve el estado de Keepa por empresa).
-- `/api/admin/*` — solo `ADMIN`.
+1. `/api/products/*`: todos los roles.
+2. `/api/auth/profile`: todos los roles.
+3. `/api/auth/change-password`: todos los roles.
+4. `/api/auth/create-employee`: `COMPANY_ADMIN` y `ADMIN`.
+5. `/api/users/*`: `COMPANY_ADMIN` y `ADMIN`.
+6. `/api/api-keys/*`: `COMPANY_ADMIN` y `ADMIN`.
+7. `/api/analytics/*`: todos los roles.
+8. `/api/alert-rules/*`: todos los roles.
+9. `/api/competitors/*`: todos los roles. Incluye `status`, que devuelve el estado de Keepa por empresa.
+10. `/api/admin/*`: solo `ADMIN`.
 
-## Endpoints principales
+## Endpoints
 
 ### Autenticación
 
@@ -164,7 +158,7 @@ POST /api/auth/register          Registrarse en empresa
 POST /api/auth/login             Iniciar sesión
 GET  /api/auth/profile           Ver perfil
 POST /api/auth/change-password   Cambiar contraseña
-POST /api/auth/create-employee   Crear empleado (COMPANY_ADMIN / ADMIN)
+POST /api/auth/create-employee   Crear empleado (COMPANY_ADMIN, ADMIN)
 ```
 
 ### Google OAuth
@@ -175,11 +169,11 @@ POST /api/auth/google/complete-new-company   Completar registro creando empresa
 POST /api/auth/google/complete-join          Completar registro uniéndose a empresa
 ```
 
-### Productos (requieren autenticación)
+### Productos
 
 ```
 POST   /api/products             Crear producto
-GET    /api/products             Listar productos (paginado)
+GET    /api/products             Listar productos paginado
 GET    /api/products/monitored   Listar productos monitorizados
 GET    /api/products/{id}        Obtener producto
 PUT    /api/products/{id}        Actualizar producto
@@ -190,25 +184,25 @@ GET    /api/products/brands      Listar marcas
 GET    /api/products/count       Contar productos
 ```
 
-### Competencia (Keepa, requieren autenticación)
+### Competencia (Keepa)
 
 ```
-GET  /api/competitors/status                   Estado de Keepa API
+GET  /api/competitors/status                   Estado de Keepa
 GET  /api/competitors/amazon/price/{asin}      Precio por ASIN
 POST /api/competitors/amazon/sync/{productId}  Sincronizar producto
 ```
 
-### Reglas de alerta (requieren autenticación)
+### Reglas de alerta
 
 ```
-GET    /api/alert-rules                  Listar reglas de alerta
-POST   /api/alert-rules                  Crear regla de alerta
+GET    /api/alert-rules                  Listar reglas
+POST   /api/alert-rules                  Crear regla
 PUT    /api/alert-rules/{id}             Actualizar regla (threshold, name, targetPrice)
 DELETE /api/alert-rules/{id}             Eliminar regla
-POST   /api/alert-rules/{id}/toggle      Activar / desactivar regla
+POST   /api/alert-rules/{id}/toggle      Activar o desactivar regla
 ```
 
-### Administración (solo `ADMIN`)
+### Administración (solo ADMIN)
 
 ```
 GET    /api/admin/stats                  Estadísticas
@@ -218,11 +212,11 @@ GET    /api/admin/users/{id}             Ver usuario
 PUT    /api/admin/users/{id}             Editar usuario
 PUT    /api/admin/users/{id}/password    Cambiar contraseña
 PUT    /api/admin/users/{id}/role        Cambiar rol
-PUT    /api/admin/users/{id}/status      Activar / desactivar
+PUT    /api/admin/users/{id}/status      Activar o desactivar
 DELETE /api/admin/users/{id}             Eliminar usuario
 ```
 
-### Usuarios (`COMPANY_ADMIN` / `ADMIN`)
+### Usuarios (COMPANY_ADMIN, ADMIN)
 
 ```
 GET    /api/users                Listar usuarios de la empresa
@@ -230,16 +224,16 @@ GET    /api/users/count          Contar usuarios
 DELETE /api/users/{userId}       Eliminar usuario de la empresa
 ```
 
-### API keys (`COMPANY_ADMIN` / `ADMIN`)
+### API keys (COMPANY_ADMIN, ADMIN)
 
 ```
 GET    /api/api-keys             Listar API keys de la empresa
 POST   /api/api-keys             Guardar API key (cifrada AES-256)
-POST   /api/api-keys/{id}/toggle Activar / desactivar API key
+POST   /api/api-keys/{id}/toggle Activar o desactivar API key
 DELETE /api/api-keys/{id}        Eliminar API key
 ```
 
-### Analytics (requieren autenticación)
+### Analytics
 
 ```
 GET    /api/analytics/dashboard                       Dashboard con métricas
@@ -252,7 +246,7 @@ POST   /api/analytics/alerts/read-all                 Marcar todas como leídas
 POST   /api/analytics/analyze                         Ejecutar análisis de precios
 ```
 
-> El `SchedulerController` fue retirado del MVP. Los jobs de Quartz se ejecutan automáticamente sin interfaz REST. Ver [`MEJORAS_FUTURAS.md`](MEJORAS_FUTURAS.md) para el plan de reintegración.
+`SchedulerController` se retiró del MVP. Los jobs de Quartz se ejecutan automáticamente sin interfaz REST. Plan de reintegración en `MEJORAS_FUTURAS.md`.
 
 ## Formato de respuestas
 
@@ -277,67 +271,65 @@ Error:
 }
 ```
 
-Códigos HTTP empleados: `200 OK`, `201 Created`, `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `500 Internal Server Error`.
+Códigos HTTP usados: 200, 201, 400, 401, 403, 404, 500.
 
-## Perfiles de configuración
+## Perfiles
 
-### Desarrollo (`dev`)
+Desarrollo (`dev`):
 
-- CORS permisivo.
-- Logs detallados.
-- SQL queries visibles.
-- `ddl-auto: update` sobre PostgreSQL local.
+1. CORS permisivo.
+2. Logs detallados.
+3. SQL queries visibles.
+4. `ddl-auto: update` sobre PostgreSQL local.
 
-### Producción (`prod`)
+Producción (`prod`):
 
-- CORS restrictivo (definido por `CORS_ORIGINS`).
-- Logs mínimos.
-- `ddl-auto: validate` (Flyway gestiona el esquema).
+1. CORS restrictivo definido por `CORS_ORIGINS`.
+2. Logs mínimos.
+3. `ddl-auto: validate`. Flyway gestiona el esquema.
 
 ## Seguridad
 
-- Autenticación JWT stateless (clásica y Google OAuth2).
-- Google OAuth2: validación del `idToken` contra la API de Google.
-- Contraseñas almacenadas con BCrypt.
-- API keys de Keepa cifradas con AES-256 en BD (tabla `company_api_keys`).
-- CORS configurable por perfil (restrictivo en producción).
-- CSRF deshabilitado (apropiado para APIs REST stateless).
-- Protección de endpoints por rol con `@PreAuthorize`.
-- Rate limiting en login y registro (10 intentos / minuto por IP).
-- Todas las credenciales externalizadas en variables de entorno.
-- Multi-tenancy: datos aislados por `companyId` en cada petición.
+1. JWT stateless, clásico y Google OAuth2.
+2. Google OAuth2: validación del `idToken` contra la API de Google.
+3. Contraseñas con BCrypt.
+4. API keys de Keepa cifradas con AES-256 en `company_api_keys`.
+5. CORS configurable por perfil, restrictivo en producción.
+6. CSRF deshabilitado, apropiado para APIs REST stateless.
+7. Protección por rol con `@PreAuthorize`.
+8. Rate limiting en login y registro (10 intentos por minuto y por IP).
+9. Credenciales externalizadas en variables de entorno.
+10. Multi-tenancy: datos aislados por `companyId` en cada petición.
 
-Ver [`SEGURIDAD.md`](SEGURIDAD.md) para el análisis detallado.
+Análisis detallado en `SEGURIDAD.md`.
 
 Recomendaciones operativas:
 
-- No subir `.env` a Git.
-- Usar un `JWT_SECRET` único por entorno.
-- Contraseñas de mínimo 6 caracteres.
-- Configurar orígenes CORS explícitos en producción.
+1. No subir `.env` a Git.
+2. Usar un `JWT_SECRET` único por entorno.
+3. Contraseñas mínimo 6 caracteres.
+4. Configurar orígenes CORS explícitos en producción.
 
 ## Base de datos
 
-### Tablas principales
+Tablas principales:
 
-| Tabla | Descripción |
-|---|---|
-| `users` | Usuarios del sistema (soporta auth clásica y Google OAuth). |
-| `companies` | Empresas con plan y código de invitación. |
-| `products` | Productos de cada empresa (soft-delete con campo `active`). |
-| `price_history` | Historial de precios propios. |
-| `competitors` | Competidores configurados. |
-| `competitor_prices` | Precios de Amazon obtenidos vía Keepa. |
-| `alerts` | Alertas generadas por el análisis automático. |
-| `alert_rules` | Reglas de alerta configuradas por el usuario (threshold, targetPrice). |
-| `company_api_keys` | API keys cifradas AES-256 por empresa (Keepa). |
-| `audit_logs` | Logs de auditoría (retirada del MVP, tabla existe pero no se usa). |
+1. `users`: usuarios del sistema. Soporta auth clásica y Google OAuth.
+2. `companies`: empresas con plan y código de invitación.
+3. `products`: productos de cada empresa, soft-delete con `active`.
+4. `price_history`: historial de precios propios.
+5. `competitors`: competidores configurados.
+6. `competitor_prices`: precios de Amazon obtenidos por Keepa.
+7. `alerts`: alertas generadas por el análisis automático.
+8. `alert_rules`: reglas configuradas por el usuario (threshold, targetPrice).
+9. `company_api_keys`: API keys cifradas AES-256 por empresa.
+10. `audit_logs`: tabla existente, retirada del MVP, no se usa.
 
-Ver [`FLYWAY.md`](FLYWAY.md) para el detalle de migraciones (V1-V8).
+Detalle de migraciones V1 a V8 en `FLYWAY.md`.
 
 ## Uso con Postman
 
-1. Importar la colección desde `http://localhost:9090/api-docs` (OpenAPI) o desde [`../postman/`](../postman/).
+1. Importar la colección desde `http://localhost:9090/api-docs` (OpenAPI) o desde `../postman/`.
 2. Hacer login y guardar el token devuelto.
 3. Usar el token en `Authorization: Bearer {{token}}`.
 
@@ -359,17 +351,16 @@ psql -U postgres -d pricewise_db      # Conectar a PostgreSQL
 
 ## Documentación relacionada
 
-- [`ARQUITECTURA.md`](ARQUITECTURA.md) — Guía completa de arquitectura y justificaciones técnicas.
-- [`SEGURIDAD.md`](SEGURIDAD.md) — Informe de seguridad (JWT, OAuth2, cifrado AES-256, RBAC).
-- [`PATRONES.md`](PATRONES.md) — Patrones internos y reglas críticas para evitar regresiones (multi-tenancy, soft-delete, separación de ViewModels Android, etc.).
-- [`FLYWAY.md`](FLYWAY.md) — Migraciones de base de datos V1-V8.
-- [`CRONOGRAMA.md`](CRONOGRAMA.md) — Cronograma de desarrollo (30 fases).
-- [`MEJORAS_FUTURAS.md`](MEJORAS_FUTURAS.md) — Servicios retirados del MVP y plan de reintegración.
+1. `ARQUITECTURA.md`: arquitectura y justificaciones técnicas.
+2. `SEGURIDAD.md`: informe de seguridad (JWT, OAuth2, cifrado, RBAC).
+3. `PATRONES.md`: patrones internos y reglas para evitar regresiones.
+4. `FLYWAY.md`: migraciones V1 a V8.
+5. `MEJORAS_FUTURAS.md`: servicios retirados del MVP y plan de reintegración.
 
 ## Autor
 
-Álvaro Martínez Fernández — TFC del ciclo DAM (curso 2025-2026).
+Álvaro Martínez Fernández. TFC del ciclo DAM, curso 2025-2026.
 
 ## Licencia
 
-Publicado bajo [Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/). Uso no comercial con atribución al autor. Texto completo en [`../LICENSE`](../LICENSE).
+Publicado bajo Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0). Uso no comercial con atribución al autor. Texto completo en `../LICENSE`.
