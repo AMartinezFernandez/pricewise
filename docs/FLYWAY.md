@@ -43,7 +43,7 @@ Flyway Community no soporta rollback automático. Para revertir:
 
 1. **V1** (2026-02-22): esquema inicial baseline. Todas las tablas, constraints e índices.
 2. **V2** (2026-02-22): índices compuestos para queries frecuentes.
-3. **V3** (2026-02-22): tabla `audit_logs`. Compatibilidad histórica, `AuditService` fuera del MVP.
+3. **V3** (2026-02-22): tabla `audit_logs`. No utilizada por el código actual.
 4. **V4** (2026-02-22): campo `auth_provider` en `users` para Google OAuth.
 5. **V5** (2026-02-22): tabla `alert_rules` con `company_id`, `product_id`, `alert_type`, `threshold`, `enabled`.
 6. **V6** (2026-03-08): campo `target_price` (`DECIMAL(10,2)`) en `alert_rules`.

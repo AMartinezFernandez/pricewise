@@ -40,7 +40,7 @@ Toda la documentación técnica vive en [`docs/`](docs/):
 - [`ARQUITECTURA.md`](docs/ARQUITECTURA.md) — capas, patrones, justificaciones técnicas.
 - [`SEGURIDAD.md`](docs/SEGURIDAD.md) — JWT, OAuth2, cifrado AES-256 de API keys, RBAC.
 - [`FLYWAY.md`](docs/FLYWAY.md) — migraciones de base de datos (V1-V8).
-- [`MEJORAS_FUTURAS.md`](docs/MEJORAS_FUTURAS.md) — componentes retirados del MVP y plan de reintegración.
+- [`MEJORAS_FUTURAS.md`](docs/MEJORAS_FUTURAS.md) — líneas de evolución previstas.
 
 La colección Postman completa está en [`postman/`](postman/).
 

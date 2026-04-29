@@ -60,9 +60,9 @@ Credenciales de demostración disponibles bajo demanda. Ver la descripción del 
 
 ## Endpoints deprecados
 
-La carpeta `Scheduler (Admin) [DEPRECATED]/` contiene cuatro peticiones (`Estado`, `Ejecutar Job Ahora`, `Pausar`, `Reanudar`) que apuntan a `/api/admin/scheduler/*`. Esos endpoints ya no existen porque `SchedulerController` se retiró del MVP. Devuelven 404.
+La carpeta `Scheduler (Admin) [DEPRECATED]/` contiene cuatro peticiones (`Estado`, `Ejecutar Job Ahora`, `Pausar`, `Reanudar`) que apuntan a `/api/admin/scheduler/*`. Esos endpoints no existen en la versión actual del backend. Devuelven 404.
 
-Se mantienen como referencia histórica. Los jobs de Quartz (`PriceMonitorJob`) siguen ejecutándose automáticamente cada 6 horas. Más contexto en `../docs/MEJORAS_FUTURAS.md` apartado 6.
+Se conservan en la colección como referencia. Los jobs de Quartz (`PriceMonitorJob`) se ejecutan automáticamente cada 6 horas en segundo plano sin necesidad de interfaz REST.
 
 ## Referencia de endpoints
 
