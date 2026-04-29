@@ -343,7 +343,7 @@ Spring Cache simple en memoria, activado con `@EnableCaching`. Anotaciones usada
 1. `@Cacheable` en consultas que se repiten (`getCategories`, `getBrands`).
 2. `@CacheEvict` al crear o actualizar productos.
 
-Limitaciones del caché simple: se pierde al reiniciar y no se comparte entre instancias. La integración con Redis se retiró del MVP. Plan en `MEJORAS_FUTURAS.md`.
+Limitaciones del caché simple: se pierde al reiniciar y no se comparte entre instancias. Para escalar a varias instancias, sustituir por Redis (ver `MEJORAS_FUTURAS.md`).
 
 ## 17. Testing
 
@@ -361,4 +361,4 @@ Anotaciones más usadas: `@Test`, `@DisplayName`, `@BeforeEach`, `@Parameterized
 2. `SEGURIDAD.md`: informe de seguridad detallado.
 3. `PATRONES.md`: reglas internas y gotchas resueltos.
 4. `FLYWAY.md`: migraciones V1 a V8.
-5. `MEJORAS_FUTURAS.md`: servicios retirados del MVP y plan de reintegración.
+5. `MEJORAS_FUTURAS.md`: líneas de evolución para iteraciones posteriores.

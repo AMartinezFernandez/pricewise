@@ -246,7 +246,7 @@ POST   /api/analytics/alerts/read-all                 Marcar todas como leídas
 POST   /api/analytics/analyze                         Ejecutar análisis de precios
 ```
 
-`SchedulerController` se retiró del MVP. Los jobs de Quartz se ejecutan automáticamente sin interfaz REST. Plan de reintegración en `MEJORAS_FUTURAS.md`.
+Los jobs de Quartz se ejecutan automáticamente en segundo plano sin interfaz REST.
 
 ## Formato de respuestas
 
@@ -323,7 +323,7 @@ Tablas principales:
 7. `alerts`: alertas generadas por el análisis automático.
 8. `alert_rules`: reglas configuradas por el usuario (threshold, targetPrice).
 9. `company_api_keys`: API keys cifradas AES-256 por empresa.
-10. `audit_logs`: tabla existente, retirada del MVP, no se usa.
+10. `audit_logs`: tabla creada en BD pero no utilizada por el código actual.
 
 Detalle de migraciones V1 a V8 en `FLYWAY.md`.
 
@@ -355,7 +355,7 @@ psql -U postgres -d pricewise_db      # Conectar a PostgreSQL
 2. `SEGURIDAD.md`: informe de seguridad (JWT, OAuth2, cifrado, RBAC).
 3. `PATRONES.md`: patrones internos y reglas para evitar regresiones.
 4. `FLYWAY.md`: migraciones V1 a V8.
-5. `MEJORAS_FUTURAS.md`: servicios retirados del MVP y plan de reintegración.
+5. `MEJORAS_FUTURAS.md`: líneas de evolución previstas para iteraciones posteriores.
 
 ## Autor
 
