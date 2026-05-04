@@ -19,6 +19,8 @@ El backend está desplegado en Railway (plan Pro) con PostgreSQL gestionado. La 
 
 Requisitos mínimos: Java 17, Maven 3.8+, PostgreSQL 14, Android Studio con SDK 36.
 
+Pasos previos: crear la base de datos (`createdb pricewise_db` o `CREATE DATABASE pricewise_db;` desde `psql`) y editar `.env` con credenciales reales. Para el módulo Android, `local.properties` debe definir `sdk.dir` (lo genera Android Studio al abrir el proyecto; si compilas solo desde CLI, créalo a mano).
+
 ```bash
 # Backend
 cd pricewise-backend
@@ -36,7 +38,7 @@ La guía completa del backend está en [`docs/README.md`](docs/README.md) (insta
 
 Toda la documentación técnica vive en [`docs/`](docs/):
 
-- [`README.md`](docs/README.md) — guía de uso y referencia de endpoints del backend.
+- [`docs/README.md`](docs/README.md) — guía detallada del backend (instalación, perfiles, endpoints).
 - [`ARQUITECTURA.md`](docs/ARQUITECTURA.md) — capas, patrones, justificaciones técnicas.
 - [`SEGURIDAD.md`](docs/SEGURIDAD.md) — JWT, OAuth2, cifrado AES-256 de API keys, RBAC.
 - [`FLYWAY.md`](docs/FLYWAY.md) — migraciones de base de datos (V1-V8).

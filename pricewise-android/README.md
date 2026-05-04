@@ -21,17 +21,18 @@ Antes del primer build hay que crear dos archivos locales fuera de Git.
 
 ### local.properties
 
-Client ID de Google Sign-In obtenido en Google Cloud Console:
+Android Studio genera este archivo automáticamente al abrir el proyecto, con `sdk.dir` apuntando al SDK local. Si compilas solo desde CLI sin haber abierto Studio, créalo a mano:
 
 ```properties
+sdk.dir=/ruta/absoluta/al/Android/sdk
 GOOGLE_WEB_CLIENT_ID=xxxxxxxxxxxx.apps.googleusercontent.com
 ```
 
-Si se omite, la app compila pero el botón «Entrar con Google» queda inoperativo.
+`sdk.dir` es obligatorio para que Gradle encuentre el SDK. `GOOGLE_WEB_CLIENT_ID` es el Client ID de Google Sign-In obtenido en Google Cloud Console; si se omite, la app compila pero el botón «Entrar con Google» queda inoperativo.
 
 ### keystore.properties
 
-Solo necesario para build release. En la raíz del módulo, mismo nivel que `settings.gradle.kts`:
+Solo necesario para build release firmado. En la raíz del módulo, mismo nivel que `settings.gradle.kts`:
 
 ```properties
 storeFile=/ruta/absoluta/al/pricewise-release.jks
@@ -40,7 +41,7 @@ keyAlias=pricewise
 keyPassword=...
 ```
 
-Si no existe, Gradle salta la firma y el APK release se genera sin `signingConfig`. Sirve para probar el proceso, no para distribución.
+Si no existe, `./gradlew assembleRelease` falla con `Keystore file not set for signing config release`. El APK debug (`./gradlew assembleDebug`) se genera sin necesidad de keystore.
 
 ## Compilar y ejecutar
 
@@ -52,12 +53,12 @@ Si no existe, Gradle salta la firma y el APK release se genera sin `signingConfi
 ./gradlew assembleRelease
 ```
 
-El APK queda en `app/build/outputs/apk/{debug,release}/`.
+El APK queda en `app/build/outputs/apk/{debug,release}/` con el patrón de nombre `PriceWise-v<versionName>-<buildType>.apk` (configurado en `app/build.gradle.kts`).
 
 Instalación en dispositivo o emulador conectado:
 
 ```bash
-adb install app/build/outputs/apk/debug/app-debug.apk
+adb install app/build/outputs/apk/debug/*.apk
 adb shell monkey -p com.alvaro.pricewise -c android.intent.category.LAUNCHER 1
 ```
 

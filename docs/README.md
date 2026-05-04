@@ -58,6 +58,8 @@ DB_PASSWORD=tu_password_de_bd
 SPRING_PROFILES_ACTIVE=dev
 ```
 
+`SPRING_PROFILES_ACTIVE=dev` es importante: el perfil por defecto de la aplicación es `prod` (con `ddl-auto=validate` y CORS restrictivo), poco práctico para desarrollo local. La carga del `.env` la hace `spring-dotenv` automáticamente al arrancar.
+
 Las API keys de Keepa se configuran por empresa desde la app, en Ajustes e Integración Keepa.
 
 Para generar un `JWT_SECRET` seguro:
@@ -75,9 +77,11 @@ mvn spring-boot:run
 O empaquetar y ejecutar:
 
 ```bash
-mvn clean package
+mvn clean package -DskipTests
 java -jar target/pricewise-1.0.0-SNAPSHOT.jar
 ```
+
+`-DskipTests` evita ejecutar los 206 tests en el primer build; varios son de integración (`@SpringBootTest`) y requieren la BD configurada. Para correrlos: `mvn test` con la base de datos activa.
 
 Disponible en `http://localhost:9090`.
 
