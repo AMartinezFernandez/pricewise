@@ -237,21 +237,26 @@ public class KeepaService {
 
     private CompetitorPrice parseKeepaProduct(com.keepa.api.backend.structs.Product keepaProduct, Product product) {
         try {
-            int amazonPriceRaw = ProductAnalyzer.getLast(
-                    keepaProduct.csv[com.keepa.api.backend.structs.Product.CsvType.AMAZON.index],
-                    com.keepa.api.backend.structs.Product.CsvType.AMAZON
-            );
-
-            if (amazonPriceRaw == -1) {
-                amazonPriceRaw = ProductAnalyzer.getLast(
-                        keepaProduct.csv[com.keepa.api.backend.structs.Product.CsvType.NEW.index],
-                        com.keepa.api.backend.structs.Product.CsvType.NEW
-                );
+            // Orden de prioridad: AMAZON (oferta directa) → NEW (mínimo nuevo) → BUY_BOX_SHIPPING (oferta destacada con envío).
+            // El tercer fallback cubre productos vendidos por sellers, donde AMAZON y NEW vienen vacíos.
+            int amazonPriceRaw = -1;
+            String priceSource = null;
+            for (com.keepa.api.backend.structs.Product.CsvType type : java.util.List.of(
+                    com.keepa.api.backend.structs.Product.CsvType.AMAZON,
+                    com.keepa.api.backend.structs.Product.CsvType.NEW,
+                    com.keepa.api.backend.structs.Product.CsvType.BUY_BOX_SHIPPING)) {
+                int candidate = ProductAnalyzer.getLast(keepaProduct.csv[type.index], type);
+                if (candidate != -1) {
+                    amazonPriceRaw = candidate;
+                    priceSource = type.name();
+                    break;
+                }
             }
 
             if (amazonPriceRaw == -1) {
                 return null;
             }
+            log.debug("Precio ASIN {} obtenido vía CSV {}", keepaProduct.asin, priceSource);
 
             BigDecimal price = new BigDecimal(amazonPriceRaw)
                     .divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
