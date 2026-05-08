@@ -137,6 +137,10 @@ seeder:
   admin-password: ${SEEDER_ADMIN_PASSWORD:Admin123}
   user-password: ${SEEDER_USER_PASSWORD:Password1}
 
+# Override locale Keepa para desarrollo local (override puntual sobre el ES por defecto)
+keepa:
+  default-locale: US
+
 # CORS permisivo en desarrollo
 cors:
   allow-all: true
