@@ -2,7 +2,7 @@
 
 Sistema de comparación y monitorización de precios de productos para PYMEs. Trabajo Fin de Ciclo del grado DAM (curso 2025-2026).
 
-Ofrece a cada empresa un espacio aislado (multi-tenancy) donde registrar su catálogo, seguir precios de competidores en Amazon (vía [Keepa](https://keepa.com/)) y recibir alertas configurables cuando se desvían de los umbrales definidos.
+Ofrece a cada empresa un espacio aislado (multi-tenancy) donde registrar su catálogo, seguir precios de competidores en Amazon y recibir alertas configurables cuando se desvían de los umbrales definidos.
 
 ## Arquitectura
 
