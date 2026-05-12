@@ -36,7 +36,7 @@ La guía completa del backend está en [`docs/README.md`](docs/README.md) (insta
 
 ## Documentación
 
-Toda la documentación técnica vive en [`docs/`](docs/):
+Toda la documentación técnica se encuentra en [`docs/`](docs/):
 
 - [`docs/README.md`](docs/README.md) — guía detallada del backend (instalación, perfiles, endpoints).
 - [`ARQUITECTURA.md`](docs/ARQUITECTURA.md) — capas, patrones, justificaciones técnicas.
