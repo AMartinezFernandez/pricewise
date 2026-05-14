@@ -46,6 +46,9 @@ Toda la documentación técnica se encuentra en [`docs/`](docs/):
 
 La colección Postman completa está en [`postman/`](postman/).
 
+La API está disponible además como documentación interactiva en Swagger UI sobre el despliegue de producción:
+[https://backend-production-5a519.up.railway.app/swagger-ui/index.html](https://backend-production-5a519.up.railway.app/swagger-ui/index.html)
+
 ## Autor
 
 Álvaro Martínez Fernández — TFC DAM, curso 2025-2026.
