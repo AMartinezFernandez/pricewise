@@ -59,7 +59,14 @@ public class SecurityConfig {
             "/api/auth/google/complete-join",
             "/api/health",
             "/actuator/health",
-            "/actuator/info"
+            "/actuator/info",
+            // Swagger UI + OpenAPI (SpringDoc 2.x). Solo exponen el contrato
+            // de la API; los endpoints siguen protegidos por JWT.
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/v3/api-docs",
+            "/v3/api-docs/**",
+            "/v3/api-docs.yaml"
     };
 
     @Bean
